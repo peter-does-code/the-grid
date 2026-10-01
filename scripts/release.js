@@ -64,6 +64,13 @@ try {
   process.exit(1);
 }
 
+// Kun fra en ren arbejdsmappe: ellers kommer halvfærdige ændringer med i release-committen, og bygget kan fange
+// filer midt i en ændring (sket med v0.1.6, 01-10-2026, hvor release-committen fik × i preset-listen med).
+if (fs.existsSync(path.join(root, '.git')) && output('git', ['status', '--porcelain'])) {
+  console.error('Uncommitted changes. Commit (or stash) them first, so the release only contains finished work.');
+  process.exit(1);
+}
+
 run('npm', ['test']);
 
 const version = nextVersion(pkg.version, bump);
@@ -95,7 +102,7 @@ run(
 if (fs.existsSync(path.join(root, '.git'))) {
   // Uden shell: git er et almindeligt program, og commit-beskeden har mellemrum (v0.1.2 fejlede her, 01-10-2026).
   const git = (args) => run('git', args, { shell: false });
-  git(['add', '-A']);
+  git(['add', 'package.json']); // kun versionen; alt andet er committet før udgivelsen
   git(['commit', '-m', `Release v${version}`]);
   git(['tag', `v${version}`]);
   git(['push', '--follow-tags']);
