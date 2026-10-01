@@ -64,7 +64,7 @@ Rendereren har ingen Node-adgang og laver ingen netværkskald. Alt Spotify-arbej
 | `eggs.js` | Påskeæg: Tron-ord i link-feltet, Konami-koden og snydearket (`CHEAT_SHEET`), som Flynns terminal viser. Terminalen (`openTerminal`, `termRun` i `app.js`) åbnes med `whoami`. Se CLAUDE.md. |
 | `music.js` | Lydkæden foran visualizeren (forsinkelse, automatisk lydniveau, begrænser) og analysen til musikmotoren. Se `music_engine.md`. |
 | `musictest.js`, `probe.js` | `npm run musictest` (offline mod facit eller en lydfil) og lyddiagnosen `npm run diagnose -- --audio` |
-| `visualizer.js` | Butterchurn: 395 presets, historik, tilfældig eller fast rækkefølge, titelanimation |
+| `visualizer.js` | Butterchurn: 1.057 presets (395 fra butterchurn-presets og 662 fra Cream of the Crop, se docs/presets.md), historik, tilfældig eller fast rækkefølge, titelanimation |
 | `spectrum.js` | Den lille Winamp-analysator på 76 x 16 pixels: spektrum, oscilloskop eller slukket, i temaets farver |
 | `playlist.js` | Playliste-listen: valg, afspilning, markering af det aktuelle nummer |
 | `index.html`, `styles.css` | Layout og tre temaer via `body[data-theme]`: `grid` (Tron, standard), `clu` (orange) og `classic` (Winamp). Faste tekster har `data-i18n`-attributter. |

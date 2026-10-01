@@ -11,7 +11,7 @@ Dokumentation i `docs/` (indeks: `docs/README.md`). Drews vejledning: `docs/en/g
 | Kommando | Hvad |
 |---|---|
 | `npm start` eller dobbeltklik på `The Grid.cmd` | Start appen fra kildekoden |
-| `npm test` | 102 unit-tests (Node test runner, ingen Electron) |
+| `npm test` | 110 unit-tests (Node test runner, ingen Electron) |
 | `npm run selftest` | Hurtig selvtest (ca. 20 s): starter appen, afspiller en 3 sekunders testlyd, tjekker lydfangst og rendering, tager skærmbilleder af dialogerne, introens start, fuld skærm og Clu-temaet, og tjekker at Init kan høres (afspiller den i 4 s). **Laver lyd på pc'en.** |
 | `npm run selftest:full` | Fuld selvtest (ca. 90 s): også introens faser, den anden intro, Game Grid-vinderen og alle påskeæg, i realtid. Før en ny installationsfil, og efter ændringer i intro eller påskeæg. |
 | `node scripts/start.js --selftest --selftest-out=<mappe>` | Selvtest med valgfri output-mappe |
@@ -24,6 +24,7 @@ Dokumentation i `docs/` (indeks: `docs/README.md`). Drews vejledning: `docs/en/g
 | `node scripts/start.js --diagnose "--search=<tekst>"` | Søger som påskeægget "drew" og viser Spotifys svar. Ændrer intet. |
 | `npm run diagnose -- --play` | Afspiller det sidst hentede link med afspil-knappens kode og viser Spotifys svar. **Starter musik.** |
 | `npm run dist` | Bygger installationsfilen `dist/The-Grid-Setup-<version>.exe` (NSIS, x64, cirka 100 MB) |
+| `npm run release` | Udgiver en ny version til Drew: test, versionshop, installationsfil til det private releases-repo, git-tag og push. Se `docs/releasing.md` |
 | `npm run dist:dir` | Bygger kun `dist/win-unpacked`. Selvtest: `"dist/win-unpacked/The Grid.exe" --selftest --selftest-out=<mappe>` |
 
 Udviklerværktøjer i appen: `Ctrl+Shift+I` eller `F12`. I den installerede app: `"The Grid.exe" --diagnose > diagnose.txt` (uden omdirigering vises intet, da programmet ikke har en konsol).
@@ -45,7 +46,7 @@ Detaljer: `docs/architecture.md`.
 
 1. **Ingen Winamp-kode eller -grafik.** Kildekoden fra 2024 må ikke distribueres i ændret form og er trukket tilbage. Skin-grafikken er ophavsretligt beskyttet. MilkDrop 2 (BSD) og Butterchurn (MIT) er fine. Se `docs/winamp_research.md`. Det samme gælder Tron: ingen logoer eller skrifttyper fra filmene, og ingen grafik ud over klippet `src/renderer/media/biojazz.mp4` fra Tron: Legacy, som Peter selv har lagt ind til påskeægget "jazz" (30-09-2026). `src/renderer/media/drew.jpg` er et foto af Drew til påskeægget "drew"; det er privat og må ikke bruges andre steder. `src/renderer/media/init.mp3` er "Init" af Nine Inch Nails fra TRON: Ares (Peters egen fil, 30-09-2026); den spiller under introen (fra 12 s, kan slås fra under Settings) og under "drew". Det er den eneste lyd, The Grid selv afspiller; al anden musik kommer fra Spotify. Appen deles kun privat; skulle den nogensinde deles offentligt, skal klippet ud. Citater og farver er fine.
 2. **Spotify-lyd optages, gemmes og videresendes aldrig.** Lydfangsten er kun til realtidsanalyse i hukommelsen. Forbind aldrig lydkilden til `audioContext.destination`; det giver ekko-sløjfe.
-3. **Kun lokalt.** Ingen server, ingen telemetri. Netværk kun til `accounts.spotify.com`, `api.spotify.com` og opslag af korte `spotify.link`-links. Eksterne links går gennem allowlisten i `main.js`.
+3. **Kun lokalt.** Ingen server, ingen telemetri. Netværk kun til `accounts.spotify.com`, `api.spotify.com`, opslag af korte `spotify.link`-links og, i den installerede app, GitHub for opdateringer (`api.github.com` og GitHubs filservere, kun det private repo `peter-does-code/the-grid-releases`; se `docs/releasing.md`). Eksterne links går gennem allowlisten i `main.js`.
 4. **Ingen hemmeligheder i repoet.** Tokens og indstillinger ligger i `%APPDATA%\The Grid`. Peters Client ID er bygget ind (`BUILT_IN_CLIENT_ID` i `store.js`); det er ikke hemmeligt, fordi login bruger PKCE og der ingen client secret er. Et Client Secret må aldrig gemmes nogen steder.
 5. **Følg Spotifys 2026-regler** (se `docs/spotify_setup.md`): ejeren skal have Premium, højst 5 brugere, `items` kun for egne playlister, ingen redaktionelle playlister, ingen batch-endpoints, `product` er fjernet fra `/me`.
 6. **Alt i appen er altid på engelsk** (Peters beslutning 30-09-2026), uanset Windows' sprog. Der er ingen dansk udgave og intet sprogvalg. Tekster i brugerfladen skrives ikke direkte i `index.html` eller `app.js`: de får en nøgle i `src/shared/i18n.js` og bruges via `data-i18n*` eller `t()`. Fejlbeskeder, konsolbeskeder, diagnose- og selvtestoutput fra hovedprocessen er også på engelsk. `main.js` tvinger Chromiums sprog til `en-US` (`--lang`), så også talformater er engelske (2.7). Testen `test/i18n.test.js` fanger manglende nøgler og dansk tekst.

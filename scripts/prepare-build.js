@@ -56,6 +56,16 @@ const parts = [
 for (const [name, file] of notices) {
   parts.push('='.repeat(78), name, '='.repeat(78), fs.readFileSync(path.join(root, file), 'utf8').trim(), '');
 }
+parts.push(
+  '='.repeat(78),
+  'MilkDrop presets from "Cream of the Crop"',
+  '='.repeat(78),
+  'A selection from the Cream of the Crop pack, curated by Jason Fletcher (ISOSCELES) and distributed by',
+  'projectM: https://github.com/projectM-visualizer/presets-cream-of-the-crop',
+  'The preset authors are named in each preset title. MilkDrop presets were released freely by their',
+  'authors; projectM removes any preset whose author asks for it.',
+  ''
+);
 fs.writeFileSync(path.join(outDir, 'THIRD_PARTY_NOTICES.txt'), parts.join('\r\n').replace(/\r?\n/g, '\r\n'));
 
 // Opdateringerne: appen (src/main/update-config.js) og electron-builder (build.publish) skal pege samme sted hen.

@@ -22,12 +22,15 @@ const args = process.argv.slice(2);
 const [dir, resultsFile] = args.filter((a) => !a.startsWith('--'));
 const totalArg = args.find((a) => a.startsWith('--total='));
 const TOTAL = totalArg ? Number(totalArg.split('=')[1]) : 1000;
+const minArg = args.find((a) => a.startsWith('--min-score='));
+// Under denne score kommer et preset ikke med, heller ikke på stilartens faste pladser.
+const MIN_SCORE = minArg ? Number(minArg.split('=')[1]) : 0.35;
 if (!dir || !resultsFile) {
   console.error('Brug: node scripts/build-preset-pack.js <mappe fra convert-presets> <results.json> [--total=1000]');
   process.exit(1);
 }
 
-const LIMITS = { minLuma: 0.015, maxLuma: 0.85, minMotion: 0.004, maxMsPerFrame: 10 };
+const LIMITS = { minLuma: 0.03, maxLuma: 0.85, minDetail: 0.035, minMotion: 0.004, maxMsPerFrame: 10 };
 
 const manifest = JSON.parse(fs.readFileSync(path.join(dir, 'manifest.json'), 'utf8'));
 const byFile = new Map(manifest.map((m) => [m.file, m]));
@@ -60,6 +63,7 @@ const ok = results.filter((r) => {
   if (existing.has(m.name.toLowerCase())) return reject('findes allerede');
   if (r.luma < LIMITS.minLuma) return reject('sort');
   if (r.luma > LIMITS.maxLuma) return reject('hvidt');
+  if (r.detail < LIMITS.minDetail) return reject('fladt');
   if (r.motion < LIMITS.minMotion) return reject('står stille');
   if (r.msPerFrame > LIMITS.maxMsPerFrame) return reject('for tungt');
   return true;
@@ -99,10 +103,30 @@ for (const r of ok) (candidates[byFile.get(r.file).style] = candidates[byFile.ge
 const styles = Object.keys(candidates);
 const weight = Object.fromEntries(styles.map((s) => [s, Math.sqrt(styleSize[s])]));
 const weightSum = styles.reduce((s, x) => s + weight[x], 0);
+// Højst 2 fra hver familie: forfatter og titel (de to første led af navnet), fx "goody + flexi - emotive
+// dissonance - turmoil" og "... - integral anomaly mix" er samme preset i forskellige udgaver.
+const familyOf = (name) =>
+  name
+    .split(' - ')
+    .slice(0, 2)
+    .join(' - ')
+    .replace(/[\s_-]*[\d.]+[a-z]?\s*$/i, '')
+    .toLowerCase()
+    .trim();
+const perFamily = new Map();
 const chosen = [];
 for (const s of styles) {
   const slots = Math.max(2, Math.round((TOTAL * weight[s]) / weightSum));
-  chosen.push(...candidates[s].sort((a, b) => b.score - a.score).slice(0, slots));
+  const ranked = candidates[s].filter((r) => r.score >= MIN_SCORE).sort((a, b) => b.score - a.score);
+  let taken = 0;
+  for (const r of ranked) {
+    if (taken >= slots) break;
+    const fam = familyOf(byFile.get(r.file).name);
+    if ((perFamily.get(fam) || 0) >= 2) continue;
+    perFamily.set(fam, (perFamily.get(fam) || 0) + 1);
+    chosen.push(r);
+    taken += 1;
+  }
 }
 chosen.sort((a, b) => b.score - a.score);
 const final = chosen.slice(0, TOTAL);
