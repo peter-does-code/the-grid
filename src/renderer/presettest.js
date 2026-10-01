@@ -37,10 +37,20 @@
   // Fang shadere, der ikke kan oversættes: Butterchurn melder det ikke selv.
   const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
   let linkFailures = 0;
+  let linkLog = '';
   const link = gl.linkProgram.bind(gl);
   gl.linkProgram = (program) => {
     link(program);
-    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) linkFailures += 1;
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+      linkFailures += 1;
+      // Oversætterens fejl (til at finde fejl i konverteringen af shaderne).
+      if (!linkLog) {
+        for (const shader of gl.getAttachedShaders(program) || []) {
+          const info = gl.getShaderInfoLog(shader);
+          if (info) linkLog += info.slice(0, 300);
+        }
+      }
+    }
   };
 
   const small = document.createElement('canvas');
@@ -129,6 +139,7 @@
   function test(preset) {
     const result = {};
     linkFailures = 0;
+    linkLog = '';
     let t = 0;
     const step = (silent) => {
       t += 1 / FPS;
@@ -184,6 +195,7 @@
       result.error = String((err && err.message) || err).slice(0, 200);
     }
     result.linkFailed = linkFailures > 0;
+    if (linkLog) result.linkLog = linkLog;
     for (const k of ['luma', 'colorful', 'detail', 'motion', 'silentMotion', 'beatSync']) {
       if (typeof result[k] === 'number') result[k] = Math.round(result[k] * 10000) / 10000;
     }
@@ -191,10 +203,10 @@
   }
 
   (async () => {
-    const results = [];
     for (let start = 0; ; start += 20) {
       const batch = await window.visamp.presettest.batch(start, 20);
       if (!batch || !batch.length) break;
+      const results = [];
       for (const item of batch) {
         let preset = null;
         try {
@@ -205,10 +217,11 @@
         }
         results.push({ file: item.file, ...test(preset) });
       }
-      // Giv hovedprocessen og GPU'en luft mellem portionerne.
+      // Gemmes efter hver portion, så en afbrudt kørsel kan fortsætte.
+      await window.visamp.presettest.results(results);
       await new Promise((r) => setTimeout(r, 0));
     }
-    return { ok: true, results };
+    return { ok: true };
   })()
     .then((report) => window.visamp.presettest.report(report))
     .catch((err) => window.visamp.presettest.report({ ok: false, error: String((err && err.stack) || err) }));

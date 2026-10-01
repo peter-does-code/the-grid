@@ -44,6 +44,7 @@ contextBridge.exposeInMainWorld('visamp', {
   },
   presettest: {
     batch: (start, count) => ipcRenderer.invoke('presettest:batch', start, count),
+    results: (list) => ipcRenderer.invoke('presettest:results', list),
     report: (data) => ipcRenderer.invoke('presettest:report', data),
   },
   probe: {

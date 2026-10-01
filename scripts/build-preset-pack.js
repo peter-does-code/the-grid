@@ -3,7 +3,7 @@
 /*
  * Vælger de bedste konverterede presets og bygger en preset-pakke til The Grid:
  *
- *   node scripts/build-preset-pack.js <mappe fra convert-presets> <results.json fra --presettest> [--total=1000]
+ *   node scripts/build-preset-pack.js <mappe fra convert-presets> <results.jsonl fra --presettest> [--total=1000]
  *
  * Skriver src/renderer/presets/cream-of-the-crop.js (samme form som butterchurn-presets: et globalt objekt
  * med getPresets()) og src/renderer/presets/cream-of-the-crop.txt (liste over de valgte og deres mål).
@@ -31,7 +31,14 @@ const LIMITS = { minLuma: 0.015, maxLuma: 0.85, minMotion: 0.004, maxMsPerFrame:
 
 const manifest = JSON.parse(fs.readFileSync(path.join(dir, 'manifest.json'), 'utf8'));
 const byFile = new Map(manifest.map((m) => [m.file, m]));
-const results = JSON.parse(fs.readFileSync(resultsFile, 'utf8')).results;
+// results.jsonl fra --presettest: én JSON-linje pr. preset (en ældre results.json har dem under "results").
+const raw = fs.readFileSync(resultsFile, 'utf8');
+const results = raw.trimStart().startsWith('{"ok"')
+  ? JSON.parse(raw).results
+  : raw
+      .split('\n')
+      .filter((l) => l.trim())
+      .map((l) => JSON.parse(l));
 
 // De indbyggede presets må ikke komme igen under samme navn.
 const existing = new Set();

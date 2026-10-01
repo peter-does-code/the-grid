@@ -22,6 +22,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { fork } = require('node:child_process');
+const { repairShader } = require('./lib/repair-shader');
 
 const MAX_BYTES = 200 * 1024; // unormalt store filer (typisk indlejrede billeder) springes over
 const PER_FAMILY = 2;
@@ -89,7 +90,11 @@ async function convertOne(src, out, { file, style }) {
   try {
     const text = fs.readFileSync(file, 'latin1');
     if (text.length > MAX_BYTES) throw new Error('too large');
-    const json = JSON.stringify(await convertPreset(text));
+    const preset = await convertPreset(text);
+    // Konverterens shadere har kendte fejl, der giver sorte presets (se scripts/lib/repair-shader.js).
+    preset.warp = repairShader(preset.warp, 'warp');
+    preset.comp = repairShader(preset.comp, 'comp');
+    const json = JSON.stringify(preset);
     const target = path.join(out, entry.file);
     fs.mkdirSync(path.dirname(target), { recursive: true });
     fs.writeFileSync(target, json);

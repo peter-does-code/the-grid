@@ -470,16 +470,33 @@ async function main() {
 
   if (IS_PRESETTEST) {
     // Skjult vindue: tegner hvert konverteret preset i --dir (med manifest.json fra
-    // scripts/convert-presets.js) og skriver målingerne til --out. Se renderer/presettest.js.
+    // scripts/convert-presets.js) og skriver målingerne til --out, én JSON-linje pr. preset, efter hver
+    // portion. Afbrydes testen, fortsætter en ny kørsel med de presets, der mangler. Se renderer/presettest.js.
     const fs = require('node:fs');
     const argValue = (name) => (process.argv.find((arg) => arg.startsWith(`--${name}=`)) || '').slice(name.length + 3);
     const dir = argValue('dir');
-    const outFile = argValue('out') || path.join(dir, 'results.json');
-    const entries = JSON.parse(fs.readFileSync(path.join(dir, 'manifest.json'), 'utf8')).filter((e) => !e.error);
+    const outFile = argValue('out') || path.join(dir, 'results.jsonl');
+    const done = new Set();
+    if (fs.existsSync(outFile)) {
+      for (const line of fs.readFileSync(outFile, 'utf8').split('\n')) {
+        try {
+          if (line.trim()) done.add(JSON.parse(line).file);
+        } catch {
+          // en halvt skrevet sidste linje fra en afbrudt kørsel
+        }
+      }
+    }
+    const all = JSON.parse(fs.readFileSync(path.join(dir, 'manifest.json'), 'utf8')).filter((e) => !e.error);
+    const entries = all.filter((e) => !done.has(e.file));
+    console.log(`${done.size} already tested, ${entries.length} to go`);
+    const started = Date.now();
     ipcMain.handle('presettest:batch', (_event, start, count) => {
       const batch = entries.slice(start, start + count).map((e) => ({ file: e.file, json: fs.readFileSync(path.join(dir, e.file), 'utf8') }));
-      if (start % 200 === 0 && batch.length) console.log(`${start}/${entries.length}`);
+      if (start % 200 === 0 && batch.length) console.log(`${start}/${entries.length} (${Math.round((Date.now() - started) / 1000)} s)`);
       return batch;
+    });
+    ipcMain.handle('presettest:results', (_event, results) => {
+      fs.appendFileSync(outFile, results.map((r) => JSON.stringify(r)).join('\n') + '\n');
     });
     const reportPromise = new Promise((resolve) => ipcMain.handleOnce('presettest:report', (_event, data) => resolve(data)));
     const win = new BrowserWindow({
@@ -499,8 +516,7 @@ async function main() {
       reportPromise,
       new Promise((resolve) => setTimeout(() => resolve({ ok: false, error: 'The preset test did not finish within 3 hours.' }), 3 * 3600 * 1000)),
     ]);
-    fs.writeFileSync(outFile, JSON.stringify(report, null, 1));
-    console.log(report.ok ? `Preset test done: ${report.results.length} presets -> ${outFile}` : `Preset test failed: ${report.error}`);
+    console.log(report.ok ? `Preset test done: ${outFile}` : `Preset test failed: ${report.error}`);
     try {
       fs.rmSync(app.getPath('userData'), { recursive: true, force: true });
     } catch {
