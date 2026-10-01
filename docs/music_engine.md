@@ -76,18 +76,37 @@ På Peters pc giver andre programmer svag baggrundslyd på -55 til -63 dB. Den m
 
 ## Hvilket preset
 
-Hvert af de 395 presets profileres, ved at motoren tæller, hvor ofte dets ligninger og shadere bruger `bass`, `mid` og `treb`.
+Hvert preset har to slags profil:
 
-- **Fordeling** siger, hvilket bånd presettet reagerer på.
-- **Reaktivitet** går fra roligt og ambient til stærkt lydstyret.
+- **Fra koden** (`profilePreset`): hvor ofte ligningerne og shaderne bruger `bass`, `mid` og `treb`. Det giver en fordeling over båndene og en gættet reaktivitet.
+- **Målt** (`src/renderer/presets/preset-stats.js`, fra preset-testen, se `docs/presets.md`): lysstyrke, bevægelse, takt, farver og detaljer. Hvert mål er gemt som placering blandt alle 1.016 presets (0-1).
+  - **Intensiteten** er 50 % bevægelse, 30 % takt og 20 % lysstyrke (`presetIntensity`).
 
-Ved et skift scores de presets, der ikke er vist for nylig. Scoren afhænger af tre ting:
+Ved et automatisk skift scores presets ud fra hvorfor der skiftes og hvad der vises nu (`selectionContext(reason, current)` og `scorePreset`):
 
-- **Bånd:** hvor godt presettets fordeling passer til de bånd, der fylder mere end normalt lige nu.
-- **Energi:** hvor godt reaktiviteten passer til sangens energi. Rolige dele får rolige presets, og intense dele får stærkt reagerende presets.
-- **Tilfældighed:** lidt tilfældighed giver variation.
+- **Intensitet:** sangens energi giver en ønsket intensitet: 0,25 i rolige dele, 0,55 normalt og 0,8 i høje dele. Under en opbygning er den 0,88 og på et drop 0,95. Vægten er 1,6 for at ramme den.
+- **Bånd:** fordelingen skal passe til de bånd, der fylder mere end normalt lige nu (vægt 1,0).
+- **Takt:** med et tempo får presets, der følger slaget, op til 0,5 ekstra.
+- **Overgang:** et blødt skift går helst til en lignende lysstyrke (op til 0,6), så skiftet ikke blænder eller mørklægger. Et drop belønner kontrast i intensitet (op til 0,8).
+- **Tilfældighed:** 0,6.
+
+Valget trækkes blandt de 12 bedste, vægtet efter score, og de sidste 150 viste kommer ikke igen foreløbig. Med kun det bedste og 25 udelukkede kom de samme ca. 60 favoritter igen og igen: 57-81 forskellige pr. 200 skift, simuleret. Nu er det 169-179 forskellige, og intensiteten rammer stadig målet (0,32 roligt, 0,55 normalt, 0,77 højt). Presets uden målinger bruger den gamle score med reaktivitet.
 
 Det sker kun ved tilfældig rækkefølge med "Vælg presets, der reagerer på den del af musikken, der fylder mest" slået til.
+
+## Overgange
+
+`installTransitions` i `visualizer.js` styrer Butterchurns overgang uden at ændre dens filer:
+
+- **Mønster:** Butterchurns tre "mixType" er 1 (en kant fejer hen over billedet), 2 (plasma, en organisk opløsning) og 3 (en cirkel, der åbner sig fra midten). Butterchurn trækker mønsteret tilfældigt. Nu vælger `transitionFor` i `app.js`:
+  - en opbygning fejer;
+  - en rolig del opløses som plasma;
+  - en ny høj del (omkvædet) åbner sig fra midten;
+  - ellers enten fejning eller plasma.
+- **Forløb i ryk på slagene:** med tempo går overgangen frem i ryk. Hvert slag skubber den 1/n frem i løbet af slagets første 35 % (en blød kurve), og imellem står den stille.
+  - Overgangen varer hele takter, så ryk og slag passer.
+  - Et manuelt skift med pilene glider jævnt som før.
+- **Drop:** det hårde klip får et lysglimt på ca. 0,18 s (`flashCut`), så klippet ser villet ud.
 
 ## Målte resultater
 

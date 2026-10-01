@@ -50,12 +50,14 @@ for (const pack of ['butterchurnPresets', 'butterchurnPresetsExtra', 'butterchur
   for (const name of Object.keys((mod.default || mod).getPresets())) existing.add(name.toLowerCase());
 }
 
-// Presets, Peter har bedt om at få fjernet (scripts/preset-bans.txt).
+// Presets, Peter har bedt om at få fjernet (scripts/preset-bans.txt). Mellemrum tæller ikke: appen viser
+// dobbelte mellemrum som ét, så navnet skrives, som det ses.
+const banKey = (name) => String(name).trim().toLowerCase().split(/\s+/).join(' ');
 const banned = new Set(
   fs
     .readFileSync(path.join(__dirname, 'preset-bans.txt'), 'utf8')
     .split('\n')
-    .map((l) => l.trim().toLowerCase())
+    .map((l) => banKey(l))
     .filter((l) => l && !l.startsWith('#'))
 );
 
@@ -63,11 +65,15 @@ const banned = new Set(
 // lysstyrke springer). Over 0,5 er det konstant stroboskop (Peters klage 01-10-2026: "flashing white lights constantly").
 const flickerArg = args.find((a) => a.startsWith('--flicker='));
 const flicker = new Map();
+const measured = new Map(); // hele målingen fra blink-kørslen (til preset-stats.js)
 for (const file of flickerArg ? flickerArg.slice('--flicker='.length).split(',') : []) {
   for (const line of fs.readFileSync(file, 'utf8').split('\n')) {
     if (!line.trim()) continue;
     const r = JSON.parse(line);
-    if (typeof r.flicker === 'number') flicker.set(r.file, r.flicker);
+    if (typeof r.flicker === "number") {
+      flicker.set(r.file, r.flicker);
+      measured.set(r.file, r);
+    }
   }
 }
 const MAX_FLICKER = 0.5;
@@ -83,7 +89,7 @@ const ok = results.filter((r) => {
   if (r.error) return reject('fejl');
   if (r.linkFailed) return reject('shader kan ikke oversættes');
   if (existing.has(m.name.toLowerCase())) return reject('findes allerede');
-  if (banned.has(m.name.toLowerCase())) return reject('fjernet af Peter');
+  if (banned.has(banKey(m.name))) return reject('fjernet af Peter');
   if (r.luma < LIMITS.minLuma) return reject('sort');
   if (r.luma > LIMITS.maxLuma) return reject('hvidt');
   if (r.detail < LIMITS.minDetail) return reject('fladt');
@@ -184,6 +190,49 @@ fs.writeFileSync(path.join(outDir, 'cream-of-the-crop.txt'), list + '\n');
 // De valgte som manifest (bedste først), så de kan ses på kontaktark:
 //   node scripts/start.js --presettest --dir=<mappe> --manifest=<mappe>/chosen.json --out=<fil> --sheets=<mappe>
 fs.writeFileSync(path.join(dir, 'chosen.json'), JSON.stringify(final.map((r) => byFile.get(r.file))));
+
+// Målingerne til valget af preset (src/shared/music-engine.js, scorePreset): for pakkens presets og, med
+// --existing=<mappe>,<jsonl>, de indbyggede. Hvert mål er gemt som placering blandt alle (0-1), så de kan
+// sammenlignes direkte: [lysstyrke, bevægelse, takt, farver, detaljer].
+const statsByName = {};
+for (const r of final) {
+  const m = measured.get(r.file);
+  if (m) statsByName[byFile.get(r.file).name] = m;
+}
+const existingArg = args.find((a) => a.startsWith('--existing='));
+if (existingArg) {
+  const [exDir, exResults] = existingArg.slice('--existing='.length).split(',');
+  const names = Object.fromEntries(JSON.parse(fs.readFileSync(path.join(exDir, 'manifest.json'), 'utf8')).map((m) => [m.file, m.name]));
+  for (const line of fs.readFileSync(exResults, 'utf8').split('\n')) {
+    if (!line.trim()) continue;
+    const r = JSON.parse(line);
+    if (!r.error && names[r.file] && !banned.has(banKey(names[r.file]))) statsByName[names[r.file]] = r;
+  }
+}
+const KEYS = ['luma', 'motion', 'beatSync', 'colorful', 'detail'];
+const entries = Object.entries(statsByName);
+const sortedBy = Object.fromEntries(KEYS.map((k) => [k, entries.map(([, r]) => r[k] || 0).sort((a, b) => a - b)]));
+const rankOf = (k, v) => {
+  const arr = sortedBy[k];
+  let lo = 0;
+  let hi = arr.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (arr[mid] < v) lo = mid + 1;
+    else hi = mid;
+  }
+  return Math.round((100 * lo) / Math.max(1, arr.length - 1)) / 100;
+};
+const stats = Object.fromEntries(entries.map(([name, r]) => [name, KEYS.map((k) => rankOf(k, r[k] || 0))]));
+fs.writeFileSync(
+  path.join(outDir, 'preset-stats.js'),
+  '/* Målinger fra The Grids preset-test, som placering blandt alle presets (0-1): [lysstyrke, bevægelse, takt,\n' +
+    ' * farver, detaljer]. Genereret af scripts/build-preset-pack.js; bruges af scorePreset i music-engine.js. */\n' +
+    'window.gridPresetStats = ' +
+    JSON.stringify(stats) +
+    ';\n'
+);
+console.log(`Målinger til valget: ${entries.length} presets`);
 
 console.log(`Testet: ${results.length}, godkendt: ${ok.length}, valgt: ${final.length} fra ${styles.length} stilarter`);
 console.log('Sorteret fra:', JSON.stringify(rejected));

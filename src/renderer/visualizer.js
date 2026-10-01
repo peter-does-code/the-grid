@@ -16,7 +16,11 @@
     'gridPresetsCreamOfTheCrop',
   ];
   const MAX_RENDER_WIDTH = 2560; // over dette bliver GPU-belastningen høj uden synlig gevinst
-  const RECENT_EXCLUDE = 25;
+  // De sidst viste presets kommer ikke igen foreløbig. Med over 1.000 presets kan vinduet være stort; med 25
+  // kom de samme ca. 60 favoritter igen og igen, når valget styres af målingerne (simuleret 01-10-2026).
+  const RECENT_EXCLUDE = 150;
+  const PICK_TOP = 12; // valget trækkes blandt de bedste ...
+  const PICK_TEMPERATURE = 0.25; // ... vægtet efter score (lavere = mere grådigt)
 
   function unwrap(mod) {
     return mod && mod.default ? mod.default : mod;
@@ -34,8 +38,9 @@
     }
     // Presets, Peter har fjernet (scripts/preset-bans.txt, lagt i preset-pakken af build-preset-pack.js).
     const ours = unwrap(window.gridPresetsCreamOfTheCrop);
-    const bans = new Set(((ours && ours.bans) || []).map((n) => String(n).toLowerCase()));
-    for (const name of Object.keys(all)) if (bans.has(name.toLowerCase())) delete all[name];
+    const key = (n) => String(n).trim().toLowerCase().split(/\s+/).join(' '); // mellemrum tæller ikke
+    const bans = new Set(((ours && ours.bans) || []).map(key));
+    for (const name of Object.keys(all)) if (bans.has(key(name))) delete all[name];
     return all;
   }
 
@@ -62,6 +67,8 @@
       canvas.height = height;
       this.viz = butterchurn.createVisualizer(this.audioContext, canvas, { width, height, pixelRatio: 1, textureRatio: 1 });
       this.isWebGL2 = Boolean(canvas.getContext('webgl2'));
+
+      this.installTransitions();
 
       const extraImages = unwrap(window.butterchurnExtraImages);
       if (extraImages && typeof extraImages.getImages === 'function') {
@@ -125,9 +132,70 @@
       cancelAnimationFrame(this.raf);
     }
 
+    /**
+     * Overgangene mellem presets, uden at ændre Butterchurns filer:
+     * - Mønsteret (Butterchurns "mixType"): 1 = en kant, der fejer hen over billedet, 2 = plasma (en organisk
+     *   opløsning), 3 = en cirkel, der åbner sig fra midten. Butterchurn trækker det tilfældigt; her vælger appen.
+     * - Forløbet: Butterchurn går jævnt fra 0 til 1. Med `beats` går overgangen i ryk på slagene i stedet:
+     *   hvert slag skubber den et stykke frem (hurtigt i starten af slaget), og imellem står den stille.
+     */
+    installTransitions() {
+      const renderer = this.viz && this.viz.renderer;
+      if (!renderer || !renderer.blendPattern) return;
+      const self = this;
+      const pattern = renderer.blendPattern;
+      const create = pattern.createBlendPattern.bind(pattern);
+      pattern.createBlendPattern = () => {
+        const want = self.activeTransition && self.activeTransition.pattern;
+        if (!want) return create();
+        // Butterchurns første Math.random() i createBlendPattern vælger mønsteret (1 + floor(r * 3)).
+        const random = Math.random;
+        let first = true;
+        Math.random = () => {
+          if (!first) return random();
+          first = false;
+          return (want - 1) / 3 + 0.01;
+        };
+        try {
+          return create();
+        } finally {
+          Math.random = random;
+        }
+      };
+      let raw = renderer.blendProgress || 0;
+      Object.defineProperty(renderer, 'blendProgress', {
+        configurable: true,
+        get() {
+          return self.shapeBlend(raw);
+        },
+        set(value) {
+          raw = value;
+        },
+      });
+      this.transitionsInstalled = true; // selvtesten tjekker, at krogene sidder i den rigtige Butterchurn
+    }
+
+    /** Overgangens forløb (0-1) fra Butterchurns jævne forløb. Over 1 er overgangen slut og røres ikke. */
+    shapeBlend(p) {
+      const beats = this.activeTransition && this.activeTransition.beats;
+      if (!beats || p <= 0 || p >= 1) return p;
+      const k = p * beats;
+      const i = Math.floor(k);
+      const f = (k - i) / 0.35; // de første 35 % af hvert slag
+      const step = f >= 1 ? 1 : 1 - Math.pow(1 - f, 3);
+      return Math.min(1, (i + step) / beats);
+    }
+
+    /** Næste overgang: { beats, pattern } (se installTransitions). Gælder kun det næste skift. */
+    setNextTransition(transition) {
+      this.nextTransition = transition || null;
+    }
+
     load(name, blendSeconds = 0, { pushHistory = true } = {}) {
       const preset = this.presets[name];
       if (!preset || this.failed.has(name)) return false;
+      this.activeTransition = blendSeconds > 0 ? this.nextTransition : null;
+      this.nextTransition = null;
       try {
         this.viz.loadPreset(preset, blendSeconds);
       } catch (err) {
@@ -184,26 +252,35 @@
       if (!this.profiles) this.profiles = new Map();
       if (!this.profiles.has(name)) {
         const preset = this.presets[name];
-        this.profiles.set(name, preset && window.VisampMusic ? window.VisampMusic.profilePreset(preset) : null);
+        const profile = preset && window.VisampMusic ? window.VisampMusic.profilePreset(preset) : null;
+        // Målingerne fra preset-testen (src/renderer/presets/preset-stats.js), hvis presettet er målt.
+        const stats = window.gridPresetStats && window.gridPresetStats[name];
+        if (profile && stats) profile.stats = stats;
+        this.profiles.set(name, profile);
       }
       return this.profiles.get(name);
     }
 
-    /** Det preset blandt de ikke nyligt viste, der scorer højest efter `score(profile)`. */
-    pickSmart(score) {
-      const recent = new Set(this.history.slice(-RECENT_EXCLUDE));
+    /**
+     * Et preset blandt de ikke nyligt viste efter `score(profile)`: trukket blandt de PICK_TOP bedste, vægtet
+     * efter score, så valget følger musikken uden at de samme få presets vinder hver gang.
+     */
+    pickSmart(score, random = Math.random) {
+      const recent = new Set(this.history.slice(-Math.min(RECENT_EXCLUDE, Math.floor(this.names.length / 2))));
       let pool = this.names.filter((n) => !recent.has(n) && !this.failed.has(n));
       if (pool.length === 0) pool = this.names.filter((n) => n !== this.current && !this.failed.has(n));
-      let best = null;
-      let bestScore = -Infinity;
-      for (const name of pool) {
-        const s = score(this.profile(name));
-        if (s > bestScore) {
-          bestScore = s;
-          best = name;
-        }
+      const top = pool
+        .map((name) => [name, score(this.profile(name))])
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, PICK_TOP);
+      if (!top.length) return null;
+      const weights = top.map(([, s]) => Math.exp((s - top[0][1]) / PICK_TEMPERATURE));
+      let r = random() * weights.reduce((a, b) => a + b, 0);
+      for (let i = 0; i < top.length; i++) {
+        r -= weights[i];
+        if (r <= 0) return top[i][0];
       }
-      return best;
+      return top[top.length - 1][0];
     }
 
     /** Uden musik: fad til sort og stop renderingen, så GPU'en hviler. */

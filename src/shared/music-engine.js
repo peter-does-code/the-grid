@@ -1093,11 +1093,20 @@
       return this.cachedState;
     }
 
-    /** Konteksten presets vurderes ud fra (se scorePreset). */
-    selectionContext() {
+    /**
+     * Konteksten presets vurderes ud fra (se scorePreset).
+     * @param {string} [reason] hvorfor der skiftes: 'drop', 'build', 'section', 'timer', 'accent', 'track' eller 'manual'
+     * @param {object} [current] profilen for presettet, der vises nu (til overgangen)
+     */
+    selectionContext(reason, current) {
       const s = this.state;
       const targetReactivity = s.energy === 'high' ? 0.85 : s.energy === 'low' ? 0.3 : 0.55;
-      return { dominance: s.dominance, energy: s.energy, targetReactivity };
+      // Ønsket intensitet (0-1): roligt i stille dele, stærkere når det er højt, opbygningen kravler op mod
+      // droppet, og droppet får det kraftigste.
+      let targetIntensity = s.energy === 'high' ? 0.8 : s.energy === 'low' ? 0.25 : 0.55;
+      if (s.building) targetIntensity = 0.88;
+      if (reason === 'drop') targetIntensity = 0.95;
+      return { dominance: s.dominance, energy: s.energy, targetReactivity, targetIntensity, tempoValid: s.tempoValid, reason, current };
     }
   }
 
@@ -1146,13 +1155,37 @@
     return dot / Math.sqrt(na * nb + EPS);
   }
 
+  /**
+   * Hvor intenst et preset er (0-1). Med målinger fra preset-testen (profile.stats, placeringer blandt alle):
+   * bevægelse, takt og lysstyrke. Uden: gættet ud fra, hvor tit koden bruger lyden (reactivity).
+   */
+  function presetIntensity(profile) {
+    const st = profile && profile.stats;
+    if (!st) return profile ? profile.reactivity : 0.5;
+    return 0.5 * st[1] + 0.3 * st[2] + 0.2 * st[0];
+  }
+
   /** Højere er bedre: passer til de bånd der fylder nu, til energien, plus lidt tilfældighed for variation. */
   function scorePreset(profile, context, random) {
     const r = random === undefined ? Math.random() : random;
     if (!profile || !context) return r;
     const match = cosine(profile.affinity, context.dominance);
-    const react = 1 - Math.abs(profile.reactivity - context.targetReactivity);
-    return 1.5 * match + 1.0 * react + 0.6 * r;
+    if (!profile.stats || context.targetIntensity === undefined) {
+      const react = 1 - Math.abs(profile.reactivity - context.targetReactivity);
+      return 1.5 * match + 1.0 * react + 0.6 * r;
+    }
+    const st = profile.stats;
+    const intensity = presetIntensity(profile);
+    let score = 1.0 * match + 1.6 * (1 - Math.abs(intensity - context.targetIntensity));
+    // Med et tempo: presets, der følger slaget, er bedst.
+    if (context.tempoValid) score += 0.5 * st[2];
+    // Overgangen: et blødt skift går til en lignende lysstyrke; et drop klipper til kontrast.
+    const cur = context.current && context.current.stats;
+    if (cur) {
+      if (context.reason === 'drop') score += 0.8 * Math.abs(intensity - presetIntensity(context.current));
+      else if (context.reason !== 'manual') score += 0.6 * (1 - Math.abs(st[0] - cur[0]));
+    }
+    return score + 0.6 * r;
   }
 
   // ---------------------------------------------------------------------------
@@ -1311,6 +1344,7 @@
     PresetDirector,
     profilePreset,
     scorePreset,
+    presetIntensity,
     cosine,
     ENGINE_DEFAULTS,
     BANDS,

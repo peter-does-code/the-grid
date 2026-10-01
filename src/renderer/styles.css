@@ -821,6 +821,28 @@ body:not([data-theme='classic']) .pl-list li.current {
   display: none;
 }
 
+/* Lysglimt på et drop (flashCut i app.js): ca. 0,18 s, klik går igennem. */
+.cut-flash {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: #fff;
+  opacity: 0;
+}
+
+.cut-flash.on {
+  animation: cut-flash 0.18s ease-out;
+}
+
+@keyframes cut-flash {
+  from {
+    opacity: 0.55;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
 /* Ingen musik: billedet fader til sort og renderingen stopper. */
 #viz.asleep {
   opacity: 0;

@@ -420,3 +420,28 @@ test('scorePreset foretrækker presets, der reagerer på det bånd der fylder nu
   const ambient = { affinity: [1 / 3, 1 / 3, 1 / 3], reactivity: 0.2 };
   assert.ok(scorePreset(ambient, calm, 0) > scorePreset(bassy, calm, 0));
 });
+
+test('med målte presets vælges intensiteten efter musikken, og overgangen efter hvorfor der skiftes', () => {
+  const even = [1 / 3, 1 / 3, 1 / 3];
+  // stats: [lysstyrke, bevægelse, takt, farver, detaljer] som placering blandt alle presets.
+  const calm = { affinity: even, reactivity: 0.5, stats: [0.3, 0.1, 0.2, 0.5, 0.5] };
+  const wild = { affinity: even, reactivity: 0.5, stats: [0.8, 0.95, 0.9, 0.5, 0.5] };
+  const brightMid = { affinity: even, reactivity: 0.5, stats: [0.9, 0.5, 0.5, 0.5, 0.5] };
+  const darkMid = { affinity: even, reactivity: 0.5, stats: [0.15, 0.55, 0.5, 0.5, 0.5] };
+  const ctx = (extra) => ({ dominance: even, targetReactivity: 0.55, tempoValid: false, ...extra });
+
+  // Rolig del: det rolige preset vinder; høj energi: det vilde.
+  assert.ok(scorePreset(calm, ctx({ targetIntensity: 0.25 }), 0) > scorePreset(wild, ctx({ targetIntensity: 0.25 }), 0));
+  assert.ok(scorePreset(wild, ctx({ targetIntensity: 0.8 }), 0) > scorePreset(calm, ctx({ targetIntensity: 0.8 }), 0));
+  // Drop fra et roligt preset: kontrasten trækker det vilde endnu længere op.
+  const drop = ctx({ targetIntensity: 0.95, reason: 'drop', current: calm });
+  const noContrast = ctx({ targetIntensity: 0.95 });
+  assert.ok(scorePreset(wild, drop, 0) - scorePreset(calm, drop, 0) > scorePreset(wild, noContrast, 0) - scorePreset(calm, noContrast, 0));
+  // Et blødt skift fra et mørkt preset går helst til en lignende lysstyrke.
+  const soft = ctx({ targetIntensity: 0.55, reason: 'section', current: { stats: [0.1, 0.5, 0.5, 0.5, 0.5] } });
+  assert.ok(scorePreset(darkMid, soft, 0) > scorePreset(brightMid, soft, 0));
+  // Med et tempo vinder det preset, der følger slaget.
+  const onBeat = { affinity: even, reactivity: 0.5, stats: [0.5, 0.5, 0.95, 0.5, 0.5] };
+  const offBeat = { affinity: even, reactivity: 0.5, stats: [0.5, 0.6, 0.05, 0.5, 0.5] };
+  assert.ok(scorePreset(onBeat, ctx({ targetIntensity: 0.55, tempoValid: true }), 0) > scorePreset(offBeat, ctx({ targetIntensity: 0.55, tempoValid: true }), 0));
+});

@@ -227,10 +227,11 @@
   }
 
   /** Vælger preset efter musikken lige nu: hvilke bånd der fylder, og hvor intens sangen er. */
-  function smartPick() {
+  /** Valget af næste preset ud fra musikken, de målte presets og hvorfor der skiftes (se scorePreset). */
+  function smartPick(reason = 'manual') {
     if (!state.settings.music.smartSelection) return null;
     return () => {
-      const context = music.engine.selectionContext();
+      const context = music.engine.selectionContext(reason, viz.current ? viz.profile(viz.current) : null);
       return viz.pickSmart((profile) => window.VisampMusic.scorePreset(profile, context));
     };
   }
@@ -259,7 +260,34 @@
     const hard = action.hard || rinzlerArmed;
     rinzlerArmed = false;
     if (hard && tronOverlay) tronOverlay.event('cut');
-    viz.next({ random: state.settings.visualizer.random, blendSeconds: hard ? 0 : action.blendSeconds, pick: smartPick() });
+    if (hard && action.reason === 'drop') flashCut();
+    if (!hard) viz.setNextTransition(transitionFor(action));
+    viz.next({ random: state.settings.visualizer.random, blendSeconds: hard ? 0 : action.blendSeconds, pick: smartPick(action.reason) });
+  }
+
+  /**
+   * Overgangen efter musikken (se installTransitions i visualizer.js): opbygningen fejer, en rolig del opløses som
+   * plasma, en ny høj del (omkvædet) åbner sig fra midten; ellers fejning eller plasma. Med tempo går overgangen
+   * i ryk på slagene. Overgangen varer hele takter (instruktørens blendFor), så slagene passer.
+   */
+  function transitionFor(action) {
+    const s = music.engine.state;
+    let pattern;
+    if (action.reason === 'build') pattern = 1;
+    else if (s.energy === 'low') pattern = 2;
+    else if (action.reason === 'section' && s.energy === 'high') pattern = 3;
+    else pattern = Math.random() < 0.5 ? 1 : 2;
+    const beats =
+      state.settings.music.beatSync && s.tempoValid && s.bpm ? Math.round((action.blendSeconds * s.bpm) / 60) : 0;
+    return { pattern, beats: beats >= 2 ? beats : null };
+  }
+
+  /** Et kort lysglimt på et drop, så det hårde klip ser villet ud og ikke som en fejl. */
+  function flashCut() {
+    const el = $('cut-flash');
+    el.classList.remove('on');
+    void el.offsetWidth; // start animationen forfra
+    el.classList.add('on');
   }
 
   function setVisualizerSetting(patch) {
@@ -1957,7 +1985,7 @@
         render: viz
           ? { frames, fps: round(frames / seconds, 1), webgl2: viz.isWebGL2, size: `${viz.canvas.width}x${viz.canvas.height}` }
           : null,
-        presets: viz ? { count: viz.names.length, current: viz.current, failed: Array.from(viz.failed) } : null,
+        presets: viz ? { count: viz.names.length, current: viz.current, failed: Array.from(viz.failed), transitions: Boolean(viz.transitionsInstalled), measured: Object.keys(window.gridPresetStats || {}).length } : null,
         media,
         ui: {
           theme: currentTheme(),
@@ -2037,6 +2065,11 @@
         await new Promise((resolve) => setTimeout(resolve, 450));
         document.body.classList.add('fullscreen', 'cursor-hidden');
         window.dispatchEvent(new Event('resize'));
+        // Midt i en overgang: cirklen åbner sig fra midten i ryk på slagene (installTransitions i visualizer.js).
+        setSleeping(false);
+        viz.setNextTransition({ pattern: 3, beats: 4 });
+        viz.next({ random: true, blendSeconds: 2 });
+        await new Promise((resolve) => setTimeout(resolve, 900));
       } else if (view.startsWith('egg-')) {
         // Et påskeæg midt i sin animation.
         document.body.classList.remove('fullscreen', 'cursor-hidden');
