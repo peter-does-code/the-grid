@@ -1,0 +1,90 @@
+'use strict';
+
+/*
+ * Udgiver en ny version af The Grid (Drews app opdaterer sig selv ud fra den):
+ *
+ *   npm run release            0.1.0 → 0.1.1
+ *   npm run release -- minor   0.1.0 → 0.2.0
+ *
+ * 1. Kører testene; fejler én, stopper udgivelsen.
+ * 2. Hæver versionen i package.json.
+ * 3. Bygger installationsfilen med en læse-token til det private releases-repo (se nedenfor) og lægger
+ *    den, latest.yml og blockmap op som en GitHub-release (electron-builder --publish always).
+ * 4. Er projektet et git-repo: commit og tag vX.Y.Z, og push.
+ *
+ * Kræver:
+ *   - gh logget ind som ejeren af releases-repoet (build.publish.owner i package.json). Tokenen herfra
+ *     bruges kun til at lægge filerne op og kommer ikke med i appen.
+ *   - Læse-tokenen, som appen henter opdateringer med, i %USERPROFILE%\.the-grid\update-token.txt: en
+ *     fine-grained token med adgang til kun releases-repoet og kun "Contents: Read-only". Den kommer med i
+ *     installationsfilen, så den må ikke kunne andet. Den ligger uden for projektet, så den aldrig havner i git.
+ */
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
+const { execFileSync } = require('node:child_process');
+
+const root = path.join(__dirname, '..');
+const pkgFile = path.join(root, 'package.json');
+const tokenSource = path.join(os.homedir(), '.the-grid', 'update-token.txt');
+const tokenTarget = path.join(root, 'build', 'update-token', 'update-token.txt');
+const bump = process.argv[2] || 'patch';
+const shell = process.platform === 'win32';
+
+function run(cmd, args, opts = {}) {
+  console.log(`> ${cmd} ${args.join(' ')}`);
+  return execFileSync(cmd, args, { cwd: root, stdio: 'inherit', shell, ...opts });
+}
+
+function output(cmd, args) {
+  return execFileSync(cmd, args, { cwd: root, encoding: 'utf8', shell }).trim();
+}
+
+function nextVersion(version, kind) {
+  const [major, minor, patch] = version.split('.').map(Number);
+  if (kind === 'major') return `${major + 1}.0.0`;
+  if (kind === 'minor') return `${major}.${minor + 1}.0`;
+  if (kind === 'patch') return `${major}.${minor}.${patch + 1}`;
+  throw new Error(`Unknown version bump "${kind}" (use patch, minor or major).`);
+}
+
+const pkg = JSON.parse(fs.readFileSync(pkgFile, 'utf8'));
+const { owner, repo } = pkg.build.publish;
+
+if (!fs.existsSync(tokenSource)) {
+  console.error(`Missing the app's read-only update token: ${tokenSource}\nSee docs/releasing.md.`);
+  process.exit(1);
+}
+let publishToken;
+try {
+  publishToken = output('gh', ['auth', 'token', '--user', owner]);
+} catch {
+  console.error(`gh is not logged in as ${owner}. Run: gh auth login (and log in as ${owner}).`);
+  process.exit(1);
+}
+
+run('npm', ['test']);
+
+const version = nextVersion(pkg.version, bump);
+pkg.version = version;
+fs.writeFileSync(pkgFile, JSON.stringify(pkg, null, 2) + '\n');
+console.log(`\nReleasing The Grid v${version} to ${owner}/${repo}\n`);
+
+fs.mkdirSync(path.dirname(tokenTarget), { recursive: true });
+fs.copyFileSync(tokenSource, tokenTarget);
+try {
+  run('node', ['scripts/prepare-build.js']);
+  run('npx', ['electron-builder', '--win', 'nsis', '--x64', '--publish', 'always'], {
+    env: { ...process.env, GH_TOKEN: publishToken },
+  });
+} finally {
+  fs.rmSync(tokenTarget, { force: true });
+}
+
+if (fs.existsSync(path.join(root, '.git'))) {
+  run('git', ['add', '-A']);
+  run('git', ['commit', '-m', `Release v${version}`]);
+  run('git', ['tag', `v${version}`]);
+  run('git', ['push', '--follow-tags']);
+}
+console.log(`\nDone: v${version} is on https://github.com/${owner}/${repo}/releases. Drew's app picks it up within 4 hours (or at the next start).`);

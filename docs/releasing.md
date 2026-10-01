@@ -1,0 +1,51 @@
+# Udgivelser og automatiske opdateringer
+
+Drews The Grid opdaterer sig selv fra GitHub. Peter udgiver en ny version med én kommando.
+
+## Sådan virker det
+
+- **To private repoer på GitHub-kontoen peter-does-code:**
+  - `the-grid`: koden.
+  - `the-grid-releases`: kun installationsfilerne (GitHub Releases).
+- **Appen tjekker for opdateringer** 10 s efter start og derefter hver 4. time (`src/main/updater.js`, electron-updater). En ny version hentes i baggrunden og installeres, når The Grid lukkes. Drew ser to beskeder:
+  - "Update vX downloaded. It installs when you close The Grid."
+  - efter genstart: "System upgraded to vX. Greetings, program."
+- **Appen bruger en læse-token** til `the-grid-releases`, fordi repoet er privat. Den ligger i installationsfilen (`resources/update-token.txt`) og giver kun adgang til at hente filer fra det ene repo, ikke til koden.
+- Det private repo holder også Init (NIN) og billedet af Drew, der ligger i installationsfilen, væk fra offentligheden.
+
+## Engangsopsætning
+
+1. **gh er logget ind som peter-does-code** (allerede gjort). Udgivelsen henter tokenen med `gh auth token --user peter-does-code`. Commits i dette repo har e-mailen pebbesen@live.dk (sat i repoets egen git-konfiguration), så de vises på profilen.
+2. **De to private repoer** er oprettet, og koden er skubbet op (01-10-2026).
+3. **Lav læse-tokenen** på github.com, logget ind som peter-does-code:
+   1. Gå til Settings → Developer settings → Personal access tokens → **Fine-grained tokens** → Generate new token.
+   2. Sæt navn: `the-grid-updates`.
+   3. Sæt udløb: det længste, GitHub tillader. Skriv datoen ned nedenfor.
+   4. Sæt Repository access: **Only select repositories** → `the-grid-releases`.
+   5. Sæt Permissions: **Contents: Read-only** og intet andet (Metadata: Read-only kommer automatisk).
+   6. Gem tokenen i `%USERPROFILE%\.the-grid\update-token.txt`, uden andet i filen. Den ligger uden for projektet og kommer aldrig i git.
+4. **Første gang Drew får opdateringer:** den første version med opdateringer skal installeres på den gamle måde. Send Drew installationsfilen én gang; derefter opdaterer den sig selv.
+
+Tokenens udløbsdato: _(skriv den her)_
+
+## Udgiv en ny version
+
+```
+npm run release            # 0.1.0 → 0.1.1
+npm run release -- minor   # 0.1.0 → 0.2.0
+```
+
+`scripts/release.js` gør følgende:
+
+1. Kører testene. Fejler én, stopper udgivelsen.
+2. Hæver versionen i `package.json`.
+3. Bygger installationsfilen med læse-tokenen og lægger den op som en release i `the-grid-releases` (installationsfil, `latest.yml` og blockmap). Kopien af tokenen i `build/` slettes igen.
+4. Committer, tagger `vX.Y.Z` og pusher koden til `the-grid`.
+
+Drews app finder den nye version inden for 4 timer eller ved næste start.
+
+## Vigtigt
+
+- **Forny læse-tokenen, før den udløber.** Den nye token kan kun nå ud til Drew gennem en opdatering, som appen henter med den gamle. Udløber den gamle først, holder opdateringerne op, og Drew skal have en installationsfil igen. Appen virker stadig; kun opdateringerne stopper.
+- **Tokenen må ikke kunne mere end at læse `the-grid-releases`.** Alle med installationsfilen kan i princippet finde den.
+- **Filen er usigneret.** Kun den første installation giver Windows' advarsel ("More info" → "Run anyway"). Opdateringer installeres af appen selv, uden advarsel.

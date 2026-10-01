@@ -1,0 +1,9 @@
+- [Arkitekturbeslutninger](project_architecture_decisions.md) — hvorfor loopback i stedet for Spotify-lyd, Butterchurn 2.6.7, PKCE, eget vindue som videokilde
+- [Spotifys 2026-regler](reference_spotify_2026_rules.md) — Premium-krav, 5 brugere, items kun for egne playlister, fjernede endpoints og felter
+- [Spotify-appens uris-fejl](project_spotify_app_uris_bug.md) — løs "uris"-afspilning tømmer afspilleren; brug altid kontekst + offset og verificér
+- [Peters ønsker til visualizeren](feedback_visual_preferences.md) — følg musikken som Winamp, sort uden musik, presetnavn kun ved pilene
+- [Musikmotorens kalibrering](project_music_engine_calibration.md) — målt baggrundsstøj, onsetLatency 27 ms, klæbrigt tempo; efterprøv med npm run musictest
+- [The Grid til Drew](project_share_with_friend.md) — appen hedder The Grid for alle; installationsfil bygget, Peters Client ID indbygget; resten i docs/sharing_plan.md
+- [Altid engelsk](feedback_always_english.md) — alt i The Grid er altid på engelsk, også hos Peter; intet sprogvalg
+- [Tron-påskeæg](feedback_tron_easter_eggs.md) — Peter vil have så mange Tron-referencer og påskeæg som muligt; foreslå hele tiden nye
+- [Electron-faldgruber](feedback_electron_gotchas.md) — ELECTRON_RUN_AS_NODE i VS Code, Electron-binæren hentes ved første kørsel, npm allowScripts

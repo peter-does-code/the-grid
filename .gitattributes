@@ -1,0 +1,17 @@
+# Force LF line endings on all text files
+* text=auto eol=lf
+
+# Windows-batchfiler skal have CRLF
+*.cmd text eol=crlf
+
+# Binary files
+*.jpg binary
+*.jpeg binary
+*.png binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.pdf binary
+*.wav binary
+*.woff binary
+*.woff2 binary

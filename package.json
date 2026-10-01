@@ -1,0 +1,133 @@
+{
+  "name": "winamp-visualizer",
+  "productName": "The Grid",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The Grid: a Tron-inspired MilkDrop visualizer that follows your Spotify music.",
+  "main": "src/main/main.js",
+  "scripts": {
+    "start": "node scripts/start.js",
+    "selftest": "node scripts/start.js --selftest",
+    "selftest:full": "node scripts/start.js --selftest-full",
+    "test": "node --test test/*.test.js",
+    "diagnose": "node scripts/start.js --diagnose",
+    "musictest": "node scripts/start.js --musictest",
+    "dist": "node scripts/prepare-build.js && electron-builder --win nsis --x64",
+    "dist:dir": "node scripts/prepare-build.js && electron-builder --win dir --x64",
+    "release": "node scripts/release.js"
+  },
+  "author": "Peter <pse@wezimplify.com>",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@fontsource/vt323": "5.3.0",
+    "butterchurn": "2.6.7",
+    "butterchurn-presets": "2.4.7",
+    "electron-updater": "^6.8.9"
+  },
+  "devDependencies": {
+    "electron": "44.5.0",
+    "electron-builder": "26.15.3",
+    "milkdrop-preset-converter": "^0.1.2"
+  },
+  "allowScripts": {
+    "core-js": false,
+    "electron-winstaller": false
+  },
+  "engines": {
+    "node": ">=22.12"
+  },
+  "build": {
+    "appId": "dk.peter.thegrid",
+    "productName": "The Grid",
+    "executableName": "The Grid",
+    "copyright": "Peter",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "package.json",
+      "src/**/*",
+      "!node_modules/**/*",
+      "node_modules/butterchurn/lib/butterchurn.min.js",
+      "node_modules/butterchurn/lib/butterchurnExtraImages.min.js",
+      "node_modules/butterchurn-presets/lib/*.min.js",
+      "node_modules/@fontsource/vt323/latin-400.css",
+      "node_modules/@fontsource/vt323/files/vt323-latin-400-normal.*",
+      "node_modules/argparse/**/*",
+      "node_modules/builder-util-runtime/**/*",
+      "node_modules/debug/**/*",
+      "node_modules/electron-updater/**/*",
+      "node_modules/fs-extra/**/*",
+      "node_modules/graceful-fs/**/*",
+      "node_modules/js-yaml/**/*",
+      "node_modules/jsonfile/**/*",
+      "node_modules/lazy-val/**/*",
+      "node_modules/lodash.escaperegexp/**/*",
+      "node_modules/lodash.isequal/**/*",
+      "node_modules/ms/**/*",
+      "node_modules/sax/**/*",
+      "node_modules/tiny-typed-emitter/**/*",
+      "node_modules/universalify/**/*"
+    ],
+    "asarUnpack": [
+      "src/main/ps/**"
+    ],
+    "electronLanguages": [
+      "en-US"
+    ],
+    "electronFuses": {
+      "runAsNode": false,
+      "enableNodeOptionsEnvironmentVariable": false,
+      "enableNodeCliInspectArguments": false,
+      "onlyLoadAppFromAsar": true
+    },
+    "extraFiles": [
+      {
+        "from": "build/THIRD_PARTY_NOTICES.txt",
+        "to": "THIRD_PARTY_NOTICES.txt"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "runAfterFinish": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "The Grid",
+      "uninstallDisplayName": "The Grid",
+      "artifactName": "The-Grid-Setup-${version}.exe",
+      "deleteAppDataOnUninstall": false,
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerHeaderIcon": "build/icon.ico"
+    },
+    "compression": "maximum",
+    "publish": {
+      "provider": "github",
+      "owner": "peter-does-code",
+      "repo": "the-grid-releases",
+      "releaseType": "release"
+    },
+    "extraResources": [
+      {
+        "from": "build/update-token",
+        "to": ".",
+        "filter": [
+          "update-token.txt"
+        ]
+      }
+    ]
+  }
+}

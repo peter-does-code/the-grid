@@ -1,0 +1,29 @@
+# Afhængigheder og byggeoutput
+node_modules/
+out/
+dist/
+build/
+
+# Hemmeligheder. The Grid gemmer selv alt i %APPDATA%\The Grid, men for en sikkerheds skyld:
+.env
+.env.*
+*.pem
+*.key
+
+# Selvtest-output, hvis det skrives i projektmappen
+selftest-output/
+visamp-selftest/
+the-grid-selftest/
+
+# Logs og editor/OS-støj
+*.log
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*~
+
+# Testsange til musikmotoren (ophavsret, store filer): ligger kun lokalt
+/*.mp3
+/*.wav

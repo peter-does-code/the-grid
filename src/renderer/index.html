@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <!-- 'unsafe-eval' er nødvendig: Butterchurn oversætter MilkDrop-presets til JavaScript med new Function(). -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-eval'; style-src 'self'; img-src 'self' data: https://*.scdn.co https://*.spotifycdn.com; font-src 'self'; media-src 'self'; connect-src 'self'; base-uri 'none'">
+  <title>The Grid</title>
+  <link rel="stylesheet" href="../../node_modules/@fontsource/vt323/latin-400.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<!-- Tekster sættes ud fra data-i18n* (src/shared/i18n.js). Temaet sættes på body[data-theme]. -->
+<body data-theme="grid">
+  <div class="app">
+    <header class="titlebar">
+      <span class="wordmark" data-i18n-title="app.greeting">THE GRID</span>
+      <span class="stripes" aria-hidden="true"></span>
+      <span class="titlebar-sub" data-i18n="app.tagline">A digital frontier.</span>
+    </header>
+
+    <aside class="left">
+      <section class="player bevel" data-i18n-aria="player.aria">
+        <div class="lcd">
+          <div class="lcd-left">
+            <span id="state-icon" class="state-icon" data-state="stopped" aria-hidden="true"></span>
+            <button id="clock" class="clock" type="button" data-i18n-title="clock.title">00:00</button>
+            <canvas id="mini-vis" class="mini-vis" width="76" height="16" data-i18n-title="minivis.title"></canvas>
+          </div>
+          <div class="lcd-right">
+            <div id="marquee" class="marquee"></div>
+            <div class="lcd-info">
+              <span id="led-spotify" class="led" data-i18n-title="led.spotify.title">SPOTIFY</span>
+              <span id="led-api" class="led" data-i18n="led.api" data-i18n-title="led.api.title">CONTROL</span>
+              <span id="led-audio" class="led" data-i18n="led.audio" data-i18n-title="led.audio.title">AUDIO</span>
+            </div>
+            <div class="lcd-music" data-i18n-title="lcd.music.title">
+              <span id="beat-dot" class="beat-dot" aria-hidden="true"></span>
+              <span id="lcd-bpm">--- BPM</span>
+              <span id="lcd-part"></span>
+            </div>
+            <div id="lcd-device" class="lcd-device"></div>
+          </div>
+        </div>
+
+        <input id="seek" class="slider seek" type="range" min="0" max="1000" value="0" step="1" data-i18n-aria="seek.aria" disabled>
+
+        <div class="transport">
+          <button class="tbtn" id="btn-prev" type="button" data-i18n-title="btn.prev" data-i18n-aria="btn.prev" data-key="Z">
+            <svg viewBox="0 0 16 16"><path d="M3 3h2v10H3zM14 3v10L6 8z"/></svg>
+          </button>
+          <button class="tbtn" id="btn-play" type="button" data-i18n-title="btn.play" data-i18n-aria="btn.play" data-key="X">
+            <svg viewBox="0 0 16 16"><path d="M4 2.5v11L13.5 8z"/></svg>
+          </button>
+          <button class="tbtn" id="btn-pause" type="button" data-i18n-title="btn.pause" data-i18n-aria="btn.pause" data-key="C">
+            <svg viewBox="0 0 16 16"><path d="M4 3h3v10H4zM9 3h3v10H9z"/></svg>
+          </button>
+          <button class="tbtn" id="btn-stop" type="button" data-i18n-title="btn.stop" data-i18n-aria="btn.stop" data-key="V">
+            <svg viewBox="0 0 16 16"><path d="M3.5 3.5h9v9h-9z"/></svg>
+          </button>
+          <button class="tbtn" id="btn-next" type="button" data-i18n-title="btn.next" data-i18n-aria="btn.next" data-key="B">
+            <svg viewBox="0 0 16 16"><path d="M11 3h2v10h-2zM2 3v10l8-5z"/></svg>
+          </button>
+          <button class="tbtn eject" id="btn-eject" type="button" data-i18n-title="btn.eject" data-i18n-aria="btn.eject" data-key="Ctrl+L">
+            <svg viewBox="0 0 16 16"><path d="M8 2.5 14 9H2zM2 11h12v2.5H2z"/></svg>
+          </button>
+          <label class="volume" data-i18n-title="volume.title">
+            <span>VOL</span>
+            <input id="volume" class="slider" type="range" min="0" max="100" value="70" data-i18n-aria="volume.aria" disabled>
+          </label>
+        </div>
+      </section>
+
+      <section class="playlist bevel" data-i18n-aria="playlist.aria">
+        <div class="panel-title"><span data-i18n="playlist.title">PLAYLIST</span><span id="pl-count" class="panel-title-extra"></span></div>
+        <form id="pl-form" class="pl-form" autocomplete="off">
+          <input id="pl-input" class="lcd-input" type="text" data-i18n-placeholder="pl.placeholder" spellcheck="false" data-i18n-aria="pl.input.aria">
+          <button id="pl-load" class="btn" type="submit" data-i18n="pl.load">Load</button>
+        </form>
+        <div id="pl-meta" class="pl-meta" hidden>
+          <img id="pl-cover" class="pl-cover" alt="" hidden>
+          <div class="pl-meta-text">
+            <div id="pl-name" class="pl-name"></div>
+            <div id="pl-owner" class="pl-owner"></div>
+          </div>
+        </div>
+        <div id="pl-notice" class="pl-notice" hidden>
+          <p id="pl-notice-text"></p>
+          <button id="pl-play-context" class="btn" type="button" data-i18n="pl.playContext">Play the playlist in Spotify</button>
+        </div>
+        <ol id="pl-list" class="pl-list" tabindex="0" data-i18n-aria="pl.tracks.aria"></ol>
+        <div id="pl-empty" class="pl-empty">
+          <p id="pl-empty-text"></p>
+          <button id="pl-empty-action" class="btn" type="button" hidden></button>
+        </div>
+        <div class="pl-footer">
+          <span id="pl-total" class="pl-total"></span>
+          <button id="btn-settings" class="btn" type="button" data-i18n="btn.settings">Settings</button>
+          <button id="btn-help" class="btn" type="button" data-i18n-title="btn.help.title" data-i18n-aria="btn.help">?</button>
+        </div>
+      </section>
+    </aside>
+
+    <main id="viz-wrap" class="viz-wrap">
+      <canvas id="viz"></canvas>
+      <div id="viz-idle" class="viz-idle" data-i18n="viz.idle">End of line. Waiting for music.</div>
+      <div id="preset-name" class="preset-name" aria-live="polite"></div>
+      <div class="viz-toolbar">
+        <button class="vbtn" id="viz-prev" type="button" data-i18n-title="viz.prev" data-i18n-aria="viz.prev">
+          <svg viewBox="0 0 16 16"><path d="M10.5 2.5 5 8l5.5 5.5"/></svg>
+        </button>
+        <button class="vbtn" id="viz-next" type="button" data-i18n-title="viz.next" data-i18n-aria="viz.next">
+          <svg viewBox="0 0 16 16"><path d="M5.5 2.5 11 8l-5.5 5.5"/></svg>
+        </button>
+        <button class="vbtn toggle" id="viz-random" type="button" data-i18n-title="viz.random" data-i18n-aria="viz.random" aria-pressed="true">
+          <svg viewBox="0 0 16 16"><path d="M1.5 4.5h3l6 7h4M1.5 11.5h3l2-2.3M9 6.8l1.5-2.3h4M12.5 2.5l2 2-2 2M12.5 9.5l2 2-2 2"/></svg>
+        </button>
+        <button class="vbtn toggle" id="viz-auto" type="button" data-i18n-title="viz.auto" data-i18n-aria="viz.auto" aria-pressed="true">
+          <svg viewBox="0 0 16 16"><path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9M13.5 1.8v3.4h-3.4"/></svg>
+        </button>
+        <button class="vbtn" id="viz-list" type="button" data-i18n-title="viz.list" data-i18n-aria="viz.list">
+          <svg viewBox="0 0 16 16"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
+        </button>
+        <button class="vbtn" id="viz-full" type="button" data-i18n-title="viz.full" data-i18n-aria="viz.full">
+          <svg viewBox="0 0 16 16"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4"/></svg>
+        </button>
+      </div>
+      <div id="capture-overlay" class="capture-overlay" hidden>
+        <p id="capture-message" data-i18n="capture.notYet">The Grid isn't listening yet.</p>
+        <button id="capture-start" class="btn big" type="button" data-i18n="capture.start">Start audio capture</button>
+      </div>
+    </main>
+  </div>
+
+  <!-- Intro og påskeæg tegnes oven på hele vinduet. Introen er synlig fra start (sort), så appen ikke blinker frem før den. -->
+  <div id="intro" class="intro">
+    <canvas id="intro-canvas"></canvas>
+    <div class="intro-skip" data-i18n="intro.skip">Press any key to skip</div>
+  </div>
+  <div id="egg" class="egg" hidden>
+    <div id="egg-art" class="egg-art"></div>
+    <video id="egg-video" class="egg-video" muted playsinline preload="none" hidden></video>
+    <div id="egg-text" class="egg-text"></div>
+    <div id="egg-sub" class="egg-sub"></div>
+  </div>
+
+  <!-- Påskeægget "drew": billedet ligger i media/drew.png (eller .jpg/.jpeg/.webp). -->
+  <div id="drew" class="drew" hidden>
+    <canvas id="drew-canvas"></canvas>
+    <div class="drew-stage">
+      <img id="drew-img" class="drew-img" alt="Drewbraham" hidden>
+      <div id="drew-placeholder" class="drew-placeholder" hidden><span>D</span></div>
+      <div id="drew-title" class="drew-title" data-i18n="drew.title">DREWBRAHAM</div>
+      <div id="drew-sub" class="drew-sub"></div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" role="status" hidden></div>
+
+  <dialog id="settings-dialog" class="dialog" aria-labelledby="settings-title">
+    <div class="dialog-inner">
+      <div class="dialog-title"><span id="settings-title" data-i18n="settings.title">SETTINGS</span><button class="dialog-close" type="button" data-close data-i18n-aria="dialog.close">×</button></div>
+
+      <section class="dialog-section">
+        <h2 data-i18n="settings.spotify">Spotify</h2>
+        <p class="muted" data-i18n="settings.spotify.intro"></p>
+        <div class="field-row">
+          <span id="spotify-status" class="status-line"></span>
+          <button type="button" class="btn" id="spotify-login" data-i18n="login.button">Log in with Spotify</button>
+          <button type="button" class="btn" id="spotify-logout" data-i18n="logout.button" hidden>Log out</button>
+        </div>
+        <details id="own-app" class="own-app">
+          <summary data-i18n="settings.ownApp">Use your own Spotify developer app (advanced)</summary>
+          <ol class="steps">
+            <li><span data-i18n="settings.step1a">Open</span> <button type="button" class="link" id="open-dashboard">Spotify Developer Dashboard</button> <span data-i18n="settings.step1b">and press Create app.</span></li>
+            <li><span data-i18n="settings.step2a">Add this Redirect URI:</span> <code id="redirect-uri"></code> <button type="button" class="btn small" id="copy-redirect" data-i18n="settings.copy">Copy</button> <span data-i18n="settings.step2b">and select Web API.</span></li>
+            <li data-i18n="settings.step3">Paste the app's Client ID here and press Save.</li>
+          </ol>
+          <div class="field-row">
+            <input id="client-id" class="lcd-input" type="text" data-i18n-placeholder="settings.clientId.placeholder" spellcheck="false" maxlength="32" aria-label="Spotify Client ID">
+            <button type="button" class="btn" id="save-client-id" data-i18n="settings.save">Save</button>
+            <button type="button" class="btn" id="use-built-in" data-i18n="settings.useBuiltIn">Use built-in app</button>
+          </div>
+          <p id="client-id-check" class="status-line small"></p>
+        </details>
+      </section>
+
+      <section class="dialog-section">
+        <h2 data-i18n="settings.appearance">Look</h2>
+        <label class="field"><span data-i18n="settings.theme">Theme</span>
+          <select id="set-theme" class="lcd-select">
+            <option value="grid" data-i18n="theme.grid">The Grid (Tron)</option>
+            <option value="clu" data-i18n="theme.clu">Clu's regime (orange)</option>
+            <option value="classic" data-i18n="theme.classic">Classic (Winamp)</option>
+          </select>
+        </label>
+        <label class="check"><input type="checkbox" id="set-intro"> <span data-i18n="settings.intro">Show the intro at startup</span></label>
+        <label class="check"><input type="checkbox" id="set-intro-music"> <span data-i18n="settings.introMusic">Play music during the intro</span></label>
+        <label class="field"><span data-i18n="settings.introStyle">Intro</span>
+          <select id="set-intro-style" class="lcd-select">
+            <option value="war" data-i18n="introStyle.war">The long battle</option>
+            <option value="duel" data-i18n="introStyle.duel">Battle and duel</option>
+          </select>
+        </label>
+        <div class="field-row">
+          <button type="button" class="btn" id="play-intro" data-i18n="settings.playIntro">Play intro</button>
+          <button type="button" class="btn" id="run-guide" data-i18n="settings.runGuide">Run setup guide</button>
+        </div>
+      </section>
+
+      <section class="dialog-section">
+        <h2 data-i18n="settings.visualizer">Visualizer</h2>
+        <label class="check"><input type="checkbox" id="set-auto"> <span data-i18n="settings.auto">Change preset automatically</span></label>
+        <label class="field"><span data-i18n="settings.cycle">Max seconds between changes</span> <input type="number" id="set-cycle" min="5" max="600" step="1"></label>
+        <label class="field"><span data-i18n="settings.blend">Transition between presets (seconds)</span> <input type="number" id="set-blend" min="0" max="10" step="0.1"></label>
+        <label class="check"><input type="checkbox" id="set-random"> <span data-i18n="settings.random">Random order</span></label>
+      </section>
+
+      <section class="dialog-section">
+        <h2 data-i18n="settings.music">Follow the music</h2>
+        <p class="muted" data-i18n="settings.music.intro"></p>
+        <label class="check"><input type="checkbox" id="set-beatsync"> <span data-i18n="settings.beatsync"></span></label>
+        <label class="check"><input type="checkbox" id="set-sections"> <span data-i18n="settings.sections"></span></label>
+        <label class="check"><input type="checkbox" id="set-hardcuts"> <span data-i18n="settings.hardcuts"></span></label>
+        <label class="check"><input type="checkbox" id="set-smart"> <span data-i18n="settings.smart"></span></label>
+        <label class="check"><input type="checkbox" id="set-agc"> <span data-i18n="settings.agc"></span></label>
+        <label class="field"><span data-i18n="settings.latency">Delay the picture (ms)</span> <input type="number" id="set-latency" min="0" max="500" step="10"></label>
+        <p class="muted" data-i18n="settings.latency.hint"></p>
+      </section>
+
+      <section class="dialog-section">
+        <h2 data-i18n="settings.audio">Audio</h2>
+        <p class="muted" data-i18n="settings.audio.intro"></p>
+        <div class="field-row">
+          <span id="capture-status" class="status-line"></span>
+          <button type="button" class="btn" id="capture-restart" data-i18n="settings.captureRestart">Restart audio capture</button>
+        </div>
+      </section>
+
+      <p id="about-line" class="about-line"></p>
+    </div>
+  </dialog>
+
+  <dialog id="guide-dialog" class="dialog guide" aria-labelledby="guide-title">
+    <div class="dialog-inner">
+      <div class="dialog-title"><span id="guide-title" data-i18n="guide.title">SETUP</span><span id="guide-step" class="dialog-title-extra"></span></div>
+      <section class="guide-page" data-page="welcome">
+        <h2 data-i18n="guide.welcome.title"></h2>
+        <p data-i18n="guide.welcome.text"></p>
+      </section>
+      <section class="guide-page" data-page="login" hidden>
+        <h2 data-i18n="guide.login.title"></h2>
+        <p data-i18n="guide.login.text"></p>
+        <div class="field-row">
+          <span id="guide-login-status" class="status-line"></span>
+          <button type="button" class="btn" id="guide-login" data-i18n="login.button">Log in with Spotify</button>
+        </div>
+      </section>
+      <section class="guide-page" data-page="sound" hidden>
+        <h2 data-i18n="guide.sound.title"></h2>
+        <p data-i18n="guide.sound.text"></p>
+        <div class="guide-meter"><div id="guide-meter-fill" class="guide-meter-fill"></div></div>
+        <p id="guide-sound-status" class="status-line"></p>
+      </section>
+      <section class="guide-page" data-page="playlist" hidden>
+        <h2 data-i18n="guide.playlist.title"></h2>
+        <p data-i18n="guide.playlist.text"></p>
+        <form id="guide-pl-form" class="pl-form" autocomplete="off">
+          <input id="guide-pl-input" class="lcd-input" type="text" data-i18n-placeholder="pl.placeholder" spellcheck="false" data-i18n-aria="pl.input.aria">
+          <button class="btn" type="submit" data-i18n="pl.load">Load</button>
+        </form>
+      </section>
+      <section class="guide-page" data-page="done" hidden>
+        <h2 data-i18n="guide.done.title"></h2>
+        <p data-i18n="guide.done.text"></p>
+      </section>
+      <div class="guide-nav">
+        <button type="button" class="btn" id="guide-skip" data-i18n="guide.skip">Skip</button>
+        <span class="spacer"></span>
+        <button type="button" class="btn" id="guide-back" data-i18n="guide.back">Back</button>
+        <button type="button" class="btn primary" id="guide-next" data-i18n="guide.next">Next</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="presets-dialog" class="dialog wide" aria-labelledby="presets-title">
+    <div class="dialog-inner">
+      <div class="dialog-title"><span id="presets-title"><span data-i18n="presets.title">PRESETS</span> <span id="preset-count" class="dialog-title-extra"></span></span><button class="dialog-close" type="button" data-close data-i18n-aria="dialog.close">×</button></div>
+      <input id="preset-filter" class="lcd-input" type="search" data-i18n-placeholder="presets.filter" spellcheck="false" data-i18n-aria="presets.filter">
+      <ol id="preset-list" class="preset-list"></ol>
+    </div>
+  </dialog>
+
+  <dialog id="help-dialog" class="dialog" aria-labelledby="help-title">
+    <div class="dialog-inner">
+      <div class="dialog-title"><span id="help-title" data-i18n="help.title">KEYBOARD SHORTCUTS</span><button class="dialog-close" type="button" data-close data-i18n-aria="dialog.close">×</button></div>
+      <table class="help-table">
+        <tbody>
+          <tr><th colspan="2" data-i18n="help.playback"></th></tr>
+          <tr><td><kbd>Z</kbd></td><td data-i18n="help.prev"></td></tr>
+          <tr><td><kbd>X</kbd></td><td data-i18n="help.play"></td></tr>
+          <tr><td><kbd>C</kbd></td><td data-i18n="help.pause"></td></tr>
+          <tr><td><kbd>V</kbd></td><td data-i18n="help.stop"></td></tr>
+          <tr><td><kbd>B</kbd></td><td data-i18n="help.next"></td></tr>
+          <tr><td><kbd>Enter</kbd> / <span data-i18n="help.dblclick"></span></td><td data-i18n="help.enter"></td></tr>
+          <tr><td><kbd>Ctrl</kbd>+<kbd>L</kbd></td><td data-i18n="help.link"></td></tr>
+          <tr><th colspan="2" data-i18n="help.visualizer"></th></tr>
+          <tr><td><kbd>→</kbd> / <kbd>←</kbd></td><td data-i18n="help.arrows"></td></tr>
+          <tr><td><kbd data-i18n="help.space">Space</kbd> / <kbd>N</kbd></td><td data-i18n="help.nextPreset"></td></tr>
+          <tr><td><kbd>H</kbd></td><td data-i18n="help.hardCut"></td></tr>
+          <tr><td><kbd>Backspace</kbd> / <kbd>P</kbd></td><td data-i18n="help.prevPreset"></td></tr>
+          <tr><td><kbd>R</kbd></td><td data-i18n="help.random"></td></tr>
+          <tr><td><kbd>A</kbd></td><td data-i18n="help.auto"></td></tr>
+          <tr><td><kbd>L</kbd></td><td data-i18n="help.list"></td></tr>
+          <tr><td><kbd>T</kbd></td><td data-i18n="help.title.track"></td></tr>
+          <tr><td><kbd>F</kbd> / <span data-i18n="help.dblclick"></span></td><td data-i18n="help.fullscreen"></td></tr>
+          <tr><th colspan="2" data-i18n="help.other"></th></tr>
+          <tr><td><kbd>F1</kbd></td><td data-i18n="help.this"></td></tr>
+          <tr><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>I</kbd></td><td data-i18n="help.devtools"></td></tr>
+        </tbody>
+      </table>
+      <p class="help-footer"><span data-i18n="help.footer">I fight for the Users.</span> <span class="muted" data-i18n="help.secret"></span></p>
+    </div>
+  </dialog>
+
+  <!-- Flynns terminal (påskeæg): åbnes ved at skrive whoami i link-feltet. Indeholder snydearket. -->
+  <dialog id="terminal-dialog" class="dialog terminal" aria-labelledby="terminal-title">
+    <div class="dialog-inner">
+      <div class="dialog-title"><span id="terminal-title" data-i18n="term.title">ENCOM OS-12</span><button class="dialog-close" type="button" data-close data-i18n-aria="dialog.close">×</button></div>
+      <pre id="term-output" class="term-output" aria-live="polite"></pre>
+      <form id="term-form" class="term-line" autocomplete="off">
+        <span class="term-prompt">flynn@flynns-arcade:~$</span>
+        <input id="term-input" class="term-input" type="text" spellcheck="false" data-i18n-aria="term.aria">
+      </form>
+    </div>
+  </dialog>
+
+  <script src="../../node_modules/butterchurn/lib/butterchurn.min.js"></script>
+  <script src="../../node_modules/butterchurn/lib/butterchurnExtraImages.min.js"></script>
+  <script src="../../node_modules/butterchurn-presets/lib/butterchurnPresets.min.js"></script>
+  <script src="../../node_modules/butterchurn-presets/lib/butterchurnPresetsExtra.min.js"></script>
+  <script src="../../node_modules/butterchurn-presets/lib/butterchurnPresetsExtra2.min.js"></script>
+  <script src="../../node_modules/butterchurn-presets/lib/butterchurnPresetsMD1.min.js"></script>
+  <script src="../../node_modules/butterchurn-presets/lib/butterchurnPresetsMinimal.min.js"></script>
+  <script src="../../node_modules/butterchurn-presets/lib/butterchurnPresetsNonMinimal.min.js"></script>
+  <script src="presets/cream-of-the-crop.js"></script>
+  <script src="../shared/i18n.js"></script>
+  <script src="../shared/format.js"></script>
+  <script src="../shared/music-engine.js"></script>
+  <script src="../shared/grid-font.js"></script>
+  <script src="music.js"></script>
+  <script src="spectrum.js"></script>
+  <script src="visualizer.js"></script>
+  <script src="playlist.js"></script>
+  <script src="intro.js"></script>
+  <script src="intro-war.js"></script>
+  <script src="eggs.js"></script>
+  <script src="media/init-beats.js"></script>
+  <script src="drew.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

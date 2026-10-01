@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(C:/Users/Peter/Documents/Projekter/winamp-visualizer/**)",
+      "Edit(C:/Users/Peter/Documents/Projekter/winamp-visualizer/**)",
+      "Write(C:/Users/Peter/Documents/Projekter/winamp-visualizer/**)",
+      "Bash(npm test)",
+      "Bash(npm run selftest)",
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(ls *)",
+      "Bash(wc *)",
+      "Bash(grep *)",
+      "Bash(find *)"
+    ]
+  }
+}
