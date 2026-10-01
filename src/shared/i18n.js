@@ -318,7 +318,7 @@
     'intro.skip': 'Press any key to skip',
     'about': 'The Grid {version} · ENCOM OS-12 · Butterchurn/MilkDrop · End of line.',
     'votes.ask': "You just voted on a preset. Share your votes (K = like, D = derez) with Peter, so he can make The Grid better? Only the preset name and your vote are sent, nothing about you.\n\nOK = share, Cancel = keep them on this PC.",
-    'settings.initVolume': 'Intro and drew music volume (100 = like Spotify)',
+    'settings.initVolume': 'Intro and drew music volume (100 = normal)',
     'settings.shareVotes': 'Share my preset votes (K / D) with Peter',
     'presets.count': '({count} · ★ {favs} · derezzed {hidden})',
     'presets.favourite': 'Favourite (shows up more often), like K',

@@ -1132,7 +1132,8 @@
   // Init er mastret meget højt (NIN), mens Spotify udjævner lydstyrken (ca. -14 LUFS) og har sin egen
   // lydstyrkeskyder. Uden justering bragede Init igennem (Peter 02-10-2026). Init spilles derfor ved Spotifys
   // lydstyrke, trukket ca. 6 dB ned, gange brugerens indstilling (100 % = som Spotify).
-  const INIT_LOUDNESS_TRIM = 0.5;
+  // 0,5 var stadig for højt (Peter 02-10-2026: "take the intro down to 40"): 0,5 × 0,4 = 0,2.
+  const INIT_LOUDNESS_TRIM = 0.2;
   const INIT_FALLBACK_SPOTIFY = 0.6; // Spotifys lydstyrke kendes ikke (ikke logget ind, ingen afspiller)
 
   function initVolume() {
