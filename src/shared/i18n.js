@@ -298,6 +298,8 @@
     'sheet.terminal': 'ONLY IN THIS TERMINAL:',
     'sheet.overlay': 'Lay the Grid over the visuals: a light-cycle floor that rides the beat. Type it again to switch it off.',
     'sheet.epic': 'The Game Grid, epic edition: 40 cycles, a bigger arena, a much longer fight.',
+    'sheet.tronBlue': 'Back to the blue Grid theme.',
+    'term.tronBlue': 'Theme: The Grid. Blue is the color of the Users.',
     'term.tron.on': 'Grid overlay: ONLINE. The Grid is under your visuals now.',
     'term.tron.off': 'Grid overlay: OFFLINE.',
     'egg.epic': 'Epic battle on the Game Grid. 40 programs enter. One team leaves.',

@@ -167,6 +167,18 @@ test('epic battle: 40 cykler i en større arena kæmper i ca. et minut, til ét 
   assert.ok(dead.filter((c) => c.cause === 'enemy').length / dead.length >= 0.5, 'de fleste bliver skåret af');
 });
 
+test('introens vinder er tilfældig (begge hold vinder), og vinderen skriver GRID og melder sit hold', () => {
+  const names = new Set();
+  for (let seed = 1; seed <= 10; seed++) {
+    const { intro, done } = run({ random: seeded(seed) }, 40, 'war');
+    assert.ok(done && done.winner, 'introen melder en vinder');
+    assert.equal(intro.finalJob.writer, intro.finalPair.winner, 'vinderen skriver GRID');
+    assert.equal(done.winner.team, intro.finalPair.winner.team);
+    names.add(done.winner.name);
+  }
+  assert.deepEqual([...names].sort(), ['blue', 'orange']);
+});
+
 test('FLYNN LIVES med den lange kamp', () => {
   const { intro, done } = run({ lines: ['FLYNN', 'LIVES'], cycles: 10, duelAt: 7, random: seeded(10) }, 40, 'war');
   assert.ok(done && !done.skipped);

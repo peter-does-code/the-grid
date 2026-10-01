@@ -1357,6 +1357,11 @@
           battleSeconds: 16,
           winnerText: (name) => (name ? { title: t(`battle.win.${name}`), sub: t(`battle.win.${name}.sub`) } : { title: t('battle.draw'), sub: '' }),
         });
+      case 'blue':
+        // "tron": tilbage til det blå Tron-tema.
+        setTheme('grid');
+        toast(t('term.tronBlue'));
+        return Promise.resolve(true);
       case 'overlay': {
         // "tron": Tron-laget over visualiseringen til og fra (også i terminalen, se termRun).
         const on = !tronOn;
@@ -1506,7 +1511,12 @@
       case 'uname':
         termPrint([t('term.uname')]);
         break;
-      case 'tron': {
+      case 'tron':
+        // Temaet blåt (også fra link-feltet).
+        setTheme('grid');
+        termPrint([t('term.tronBlue')]);
+        break;
+      case 'trongrid': {
         // Tron-laget over visualiseringen, til og fra (også fra link-feltet). Huskes ikke: det starter slukket.
         const on = !tronOn;
         setTronOverlay(on);
@@ -2337,6 +2347,12 @@
     // Lige efter en opdatering (genstart midt i en session) springes introen over.
     const showIntro = !state.info.selftest && !REVIEW && !state.info.updatedFrom && state.settings.showIntro !== false;
     const introDone = showIntro ? playIntro() : Promise.resolve();
+    // Introens vinder bestemmer temaet: orange → Clus tema, blå → det blå. Classic røres ikke.
+    introDone.then((info) => {
+      const name = info && info.winner && info.winner.name;
+      if (!name || !['grid', 'clu'].includes(currentTheme())) return;
+      setTheme(name === 'orange' ? 'clu' : 'grid');
+    });
     if (!showIntro) $('intro').hidden = true;
 
     audioContext = new AudioContext({ latencyHint: 'interactive' });

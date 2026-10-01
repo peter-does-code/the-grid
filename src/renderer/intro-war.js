@@ -237,10 +237,11 @@
       if (this.lastTwoAt !== undefined && !this.loserChosen && t >= this.lastTwoAt + this.duelSeconds && alive.length >= 2) {
         this.loserChosen = true;
         const teams = new Set(alive.map((c) => c.team));
-        // Med tekst vinder det cyan hold og skriver det sidste ord; uden tekst er det åbent.
-        let loser = teams.size > 1 ? alive.find((c) => c.team === 1) : alive[1];
-        if (this.battleOnly) loser = alive[Math.floor(this.random() * alive.length)];
+        // Vinderen er tilfældig (50/50) og skriver det sidste ord i sin farve. Ved start bestemmer den temaet:
+        // orange vinder → Clus tema, blå vinder → det blå (Peter 02-10-2026).
+        const loser = alive[Math.floor(this.random() * alive.length)];
         const winner = alive.find((c) => c !== loser);
+        this.winner = { team: winner.team, name: this.palette.names[winner.team], color: winner.color };
         loser.finalLoser = true;
         loser.protectedUntil = 0;
         winner.protectedUntil = Infinity;

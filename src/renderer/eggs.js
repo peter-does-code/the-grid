@@ -49,7 +49,8 @@
     'game grid': 'battle',
     gamegrid: 'battle',
     // Virker både i link-feltet og i Flynns terminal (Peter: det, der skal virke i terminalen, skal også virke her).
-    tron: 'overlay',
+    tron: 'blue', // temaet blåt
+    trongrid: 'overlay', // Tron-laget over visualiseringen
     'epic battle': 'epic',
     epicbattle: 'epic',
   };
@@ -74,7 +75,8 @@
     ['whoami', 'sheet.whoami', 'terminal'],
     ['who am i', 'sheet.spaces', 'spaces'],
     ['battle / game grid', 'sheet.battle', 'battle'],
-    ['tron', 'sheet.overlay', 'overlay'],
+    ['tron', 'sheet.tronBlue', 'blue'],
+    ['trongrid', 'sheet.overlay', 'overlay'],
     ['epic battle', 'sheet.epic', 'epic'],
     ['↑ ↑ ↓ ↓ ← → ← →', 'sheet.konami', null],
     ['double-click THE GRID', 'sheet.wordmark', null],
