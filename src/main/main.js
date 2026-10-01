@@ -513,11 +513,20 @@ async function main() {
     return;
   }
 
-  if (process.argv.includes('--update-check')) {
+  const updateCheckArg = process.argv.find((arg) => arg === '--update-check' || arg.startsWith('--update-check='));
+  if (updateCheckArg) {
     // Fejlsøgning af opdateringer i den installerede app: ét tjek, resultatet som JSON, så lukker appen.
+    // --update-check=<fil> skriver til en fil (release.js); ellers til konsollen, og appen venter, til teksten er
+    // sendt (app.exit med det samme tabte den, når outputtet gik gennem et rør).
     const result = await require('./updater').checkOnce({ publish: require('./update-config') });
-    console.log(JSON.stringify(result, null, 2));
-    app.exit(0);
+    const json = JSON.stringify(result, null, 2);
+    const file = updateCheckArg.slice('--update-check='.length);
+    if (file) {
+      require('node:fs').writeFileSync(file, json);
+      app.exit(0);
+    } else {
+      process.stdout.write(json + '\n', () => app.exit(0));
+    }
     return;
   }
 

@@ -49,7 +49,7 @@ Drews app finder den nye version ved næste start eller inden for 4 timer.
 
 ## Fejlsøgning
 
-`"The Grid.exe" --update-check > update-check.txt` laver ét tjek mod GitHub og skriver resultatet: om opdateringsmodulet kan indlæses, om tokenen findes, og hvilken version der er nyest. `release.js` kører det på den byggede app før hver udgivelse og stopper, hvis det fejler.
+`"The Grid.exe" --update-check > update-check.txt` (eller `--update-check=<fil>`) laver ét tjek mod GitHub og skriver resultatet: om opdateringsmodulet kan indlæses, om tokenen findes, og hvilken version der er nyest. `release.js` kører det på den byggede app før hver udgivelse og stopper, hvis det fejler.
 
 **v0.1.1 til v0.1.10 kan ikke opdatere sig selv** (rettet i v0.1.11): modulet `semver` manglede i bygget, så electron-updater aldrig startede. GitHubs downloadtal viste det: ingen hentede `latest.yml`. Alle med en af de udgaver skal installere v0.1.11 eller nyere i hånden én gang.
 

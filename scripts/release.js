@@ -92,8 +92,10 @@ try {
 // udgives noget.
 {
   const exe = path.join(root, 'dist', 'win-unpacked', 'The Grid.exe');
-  const raw = execFileSync(exe, ['--update-check'], { cwd: root, encoding: 'utf8', timeout: 60000 });
-  const check = JSON.parse(raw.slice(raw.indexOf('{')));
+  const checkFile = path.join(os.tmpdir(), `the-grid-update-check-${process.pid}.json`);
+  execFileSync(exe, [`--update-check=${checkFile}`], { cwd: root, timeout: 60000 });
+  const check = JSON.parse(fs.readFileSync(checkFile, 'utf8'));
+  fs.rmSync(checkFile, { force: true });
   if (!check.updaterLoaded || check.error || !check.token || !check.latest) {
     console.error('The built app cannot check for updates; nothing was released:\n' + JSON.stringify(check, null, 2));
     process.exit(1);
