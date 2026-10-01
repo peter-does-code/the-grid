@@ -44,7 +44,7 @@ npm run release -- minor   # 0.1.0 → 0.2.0
 
 Drews app finder den nye version ved næste start eller inden for 4 timer.
 
-- **Alle opdateringer installeres med det samme** (fra v0.1.10). Appen tjekker ved hver start og hver 4. time, henter en ny udgave og genstarter efter 10 s varsel. Musikken spiller videre i Spotify, og introen springes over efter en opdatering. `--force` til release.js er ikke længere nødvendigt.
+- **Alle opdateringer installeres med det samme** (fra v0.1.10). Appen tjekker ved hver start og hver 4. time, henter en ny udgave og genstarter efter 10 s varsel. Musikken spiller videre i Spotify, og introen springes over efter en opdatering. (`--force` fandtes i v0.1.8-v0.1.10 og er fjernet.)
 - **Kun fra en ren arbejdsmappe:** `release.js` stopper, hvis der er ændringer, der ikke er committet, og committer selv kun versionen.
 
 ## Fejlsøgning

@@ -144,7 +144,7 @@ Kører musiktesten på Init, fire af Peters egne optagelser i Downloads og den s
 | slappa da bass: jævne slag | 81,1 % | 82,1 % |
 | Falske opbygninger i de fem filer | – | 0 |
 
-Anden runde, samme dag, med "The Gospel of John Hurt" (langsomt shuffle, 90 BPM, stille passager; ligger i projektmappen):
+Anden runde, samme dag, med "The Gospel of John Hurt" (langsomt shuffle, 90 BPM, stille passager; ligger i `test/audio/`):
 
 | Fil | Før | Efter |
 |---|---|---|

@@ -11,6 +11,8 @@ Oprettet 29-09-2026. **Levende** dokumenter holdes ajour og må citeres som fakt
 | `music_engine.md` | Hvordan visualizeren følger musikken: tempo, slag, dele, drops, stilhed, valg af preset og målte resultater |
 | `spotify_setup.md` | Opsætning af Spotify-udvikler-app, hvad Spotify tillader i 2026, fejlfinding og lagring |
 | `winamp_research.md` | Hvordan Winamp og MilkDrop virker, licensstatus, og hvorfor vi bruger Butterchurn |
+| `presets.md` | Hvor presets kommer fra, preset-testen, udvælgelsen, Peters smag, review, stemmer og personlige lister |
+| `releasing.md` | Udgivelser og automatiske opdateringer: tokens, `npm run release`, fejlsøgning med `--update-check` |
 | `sharing_plan.md` | Planen for at dele The Grid med Peters ven Drew: status på sprog, Tron-præg, guide, installationsfil og test |
 | `en/getting_started.md` | **Engelsk** vejledning til Drew: installation, SmartScreen, første start, fejlfinding og diagnose |
 

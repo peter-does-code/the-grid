@@ -52,14 +52,30 @@ The Grid har to slags MilkDrop-presets:
    - Fra kildekoden (Peter selv) skriver K/D direkte i listerne.
 9. **Fjernet af Peter:** navnene i `scripts/preset-bans.txt` kommer aldrig med. Listen ligger også i pakken, så `visualizer.js` fjerner de samme navne blandt de indbyggede presets.
 
-## Køre det igen
+## Til hverdag
+
+Arbejdsdataene ligger i `presets-work/` (ignoreres af git, ca. 40 MB):
+- `converted/`: de 2.765 konverterede presets og deres manifest.
+- `results.jsonl`: preset-testens målinger.
+- `flash.jsonl`: blink-målingerne.
+- `existing/` og `flash-existing.jsonl`: de indbyggede presets og deres målinger.
+
+| Kommando | Hvad |
+|---|---|
+| `npm run presets:pack` | Bygger pakken (`src/renderer/presets/`) ud fra målingerne og Peters lister. Kør efter nye stemmer eller ændringer i ban- og behold-listerne, og udgiv bagefter. |
+| `npm run presets:review` | 50 nye kandidater efter Peters smag (`scripts/build-review-pack.js`) og åbner review-vinduet. `-- --flashers` viser i stedet de frasorterede blinkere. |
+| `node scripts/collect-votes.js [--apply]` | Brugernes stemmer fra GitHub ind i listerne. |
+
+## Fra bunden
+
+Kun hvis `presets-work/` mangler, eller der skal flere presets med fra Cream of the Crop (der blev kun udtaget 20 pr. stilart):
 
 ```
 git clone --depth 1 https://github.com/projectM-visualizer/presets-cream-of-the-crop.git <cotc>
-node scripts/convert-presets.js <cotc> <conv> --per-style=20 --workers=4
-node scripts/start.js --presettest --dir=<conv> --out=<conv>/results.jsonl
-node scripts/start.js --presettest --dir=<conv> --manifest=<conv>/chosen.json --out=<conv>/flash.jsonl
-node scripts/build-preset-pack.js <conv> <conv>/results.jsonl --total=1000 --flicker=<conv>/flash.jsonl
+node scripts/convert-presets.js <cotc> presets-work/converted --per-style=20 --workers=4
+node scripts/start.js --presettest --dir=presets-work/converted --out=presets-work/results.jsonl
+node scripts/start.js --presettest --dir=presets-work/converted --out=presets-work/flash.jsonl
+npm run presets:pack
 ```
 
-Preset-testen tager ca. 40 min for 2.765 presets. Den kan stoppes og startes igen.
+De indbyggede presets (`presets-work/existing`) eksporteres fra butterchurn-presets til samme format og måles med `--dir=presets-work/existing --out=presets-work/flash-existing.jsonl`. Preset-testen tager ca. 40 min for 2.765 presets. Den kan stoppes og startes igen.

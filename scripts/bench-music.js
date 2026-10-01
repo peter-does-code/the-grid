@@ -23,11 +23,11 @@ const downloads = path.join(os.homedir(), 'Downloads');
 const CASES = [
   { name: 'Init (NIN)', file: path.join(root, 'src', 'renderer', 'media', 'init.mp3'), bpm: 92.95 },
   // Langsomt shuffle-nummer med stille passager (triol- og 3:2-pulsen lokker tempoet væk fra 90).
-  { name: 'Gospel of John Hurt', file: path.join(root, 'The Gospel of John Hurt.mp3'), bpm: 90 },
+  { name: 'Gospel of John Hurt', file: path.join(root, 'test', 'audio', 'The Gospel of John Hurt.mp3'), bpm: 90 },
   // Radiohead i 10/4: helt jævnt slag, men takten er ikke 4 slag.
-  { name: 'Everything In Its...', file: path.join(root, 'Everything In Its Right Place.mp3'), bpm: 124 },
+  { name: 'Everything In Its...', file: path.join(root, 'test', 'audio', 'Everything In Its Right Place.mp3'), bpm: 124 },
   // Tredelt takt (ca. 130 BPM), hvor trommerne i nogle dele spiller halvtid (65).
-  { name: 'Febersvan', file: path.join(root, 'Febersvan.mp3') },
+  { name: 'Febersvan', file: path.join(root, 'test', 'audio', 'Febersvan.mp3') },
   { name: 'Peter jam #1', file: path.join(downloads, 'Peter jam #1.wav') },
   { name: 'Something with Mist', file: path.join(downloads, 'Track 2 - Something with Mist.wav') },
   { name: 'slappa da bass', file: path.join(downloads, 'slappa da bass.wav') },

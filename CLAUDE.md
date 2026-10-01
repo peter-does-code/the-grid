@@ -4,7 +4,7 @@ Personligt projekt, der kører lokalt på Windows. Det er ikke et WeZimplify-kun
 
 The Grid opfører sig som klassisk Winamp 2 med MilkDrop, men ser ud som Tron. Brugeren indsætter et Spotify-link, og The Grid henter nummerlisten via Spotify Web API og starter afspilningen i Spotify-appen. Den *rigtige* systemlyd fanges via Windows-loopback og visualiseres med Butterchurn (MilkDrop 2 i WebGL). Der er to intro-stilarter (Settings → Intro). **The long battle** (standard, `intro-war.js`, cirka 22-26 sekunder): 16 lyscykler kæmper i 3D og elimineres én efter én, mest ved rigtige afskæringer (en jæger krydser byttets bane, og byttet kører ind i væggen); mens kampen raser, bryder cykler ud og skriver "WELCOME TO THE" i tekstfeltet øverst med deres lysvægge; de sidste to (én fra hvert hold) kæmper, vinderen skærer taberen af og skriver "GRID". **Battle and duel** (`intro.js`, cirka 13 sekunder): kampen, derefter skriver de sidste to teksten, og taberen derezzer mod vinderens afskæringsvæg.
 
-Dokumentation i `docs/` (indeks: `docs/README.md`). Drews vejledning: `docs/en/getting_started.md`. Planer i `.claude/plans/`, memories i `.claude/memories/`.
+Dokumentation i `docs/` (indeks: `docs/README.md`). Drews vejledning: `docs/en/getting_started.md`. Memories i `.claude/memories/`.
 
 ## Kommandoer
 
@@ -17,7 +17,7 @@ Dokumentation i `docs/` (indeks: `docs/README.md`). Drews vejledning: `docs/en/g
 | `npm run selftest:full` | Fuld selvtest (ca. 90 s): også introens faser, den anden intro, Game Grid-vinderen og alle påskeæg, i realtid. Før en ny installationsfil, og efter ændringer i intro eller påskeæg. |
 | `node scripts/start.js --selftest --selftest-out=<mappe>` | Selvtest med valgfri output-mappe |
 | `npm run musictest` | Musikmotoren mod to syntetiske sange med kendt facit (tempo, slag, dele, drop, opbygning). Offline og lydløst. |
-| `node scripts/bench-music.js` | Benchmark af musikmotoren på Init, Peters optagelser i Downloads og de syntetiske sange: hvornår tempoet låses, hvor jævne slagene er, opbygninger og drops. Kør før og efter ændringer i motoren. |
+| `node scripts/bench-music.js` | Benchmark af musikmotoren på Init, Peters optagelser i Downloads, testsangene i `test/audio/` og de syntetiske sange: hvornår tempoet låses, hvor jævne slagene er, opbygninger og drops. Kør før og efter ændringer i motoren. |
 | `node scripts/make-beatmap.js <musiktest.json>` | Laver beat-kortet til Init ud fra `node scripts/start.js --musictest --file=src/renderer/media/init.mp3 > musiktest.json` |
 | `npm run musictest -- --file=<lydfil>` | Samme analyse af en rigtig lydfil, plus et uafhængigt tempoestimat for hele filen og bassens niveau hvert kvarte sekund |
 | `npm run diagnose -- --audio=30` | Lytter med på det, der rent faktisk spiller, i 30 s og viser hvad musikmotoren hører |
@@ -26,6 +26,8 @@ Dokumentation i `docs/` (indeks: `docs/README.md`). Drews vejledning: `docs/en/g
 | `npm run diagnose -- --play` | Afspiller det sidst hentede link med afspil-knappens kode og viser Spotifys svar. **Starter musik.** |
 | `npm run dist` | Bygger installationsfilen `dist/The-Grid-Setup-<version>.exe` (NSIS, x64, cirka 100 MB) |
 | `node scripts/start.js --review` | Gennemsyn af frasorterede presets i et eget vindue: ← → bladrer, K beholder, D bandlyser (se `docs/presets.md`) |
+| `npm run presets:pack` | Bygger preset-pakken ud fra målingerne i `presets-work/` og ban- og behold-listerne (se `docs/presets.md`) |
+| `npm run presets:review` | 50 nye kandidater efter Peters smag i review-vinduet (K behold, D ban) |
 | `node scripts/collect-votes.js [--apply]` | Brugernes stemmer (K/D) fra releases-repoets issues: vis dem, eller skriv dem i ban- og behold-listerne og luk issues |
 | `npm run release` | Udgiver en ny version til Drew: test, versionshop, installationsfil til det private releases-repo, git-tag og push. Kun fra en ren arbejdsmappe. `-- --force` får brugernes app til at genstarte selv. Se `docs/releasing.md` |
 | `npm run dist:dir` | Bygger kun `dist/win-unpacked`. Selvtest: `"dist/win-unpacked/The Grid.exe" --selftest --selftest-out=<mappe>` |

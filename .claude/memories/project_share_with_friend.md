@@ -1,17 +1,18 @@
 ---
 name: project-share-with-friend
-description: Appen hedder nu "The Grid" (30-09-2026) for både Peter og vennen Drew; installationsfil bygget, resterende test og afsendelse i docs/sharing_plan.md
+description: The Grid deles med Drew og to venner via en installationsfil, der opdaterer sig selv fra et privat GitHub-repo (02-10-2026)
 metadata:
   type: project
 ---
 
-Peter sender appen til sin ven Drew, der kun taler engelsk, går under navnet "drewbraham" og bor i "Drewtopia". Status og resterende punkter står i `docs/sharing_plan.md`. Beslutninger pr. 30-09-2026:
+Peter deler The Grid med vennen Drew (engelsk, "drewbraham", "Drewtopia") og to venner mere (01-10-2026). Status i `docs/sharing_plan.md`, udgivelser i `docs/releasing.md`.
 
-- **Navnet er "The Grid" for alle.** Peter valgte det 30-09-2026. Det afløser både "Visamp" og det tidligere "Master Drewgram: Drewrezzed". Der er én udgave, og den er altid på engelsk (se [[feedback-always-english]]).
-- **Tron-præg:** introen, hvor lyscykler kæmper og skriver "WELCOME TO THE GRID", Tron-tema som standard, og påskeæg (se [[feedback-tron-easter-eggs]]).
-- **Drew bruger Peters Spotify-udvikler-app** med Peters Client ID bygget ind. Peter har tilføjet ham under User Management. Drew har Premium.
-- **Levering:** usigneret NSIS-installationsfil (`npm run dist`, cirka 103 MB). Opdateringer sendes som nye installationsfiler med højere version. Udviklerværktøjerne følger med uden knapper i brugerfladen.
+- **Én udgave for alle**, altid på engelsk (se [[feedback-always-english]]), med Tron-præg og påskeæg (se [[feedback-tron-easter-eggs]]).
+- **Spotify:** alle bruger Peters udvikler-app (Client ID bygget ind). Peter tilføjer deres Spotify-e-mails under User Management (højst 5 brugere). Vejledningen beder dem sende e-mailen først og nævner egen udvikler-app som alternativ.
+- **Levering og opdateringer:** NSIS-installationsfil fra `npm run release` til det private repo `peter-does-code/the-grid-releases`. Appen tjekker ved start og hver 4. time og installerer straks.
+  - v0.1.1 til v0.1.10 kunne ikke opdatere sig selv (semver manglede i bygget). Alle skulle have v0.1.11 i hånden én gang (02-10-2026).
+- **Stemmer:** K (favorit) og D (derez) er personlige lister. Med samtykke sendes de også som issues til releases-repoet. Det kræver, at tokenen har "Issues: Read and write".
 
-**Why:** Peter bad eksplicit om en guidet installation, om at alt er på engelsk for Drew, og om Tron-temaet. Han svarede "whatever makes most sense" om detaljerne.
+**Why:** Peter vil kunne sende forbedringer ud uden at sende filer, og vil vide, hvad vennerne kan lide.
 
-**How to apply:** Resterende punkter er Peters egne test af installationsfilen og afsendelsen (arbejdspakke 8 og 9). Træf selv rimelige valg i detaljerne. Peter skal stadig omdøbe appen på Spotify-dashboardet til "The Grid". Relateret: [[reference-spotify-2026-rules]].
+**How to apply:** Udgiv med `npm run release` fra en ren arbejdsmappe. Brugerrettede tekster skal virke for alle venner, ikke kun Drew. Relateret: [[reference-spotify-2026-rules]].
