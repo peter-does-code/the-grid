@@ -93,9 +93,11 @@ run(
 );
 
 if (fs.existsSync(path.join(root, '.git'))) {
-  run('git', ['add', '-A']);
-  run('git', ['commit', '-m', `Release v${version}`]);
-  run('git', ['tag', `v${version}`]);
-  run('git', ['push', '--follow-tags']);
+  // Uden shell: git er et almindeligt program, og commit-beskeden har mellemrum (v0.1.2 fejlede her, 01-10-2026).
+  const git = (args) => run('git', args, { shell: false });
+  git(['add', '-A']);
+  git(['commit', '-m', `Release v${version}`]);
+  git(['tag', `v${version}`]);
+  git(['push', '--follow-tags']);
 }
 console.log(`\nDone: v${version} is on https://github.com/${owner}/${repo}/releases. Drew's app picks it up within 4 hours (or at the next start).`);
