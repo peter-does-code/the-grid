@@ -130,6 +130,9 @@ const list = final
   })
   .join('\n');
 fs.writeFileSync(path.join(outDir, 'cream-of-the-crop.txt'), list + '\n');
+// De valgte som manifest (bedste først), så de kan ses på kontaktark:
+//   node scripts/start.js --presettest --dir=<mappe> --manifest=<mappe>/chosen.json --out=<fil> --sheets=<mappe>
+fs.writeFileSync(path.join(dir, 'chosen.json'), JSON.stringify(final.map((r) => byFile.get(r.file))));
 
 console.log(`Testet: ${results.length}, godkendt: ${ok.length}, valgt: ${final.length} fra ${styles.length} stilarter`);
 console.log('Sorteret fra:', JSON.stringify(rejected));

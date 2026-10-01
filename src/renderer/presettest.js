@@ -202,7 +202,36 @@
     return result;
   }
 
+  // Kontaktark: 4x4 små billeder med navn, til at se på et udvalg (--sheets=<mappe>).
+  const SHEET_COLS = 4;
+  const CELL_W = 320;
+  const CELL_H = 180;
+  const sheet = document.createElement('canvas');
+  sheet.width = SHEET_COLS * CELL_W;
+  sheet.height = SHEET_COLS * CELL_H;
+  const sheetCtx = sheet.getContext('2d');
+  let sheetCount = 0;
+  let sheetIndex = 0;
+  function addToSheet(name) {
+    const x = (sheetCount % SHEET_COLS) * CELL_W;
+    const y = Math.floor(sheetCount / SHEET_COLS) * CELL_H;
+    sheetCtx.drawImage(canvas, x, y, CELL_W, CELL_H);
+    sheetCtx.fillStyle = 'rgba(0,0,0,0.7)';
+    sheetCtx.fillRect(x, y + CELL_H - 18, CELL_W, 18);
+    sheetCtx.fillStyle = '#fff';
+    sheetCtx.font = '12px sans-serif';
+    sheetCtx.fillText(String(name).slice(0, 48), x + 4, y + CELL_H - 5);
+    sheetCount += 1;
+  }
+  async function flushSheet() {
+    if (!sheetCount) return;
+    await window.visamp.presettest.sheet(sheetIndex++, sheet.toDataURL('image/jpeg', 0.8));
+    sheetCtx.clearRect(0, 0, sheet.width, sheet.height);
+    sheetCount = 0;
+  }
+
   (async () => {
+    const options = (await window.visamp.presettest.options()) || {};
     for (let start = 0; ; start += 20) {
       const batch = await window.visamp.presettest.batch(start, 20);
       if (!batch || !batch.length) break;
@@ -216,11 +245,16 @@
           continue;
         }
         results.push({ file: item.file, ...test(preset) });
+        if (options.sheets) {
+          addToSheet(item.name || item.file);
+          if (sheetCount === SHEET_COLS * SHEET_COLS) await flushSheet();
+        }
       }
       // Gemmes efter hver portion, så en afbrudt kørsel kan fortsætte.
       await window.visamp.presettest.results(results);
       await new Promise((r) => setTimeout(r, 0));
     }
+    if (options.sheets) await flushSheet();
     return { ok: true };
   })()
     .then((report) => window.visamp.presettest.report(report))

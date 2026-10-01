@@ -486,17 +486,29 @@ async function main() {
         }
       }
     }
-    const all = JSON.parse(fs.readFileSync(path.join(dir, 'manifest.json'), 'utf8')).filter((e) => !e.error);
+    // --manifest=<fil> tester kun et udvalg (fx de valgte fra scripts/build-preset-pack.js til kontaktark).
+    const manifestFile = argValue('manifest') || path.join(dir, 'manifest.json');
+    const all = JSON.parse(fs.readFileSync(manifestFile, 'utf8')).filter((e) => !e.error);
     const entries = all.filter((e) => !done.has(e.file));
     console.log(`${done.size} already tested, ${entries.length} to go`);
     const started = Date.now();
     ipcMain.handle('presettest:batch', (_event, start, count) => {
-      const batch = entries.slice(start, start + count).map((e) => ({ file: e.file, json: fs.readFileSync(path.join(dir, e.file), 'utf8') }));
+      const batch = entries
+        .slice(start, start + count)
+        .map((e) => ({ file: e.file, name: e.name, json: fs.readFileSync(path.join(dir, e.file), 'utf8') }));
       if (start % 200 === 0 && batch.length) console.log(`${start}/${entries.length} (${Math.round((Date.now() - started) / 1000)} s)`);
       return batch;
     });
     ipcMain.handle('presettest:results', (_event, results) => {
       fs.appendFileSync(outFile, results.map((r) => JSON.stringify(r)).join('\n') + '\n');
+    });
+    // Med --sheets=<mappe>: kontaktark (4x4 små billeder med navn) af presets, til at se på udvalget.
+    const sheetsDir = argValue('sheets');
+    ipcMain.handle('presettest:options', () => ({ sheets: Boolean(sheetsDir) }));
+    ipcMain.handle('presettest:sheet', (_event, index, dataUrl) => {
+      fs.mkdirSync(sheetsDir, { recursive: true });
+      const file = path.join(sheetsDir, `sheet-${String(index).padStart(3, '0')}.jpg`);
+      fs.writeFileSync(file, Buffer.from(dataUrl.split(',')[1], 'base64'));
     });
     const reportPromise = new Promise((resolve) => ipcMain.handleOnce('presettest:report', (_event, data) => resolve(data)));
     const win = new BrowserWindow({
