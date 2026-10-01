@@ -10,13 +10,13 @@ Greetings, program. The Grid is a music visualizer in the spirit of Winamp and M
 
 ## Install
 
-1. Double-click `The-Grid-Setup-0.1.0.exe`.
+1. Double-click the installer (`The-Grid-Setup-0.1.1.exe` or newer).
 2. Windows will probably say **"Windows protected your PC"**. That happens because the file isn't signed with a paid certificate, not because anything is wrong. Click **More info**, then **Run anyway**.
 3. That's it. There are no questions to answer: The Grid installs itself in a few seconds and starts right away. You'll find it on the desktop and in the Start menu.
 
 Your browser may also warn about the download, because the file is new and not downloaded often. Choose **Keep** (in Chrome: the three dots next to the download, then **Keep**; in Edge: **Keep** → **Keep anyway**).
 
-To update later, just run the new installer file. Your settings and your Spotify login are kept. To uninstall, use **Settings → Apps** in Windows.
+You only install once. After that The Grid updates itself: it checks for a new version when it starts and every few hours, downloads it in the background, and installs it when you close The Grid. You'll see "Update downloaded" when one is ready, and "System upgraded" the next time it starts. Your settings and your Spotify login are kept. To uninstall, use **Settings → Apps** in Windows.
 
 ## First start
 
@@ -33,9 +33,9 @@ You can run the guide again from **Settings → Run setup guide**.
 
 - Paste a Spotify link into the playlist field and press **Load**. Double-click a track to play it.
 - **F** or a double-click on the picture toggles fullscreen. In fullscreen only the visuals are shown, and the mouse pointer hides itself when you stop moving it. **Esc** leaves fullscreen.
-- **→ / ←** changes the preset (the visual style) and shows its name. **Space** changes preset without showing the name.
+- **→ / ←** changes the preset (the visual style, there are over a thousand) and shows its name. **Space** changes preset without showing the name.
 - **F1** shows all keyboard shortcuts. They work like in Winamp: Z, X, C, V and B are previous, play, pause, stop and next.
-- **Settings** has the theme (The Grid, Clu's orange regime, or classic Winamp colours), the language, and how the visuals follow the music.
+- **Settings** has the theme (The Grid, Clu's orange regime, or classic Winamp colours), the intro, and how the visuals follow the music.
 - With no music the screen stays dark and shows "End of line. Waiting for music." That's on purpose.
 
 There are also a few secrets on the Grid. The help screen (F1) has a hint.
@@ -70,6 +70,6 @@ The Grid can write a diagnosis that Peter can read. It only reads information an
 
 ## Privacy
 
-The sound is only analysed in memory while it plays. It is never recorded, saved or sent anywhere. The Grid only talks to Spotify. Your settings and login live in `%APPDATA%\The Grid` on your own PC.
+The sound is only analysed in memory while it plays. It is never recorded, saved or sent anywhere. The Grid only talks to Spotify, and to GitHub to check for updates (nothing about you or your music is sent). Your settings and login live in `%APPDATA%\The Grid` on your own PC.
 
 End of line.

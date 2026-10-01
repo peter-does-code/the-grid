@@ -16,7 +16,7 @@ Drews The Grid opdaterer sig selv fra GitHub. Peter udgiver en ny version med é
 ## Engangsopsætning
 
 1. **gh er logget ind som peter-does-code** (allerede gjort). Udgivelsen henter tokenen med `gh auth token --user peter-does-code`. Commits i dette repo har e-mailen pebbesen@live.dk (sat i repoets egen git-konfiguration), så de vises på profilen.
-2. **De to private repoer** er oprettet, og koden er skubbet op (01-10-2026).
+2. **De to private repoer** er oprettet, og koden er skubbet op (01-10-2026). `the-grid-releases` skal have mindst ét commit (her en README): GitHub kan ikke lave en release i et tomt repo og svarer "422 Repository is empty".
 3. **Lav læse-tokenen** på github.com, logget ind som peter-does-code:
    1. Gå til Settings → Developer settings → Personal access tokens → **Fine-grained tokens** → Generate new token.
    2. Sæt navn: `the-grid-updates`.
@@ -39,7 +39,7 @@ npm run release -- minor   # 0.1.0 → 0.2.0
 
 1. Kører testene. Fejler én, stopper udgivelsen.
 2. Hæver versionen i `package.json`.
-3. Bygger installationsfilen med læse-tokenen og lægger den op som en release i `the-grid-releases` (installationsfil, `latest.yml` og blockmap). Kopien af tokenen i `build/` slettes igen.
+3. Bygger installationsfilen med læse-tokenen (`--publish never`), skriver `latest.yml` (`scripts/lib/update-info.js`) og lægger installationsfil, blockmap og `latest.yml` op som én release i `the-grid-releases` med `gh release create`. Kopien af tokenen i `build/` slettes igen.
 4. Committer, tagger `vX.Y.Z` og pusher koden til `the-grid`.
 
 Drews app finder den nye version inden for 4 timer eller ved næste start.

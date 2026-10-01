@@ -8,8 +8,8 @@
  *
  * 1. Kører testene; fejler én, stopper udgivelsen.
  * 2. Hæver versionen i package.json.
- * 3. Bygger installationsfilen med en læse-token til det private releases-repo (se nedenfor) og lægger
- *    den, latest.yml og blockmap op som en GitHub-release (electron-builder --publish always).
+ * 3. Bygger installationsfilen med en læse-token til det private releases-repo (se nedenfor), skriver
+ *    latest.yml og lægger de tre filer op som en GitHub-release med gh.
  * 4. Er projektet et git-repo: commit og tag vX.Y.Z, og push.
  *
  * Kræver:
@@ -23,6 +23,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
+const { writeLatestYml } = require('./lib/update-info');
 
 const root = path.join(__dirname, '..');
 const pkgFile = path.join(root, 'package.json');
@@ -74,12 +75,22 @@ fs.mkdirSync(path.dirname(tokenTarget), { recursive: true });
 fs.copyFileSync(tokenSource, tokenTarget);
 try {
   run('node', ['scripts/prepare-build.js']);
-  run('npx', ['electron-builder', '--win', 'nsis', '--x64', '--publish', 'always'], {
-    env: { ...process.env, GH_TOKEN: publishToken },
-  });
+  run('npx', ['electron-builder', '--win', 'nsis', '--x64', '--publish', 'never']);
 } finally {
   fs.rmSync(tokenTarget, { force: true });
 }
+
+// Releasen laves med gh i ét hug. electron-builders egen upload sender filerne samtidig, og hver prøver at
+// oprette releasen; det gav "422 Published releases must have a valid tag" og en release uden latest.yml
+// (v0.1.1, 01-10-2026). latest.yml skrives her, så den altid passer til installationsfilen.
+const installer = path.join(root, 'dist', `The-Grid-Setup-${version}.exe`);
+const latest = writeLatestYml(installer, version);
+run(
+  'gh',
+  ['release', 'create', `v${version}`, installer, `${installer}.blockmap`, latest, '-R', `${owner}/${repo}`, '--title', version, '--notes', `The Grid ${version}`],
+  // Uden shell: gh.exe er et almindeligt program, og noter med mellemrum må ikke deles op.
+  { shell: false, env: { ...process.env, GH_TOKEN: publishToken } }
+);
 
 if (fs.existsSync(path.join(root, '.git'))) {
   run('git', ['add', '-A']);
