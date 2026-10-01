@@ -69,8 +69,11 @@
       this.pulse = Math.max(this.pulse, down ? 1 : 0.55);
       if (down) {
         this.downbeats += 1;
-        // Ind imellem kører en enkelt lyscykel forbi på en taktstart.
-        if (this.downbeats % 8 === 0) this.spawnCycle();
+        // En lyscykel på hver anden taktstart (før hver 8.; Peter ville have flere, 02-10-2026).
+        if (this.downbeats % 2 === 0) this.spawnCycle();
+      } else if (Math.random() < 0.12) {
+        // ... og ind imellem en ekstra på et almindeligt slag.
+        this.spawnCycle();
       }
     }
 
@@ -79,9 +82,8 @@
       if (!this.enabled) return;
       if (type === 'drop') {
         this.pulse = 1;
-        this.spawnCycle(0);
-        this.spawnCycle(1);
-        this.spawnCycle(Math.random() < 0.5 ? 0 : 1);
+        // Droppet: en flok lyscykler fra begge sider.
+        for (let i = 0; i < 5; i++) this.spawnCycle(i % 2);
       } else if (type === 'section') {
         this.sweep = 0;
       } else if (type === 'cut') {
@@ -91,7 +93,7 @@
 
     /** En lyscykel på tværs af gulvet i en tilfældig dybde, fra venstre eller højre, i laget eller accentfarven. */
     spawnCycle(colorIndex = Math.random() < 0.6 ? 0 : 1) {
-      if (this.cycles.length > 6) return;
+      if (this.cycles.filter((c) => !c.dead).length >= 12) return;
       const fromLeft = Math.random() < 0.5;
       const z = 2.2 + Math.random() * 7;
       this.cycles.push({
