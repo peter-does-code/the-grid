@@ -44,7 +44,7 @@ The Grid har to slags MilkDrop-presets:
 8. **Brugernes stemmer og personlige lister** (01-10-2026).
    - **K:** favorit (`favoritePresets`). Den får et tillæg på 0,8 i valget og må komme igen efter 20 skift i stedet for 150. Ved tilfældig rækkefølge går op til 30 % af skiftene til en favorit, når der er 20 favoritter (1,5 % pr. favorit). K igen fjerner den.
    - **D**, eller × i preset-listen (L): derez (`hiddenPresets`). Presettet skjules for brugeren selv.
-   - **Preset-listen** viser favoritter med ★ og derezzede overstreget med ↺ for at få dem tilbage. Mens listen er åben, skiftes der ikke automatisk.
+   - **Preset-listen** (L) har på hver række ☆/★ (favorit, som K) og × (derez, som D); derezzede står overstreget med ↺ for at få dem tilbage. Mens listen er åben, skiftes der ikke automatisk.
    - Begge lister er personlige og ligger i brugerens egne indstillinger.
    - Første gang spørger appen, om stemmerne må sendes til Peter (`shareVotes`; kan ændres under Settings).
    - Ja: `src/main/votes.js` sender dem i portioner som issues i `the-grid-releases`. Der sendes presetnavn, stemme, version og et tilfældigt id.

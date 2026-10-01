@@ -1825,10 +1825,30 @@ code {
   color: #00e5ff;
 }
 
-/* Favoritter (K) i preset-listen. */
-.preset-list li.fav .preset-name-text::before {
-  content: '★ ';
-  color: var(--accent, #ffb000);
+/* Favoritter (K, eller ★ i listen): stjernen står fremme; ☆ vises, når musen er over rækken. */
+.preset-fav {
+  flex: none;
+  visibility: hidden;
+  margin-left: 6px;
+  padding: 0 4px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  line-height: 1.2;
+  cursor: pointer;
+  opacity: 0.6;
+}
+
+.preset-list li:hover .preset-fav,
+.preset-list li.fav .preset-fav {
+  visibility: visible;
+}
+
+.preset-list li.fav .preset-fav,
+.preset-fav:hover {
+  opacity: 1;
+  color: #ffb000;
 }
 
 /* Klikbar besked (fx "genstart nu"). */

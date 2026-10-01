@@ -320,6 +320,8 @@
     'votes.ask': "You just voted on a preset. Share your votes (K = like, D = derez) with Peter, so he can make The Grid better? Only the preset name and your vote are sent, nothing about you.\n\nOK = share, Cancel = keep them on this PC.",
     'settings.shareVotes': 'Share my preset votes (K / D) with Peter',
     'presets.count': '({count} · ★ {favs} · derezzed {hidden})',
+    'presets.favourite': 'Favourite (shows up more often), like K',
+    'presets.unfavourite': 'No longer a favourite',
     'presets.restore': 'Bring this preset back',
     'presets.restored': 'Back on the Grid: {name}',
     'presets.derez': 'Derez this preset (you will not see it again)',

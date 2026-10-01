@@ -1716,14 +1716,22 @@
     const label = document.createElement('span');
     label.className = 'preset-name-text';
     label.textContent = name;
-    // × derezzer presettet (skjuler det og tæller som en D-stemme); ↺ tager et derezzet preset tilbage.
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = hidden ? 'preset-restore' : 'preset-del';
-    btn.textContent = hidden ? '↺' : '×';
-    btn.title = t(hidden ? 'presets.restore' : 'presets.derez');
-    btn.setAttribute('aria-label', btn.title);
-    li.append(label, btn);
+    // ★ gør til favorit (som K); × derezzer (som D); ↺ tager et derezzet preset tilbage.
+    const button = (cls, text, titleKey) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = cls;
+      b.textContent = text;
+      b.title = t(titleKey);
+      b.setAttribute('aria-label', b.title);
+      return b;
+    };
+    if (hidden) {
+      li.append(label, button('preset-restore', '↺', 'presets.restore'));
+    } else {
+      const fav = viz.isFavorite(name);
+      li.append(label, button('preset-fav', fav ? '★' : '☆', fav ? 'presets.unfavourite' : 'presets.favourite'), button('preset-del', '×', 'presets.derez'));
+    }
     return li;
   }
 
@@ -1956,6 +1964,11 @@
       if (event.target.closest('.preset-del')) {
         event.stopPropagation();
         votePreset(li.dataset.name, 'derez');
+        return;
+      }
+      if (event.target.closest('.preset-fav')) {
+        event.stopPropagation();
+        votePreset(li.dataset.name, 'keep').then(() => li.replaceWith(presetRow(li.dataset.name, false)));
         return;
       }
       if (event.target.closest('.preset-restore')) {
