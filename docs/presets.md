@@ -36,7 +36,12 @@ The Grid har to slags MilkDrop-presets:
    - Preset-testen måler nu `flicker`: andelen af billeder, hvor hele billedets lysstyrke springer mere end 0,06. Den måler også `whiteFrames` (næsten hvidt) og `lumaSpread`.
    - 86 af pakkens daværende 660 lå på 0,5 eller derover (Peters eksempler: 0,78 og 0,85). Ingen af de 395 indbyggede gjorde. Et slag på hvert kick i testmusikken giver kun ca. 0,07-0,13.
    - `build-preset-pack.js --flicker=<filer>` sorterer alt fra 0,5 og op fra.
-7. **Fjernet af Peter:** navnene i `scripts/preset-bans.txt` kommer aldrig med. Listen ligger også i pakken, så `visualizer.js` fjerner de samme navne blandt de indbyggede presets.
+7. **Review og Peters smag** (01-10-2026). `node scripts/start.js --review` åbner et eget vindue med kun de blinkere, der blev sorteret fra (`src/renderer/presets/review-pack.js`, genereres lokalt, ikke i git eller installationen). Med ← → bladrer man; **K** beholder (`scripts/preset-keeps.txt`), **D** bandlyser (`scripts/preset-bans.txt`).
+   - Peter gennemgik 65: 14 beholdt, 51 bandlyst.
+   - Hvad adskiller dem (AUC, 0,5 = intet, 1 = perfekt): takt 0,77, farver 0,67, blink 0,27 og bevægelse 0,28 (dvs. jo mindre, jo bedre). Lysstyrke, hvide billeder og detaljer betød intet. Takt minus blink adskilte bedst (0,80); en model med alle mål overfittede (0,69 med leave-one-out).
+   - Reglen i `build-preset-pack.js`: en blinker (flicker 0,5 og op) kommer med, hvis takt minus blink er mindst -0,2 (`TASTE_MARGIN`). På Peters stemmer: 11 af 14 behold med, 10 af 51 ban med. Kort sagt: blink er fint, når det følger musikken.
+   - Peters egne valg går altid forud: "behold" kommer altid med (uden om stilartens pladser og familiegrænsen), "ban" aldrig.
+8. **Fjernet af Peter:** navnene i `scripts/preset-bans.txt` kommer aldrig med. Listen ligger også i pakken, så `visualizer.js` fjerner de samme navne blandt de indbyggede presets.
 
 ## Køre det igen
 

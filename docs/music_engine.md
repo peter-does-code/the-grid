@@ -106,6 +106,8 @@ Det sker kun ved tilfældig rækkefølge med "Vælg presets, der reagerer på de
 - **Forløb i ryk på slagene:** med tempo går overgangen frem i ryk. Hvert slag skubber den 1/n frem i løbet af slagets første 35 % (en blød kurve), og imellem står den stille.
   - Overgangen varer hele takter, så ryk og slag passer.
   - Et manuelt skift med pilene glider jævnt som før.
+- **Blink-vagten** (`src/shared/flash-guard.js`): blinker billedet konstant (mindst 55 % af målingerne over 4 s er et lysspring, to vinduer i træk), skiftes der videre. Ikke de første 6 s efter et skift, højst hvert 30. s, og ikke når brugeren selv har valgt med pilene. Blink på slaget (op til 180 BPM) giver højst ca. 20 % og får lov at blive.
+- **Pilene** (taster og knapper) sætter de automatiske skift på pause. Mellemrum skifter og starter dem igen.
 - **Drop:** det hårde klip får et lysglimt på ca. 0,18 s (`flashCut`), så klippet ser villet ud.
 
 ## Målte resultater

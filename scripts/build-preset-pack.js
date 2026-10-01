@@ -77,6 +77,11 @@ for (const file of flickerArg ? flickerArg.slice('--flicker='.length).split(',')
   }
 }
 const MAX_FLICKER = 0.5;
+// Peters smag (review af 65 blinkere, 01-10-2026): blink er fint, når det følger musikken. Takt minus blink
+// adskilte hans "behold" fra "ban" bedst (AUC 0,80; takt alene 0,77, blink alene 0,73). Med mindst -0,2 ville
+// 11 af hans 14 "behold" være kommet med og 10 af 51 "ban". Hans egne valg (keeps/bans) går altid forud.
+const TASTE_MARGIN = -0.2;
+const flashesWithMusic = (rec) => rec && rec.beatSync - rec.flicker >= TASTE_MARGIN;
 
 // Presets, Peter vil beholde trods blink (K i review-tilstanden, scripts/preset-keeps.txt).
 const keeps = new Set(
@@ -104,7 +109,9 @@ const ok = results.filter((r) => {
   if (r.detail < LIMITS.minDetail) return reject('fladt');
   if (r.motion < LIMITS.minMotion) return reject('står stille');
   if (r.msPerFrame > LIMITS.maxMsPerFrame) return reject('for tungt');
-  if ((flicker.get(r.file) || 0) >= MAX_FLICKER && !keeps.has(banKey(m.name))) return reject('blinker');
+  if ((flicker.get(r.file) || 0) >= MAX_FLICKER && !keeps.has(banKey(m.name)) && !flashesWithMusic(measured.get(r.file))) {
+    return reject('blinker');
+  }
   if (flickerArg && !flicker.has(r.file)) return reject('blink ikke målt');
   return true;
 });
@@ -168,8 +175,12 @@ for (const s of styles) {
     taken += 1;
   }
 }
+// Peters "behold" (scripts/preset-keeps.txt) kommer altid med, når de virker, uanset stilartens pladser,
+// familiegrænsen og minimumsscoren.
+const chosenFiles = new Set(chosen.map((r) => r.file));
+for (const r of ok) if (!chosenFiles.has(r.file) && keeps.has(banKey(byFile.get(r.file).name))) chosen.push(r);
 chosen.sort((a, b) => b.score - a.score);
-const final = chosen.slice(0, TOTAL);
+const final = chosen.slice(0, Math.max(TOTAL, chosen.length));
 
 const presets = {};
 for (const r of final) {
