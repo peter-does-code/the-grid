@@ -70,7 +70,9 @@
       "node_modules/ms/**/*",
       "node_modules/sax/**/*",
       "node_modules/tiny-typed-emitter/**/*",
-      "node_modules/universalify/**/*"
+      "node_modules/universalify/**/*",
+      "node_modules/electron-updater/node_modules/**/*",
+      "node_modules/semver/**/*"
     ],
     "asarUnpack": [
       "src/main/ps/**"

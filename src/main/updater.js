@@ -74,4 +74,29 @@ function startUpdater({ log = console, send, publish }) {
   return autoUpdater;
 }
 
-module.exports = { startUpdater, readToken };
+/**
+ * Ét tjek for opdateringer med udskrift, til fejlsøgning i den installerede app:
+ *   "The Grid.exe" --update-check > update-check.txt
+ * Henter ikke noget ned.
+ */
+async function checkOnce({ publish }) {
+  const out = { packaged: app.isPackaged, version: app.getVersion(), resourcesPath: process.resourcesPath, token: Boolean(readToken()) };
+  try {
+    const { autoUpdater } = require('electron-updater');
+    out.updaterLoaded = true;
+    autoUpdater.autoDownload = false;
+    const lines = [];
+    autoUpdater.logger = { info: (m) => lines.push(`info ${m}`), warn: (m) => lines.push(`warn ${m}`), error: (m) => lines.push(`error ${m}`), debug() {} };
+    const token = readToken();
+    if (token && publish) autoUpdater.setFeedURL({ ...publish, private: true, token });
+    const result = await autoUpdater.checkForUpdates();
+    out.latest = result && result.updateInfo ? result.updateInfo.version : null;
+    out.updateAvailable = Boolean(result && result.updateInfo && result.updateInfo.version !== app.getVersion());
+    out.log = lines;
+  } catch (err) {
+    out.error = String((err && err.stack) || err).slice(0, 2000);
+  }
+  return out;
+}
+
+module.exports = { startUpdater, readToken, checkOnce };

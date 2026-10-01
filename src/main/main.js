@@ -513,6 +513,14 @@ async function main() {
     return;
   }
 
+  if (process.argv.includes('--update-check')) {
+    // Fejlsøgning af opdateringer i den installerede app: ét tjek, resultatet som JSON, så lukker appen.
+    const result = await require('./updater').checkOnce({ publish: require('./update-config') });
+    console.log(JSON.stringify(result, null, 2));
+    app.exit(0);
+    return;
+  }
+
   if (IS_PRESETTEST) {
     // Skjult vindue: tegner hvert konverteret preset i --dir (med manifest.json fra
     // scripts/convert-presets.js) og skriver målingerne til --out, én JSON-linje pr. preset, efter hver

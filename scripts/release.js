@@ -91,6 +91,20 @@ try {
   fs.rmSync(tokenTarget, { force: true });
 }
 
+// Kan den byggede app opdatere sig selv? (v0.1.1-v0.1.10 manglede modulet semver i bygget, så electron-updater
+// aldrig startede, og ingen installeret app fandt en ny udgave; opdaget 02-10-2026.) Ét tjek mod GitHub, før der
+// udgives noget.
+{
+  const exe = path.join(root, 'dist', 'win-unpacked', 'The Grid.exe');
+  const raw = execFileSync(exe, ['--update-check'], { cwd: root, encoding: 'utf8', timeout: 60000 });
+  const check = JSON.parse(raw.slice(raw.indexOf('{')));
+  if (!check.updaterLoaded || check.error || !check.token || !check.latest) {
+    console.error('The built app cannot check for updates; nothing was released:\n' + JSON.stringify(check, null, 2));
+    process.exit(1);
+  }
+  console.log(`Update check from the built app works (latest on GitHub: ${check.latest}).`);
+}
+
 // Releasen laves med gh i ét hug. electron-builders egen upload sender filerne samtidig, og hver prøver at
 // oprette releasen; det gav "422 Published releases must have a valid tag" og en release uden latest.yml
 // (v0.1.1, 01-10-2026). latest.yml skrives her, så den altid passer til installationsfilen.
