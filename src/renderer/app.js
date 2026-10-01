@@ -185,15 +185,15 @@
     // Tron-laget ("tron" i Flynns terminal) ligger over visualiseringen og lytter til musikmotoren.
     tronOverlay = new window.Visamp.TronOverlay($('tron-overlay'));
     tronOverlay.setTheme(currentTheme());
-    tronOverlay.setEnabled(Boolean(state.settings.tronOverlay));
+    tronOverlay.setEnabled(false); // starter altid slukket; "tron" tænder det (huskes ikke, Peter 01-10-2026)
     // Ingen musik endnu: start i mørke, indtil musikmotoren hører lyd.
     setSleeping(true);
   }
 
   let tronOverlay = null;
+  let tronOn = false;
   function setTronOverlay(on) {
-    state.settings.tronOverlay = on;
-    saveSettingsSoon({ tronOverlay: on });
+    tronOn = on;
     if (tronOverlay) tronOverlay.setEnabled(on);
   }
 
@@ -1211,8 +1211,15 @@
           battleSeconds: 16,
           winnerText: (name) => (name ? { title: t(`battle.win.${name}`), sub: t(`battle.win.${name}.sub`) } : { title: t('battle.draw'), sub: '' }),
         });
+      case 'overlay': {
+        // "tron": Tron-laget over visualiseringen til og fra (også i terminalen, se termRun).
+        const on = !tronOn;
+        setTronOverlay(on);
+        toast(t(on ? 'term.tron.on' : 'term.tron.off'));
+        return Promise.resolve(true);
+      }
       case 'epic':
-        // "epic battle" i Flynns terminal: Game Grid med 40 cykler i en større arena (finere gitter), ca. 1 minut.
+        // "epic battle" (link-feltet eller Flynns terminal): Game Grid med 40 cykler i en større arena (finere gitter), ca. 1 minut.
         toast(t('egg.epic'));
         return playIntro({
           style: 'war',
@@ -1323,10 +1330,7 @@
       t('sheet.title'),
       '',
       ...typed.map(([input, key]) => `  ${input.padEnd(width)}${t(key)}`),
-      '',
-      t('sheet.terminal'),
-      '',
-      ...terminalOnly.map(([input, key]) => `  ${input.padEnd(width)}${t(key)}`),
+      ...(terminalOnly.length ? ['', t('sheet.terminal'), '', ...terminalOnly.map(([input, key]) => `  ${input.padEnd(width)}${t(key)}`)] : []),
       '',
       t('sheet.anywhere'),
       '',
@@ -1357,8 +1361,8 @@
         termPrint([t('term.uname')]);
         break;
       case 'tron': {
-        // Kun her: Tron-laget over visualiseringen, til og fra. Huskes til næste start.
-        const on = !state.settings.tronOverlay;
+        // Tron-laget over visualiseringen, til og fra (også fra link-feltet). Huskes ikke: det starter slukket.
+        const on = !tronOn;
         setTronOverlay(on);
         termPrint([t(on ? 'term.tron.on' : 'term.tron.off')]);
         break;
@@ -2054,7 +2058,7 @@
         await new Promise((resolve) => setTimeout(resolve, 1100));
       } else if (view === 'battle-epic') {
         // "epic battle" i terminalen: 40 cykler midt i kampen.
-        tronOverlay.setEnabled(Boolean(state.settings.tronOverlay));
+        tronOverlay.setEnabled(tronOn);
         if (intro && intro.running) intro.finish(true);
         await new Promise((resolve) => setTimeout(resolve, 450));
         runEgg('epic');

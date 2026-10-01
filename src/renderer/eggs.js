@@ -48,6 +48,10 @@
     battle: 'battle',
     'game grid': 'battle',
     gamegrid: 'battle',
+    // Virker både i link-feltet og i Flynns terminal (Peter: det, der skal virke i terminalen, skal også virke her).
+    tron: 'overlay',
+    'epic battle': 'epic',
+    epicbattle: 'epic',
   };
 
   /**
@@ -70,9 +74,8 @@
     ['whoami', 'sheet.whoami', 'terminal'],
     ['who am i', 'sheet.spaces', 'spaces'],
     ['battle / game grid', 'sheet.battle', 'battle'],
-    // Kun i Flynns terminal (fjerde felt 'terminal'): de virker ikke fra link-feltet.
-    ['tron', 'sheet.overlay', 'overlay', 'terminal'],
-    ['epic battle', 'sheet.epic', 'epic', 'terminal'],
+    ['tron', 'sheet.overlay', 'overlay'],
+    ['epic battle', 'sheet.epic', 'epic'],
     ['↑ ↑ ↓ ↓ ← → ← →', 'sheet.konami', null],
     ['double-click THE GRID', 'sheet.wordmark', null],
   ];

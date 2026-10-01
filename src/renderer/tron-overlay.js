@@ -1,5 +1,5 @@
 /*
- * Tron-laget over MilkDrop (slås til og fra med "tron" i Flynns terminal): et perspektivgulv, der ruller med
+ * Tron-laget over MilkDrop (slås til og fra med "tron" i link-feltet eller Flynns terminal; starter slukket): et perspektivgulv, der ruller med
  * tempoet og lyser op på slagene, lyscykler, der kører hen over gulvet på drops og ind imellem på en
  * taktstart, og et kort derez-glimt på hårde klip. Tegnes additivt ("lighter"), så MilkDrop stadig er
  * hovedsagen. Musikmotorens hændelser kommer ind via beat() og event().
