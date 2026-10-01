@@ -27,3 +27,6 @@ Thumbs.db
 # Testsange til musikmotoren (ophavsret, store filer): ligger kun lokalt
 /*.mp3
 /*.wav
+
+# Review-tilstandens preset-pakke (--review): genereres lokalt
+src/renderer/presets/review-pack.js

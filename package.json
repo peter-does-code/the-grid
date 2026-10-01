@@ -1,7 +1,7 @@
 {
   "name": "winamp-visualizer",
   "productName": "The Grid",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "private": true,
   "description": "The Grid: a Tron-inspired MilkDrop visualizer that follows your Spotify music.",
   "main": "src/main/main.js",
@@ -48,6 +48,7 @@
     "files": [
       "package.json",
       "src/**/*",
+      "!src/renderer/presets/review-pack.js",
       "!node_modules/**/*",
       "node_modules/butterchurn/lib/butterchurn.min.js",
       "node_modules/butterchurn/lib/butterchurnExtraImages.min.js",
