@@ -21,11 +21,11 @@
   const RECENT_EXCLUDE = 150;
   const PICK_TOP = 12; // valget trækkes blandt de bedste ...
   const PICK_TEMPERATURE = 0.25; // ... vægtet efter score (lavere = mere grådigt)
-  // Brugerens favoritter (K): et tillæg i valget, og de må komme igen efter 20 skift i stedet for 150.
+  // Brugerens favoritter (K) vægtes først, når der er FAVORITE_FULL_AT af dem (Peter 02-10-2026): før det er de
+  // helt almindelige presets. Derefter et tillæg i valget, og de må komme igen efter 40 skift i stedet for 150.
   const FAVORITE_BONUS = 0.8;
-  const FAVORITE_EXCLUDE = 20;
-  // Ved tilfældig rækkefølge: så stor en andel af skiftene går til en favorit, når der er FAVORITE_FULL_AT
-  // favoritter; med færre er andelen tilsvarende mindre (Peter: hver tredje først, når listen er nået 20).
+  const FAVORITE_EXCLUDE = 40;
+  // Ved tilfældig rækkefølge: så stor en andel af skiftene går til en favorit (når de vægtes).
   const FAVORITE_SHARE = 0.3;
   const FAVORITE_FULL_AT = 20;
 
@@ -262,17 +262,26 @@
       return Boolean(this.favorites && this.favorites.has(name));
     }
 
+    /** Vægtes favoritterne? Først når brugeren har mindst FAVORITE_FULL_AT. */
+    favoritesWeighted() {
+      return Boolean(this.favorites && this.favorites.size >= FAVORITE_FULL_AT);
+    }
+
+    /** En favorit, der vægtes (bruges til tillæg og kortere ventetid). */
+    weightedFavorite(name) {
+      return this.favoritesWeighted() && this.isFavorite(name);
+    }
+
     /** Vist for nylig? Favoritter tæller kun de seneste FAVORITE_EXCLUDE skift med. */
     recentSets() {
       const all = new Set(this.history.slice(-Math.min(RECENT_EXCLUDE, Math.floor(this.names.length / 2))));
       const fav = new Set(this.history.slice(-FAVORITE_EXCLUDE));
-      return (name) => (this.isFavorite(name) ? fav.has(name) : all.has(name));
+      return (name) => (this.weightedFavorite(name) ? fav.has(name) : all.has(name));
     }
 
     randomName() {
       const isRecent = this.recentSets();
-      const share = this.favorites ? FAVORITE_SHARE * Math.min(1, this.favorites.size / FAVORITE_FULL_AT) : 0;
-      if (share && Math.random() < share) {
+      if (this.favoritesWeighted() && Math.random() < FAVORITE_SHARE) {
         const favs = this.names.filter((n) => this.isFavorite(n) && !isRecent(n) && !this.failed.has(n));
         if (favs.length) return favs[Math.floor(Math.random() * favs.length)];
       }
@@ -331,7 +340,7 @@
       let pool = this.names.filter((n) => !isRecent(n) && !this.failed.has(n));
       if (pool.length === 0) pool = this.names.filter((n) => n !== this.current && !this.failed.has(n));
       const top = pool
-        .map((name) => [name, score(this.profile(name)) + (this.isFavorite(name) ? FAVORITE_BONUS : 0)])
+        .map((name) => [name, score(this.profile(name)) + (this.weightedFavorite(name) ? FAVORITE_BONUS : 0)])
         .sort((a, b) => b[1] - a[1])
         .slice(0, PICK_TOP);
       if (!top.length) return null;

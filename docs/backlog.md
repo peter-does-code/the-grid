@@ -20,6 +20,8 @@ Ting, Peter vil have, men som ikke er bygget endnu. Ældst øverst. Flyt et punk
 - **Mål det:** genbrug simuleringen fra 01-10-2026, der tæller forskellige presets pr. 200 skift og deres gennemsnitlige intensitet (se `docs/music_engine.md`, "Hvilket preset"). Simuler også med fx 20 og 50 favoritter. Målet er, at intensiteten stadig følger musikken, mens antallet af forskellige presets stiger, og favoritterne højst får ca. en fjerdedel af skiftene.
 - Gør gerne andelene til indstillinger: "Variation" under Settings.
 
+**Delvist løst 02-10-2026 (v0.1.15):** favoritterne vægtes nu slet ikke, før der er mindst 20 (Peters ønske), og ventetiden for en vægtet favorit er 40 skift. Resten herunder gælder stadig, når der er 20 eller flere.
+
 **Fundet 02-10-2026 (Peter: "mine favoritter kommer meget"):** reglen om, at favoritternes andel først er fuld ved 20 favoritter (`FAVORITE_FULL_AT`), gælder kun ved tilfældig rækkefølge (`randomName`). Det musikstyrede valg (`pickSmart`, standard) giver altid 0,8 i tillæg (`FAVORITE_BONUS`). Med temperaturen 0,25 vinder en favorit så næsten altid, når den er fri efter 20 skift. Hver favorit ses derfor ca. hvert 21. skift, og med 5 favoritter er det ca. en fjerdedel af alle skift.
 - Lad tillægget skalere med listens størrelse som `FAVORITE_SHARE`: `FAVORITE_BONUS * min(1, antal / FAVORITE_FULL_AT)`.
 - Lad hellere favoritterne vente længere end 20 skift, fx 60, eller lad ventetiden vokse med antallet af favoritter.
