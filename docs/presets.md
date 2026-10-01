@@ -41,7 +41,12 @@ The Grid har to slags MilkDrop-presets:
    - Hvad adskiller dem (AUC, 0,5 = intet, 1 = perfekt): takt 0,77, farver 0,67, blink 0,27 og bevægelse 0,28 (dvs. jo mindre, jo bedre). Lysstyrke, hvide billeder og detaljer betød intet. Takt minus blink adskilte bedst (0,80); en model med alle mål overfittede (0,69 med leave-one-out).
    - Reglen i `build-preset-pack.js`: en blinker (flicker 0,5 og op) kommer med, hvis takt minus blink er mindst -0,2 (`TASTE_MARGIN`). På Peters stemmer: 11 af 14 behold med, 10 af 51 ban med. Kort sagt: blink er fint, når det følger musikken.
    - Peters egne valg går altid forud: "behold" kommer altid med (uden om stilartens pladser og familiegrænsen), "ban" aldrig.
-8. **Fjernet af Peter:** navnene i `scripts/preset-bans.txt` kommer aldrig med. Listen ligger også i pakken, så `visualizer.js` fjerner de samme navne blandt de indbyggede presets.
+8. **Brugernes stemmer** (01-10-2026). I appen er **K** "kan lide" og **D** "derez": presettet skjules for brugeren selv (`hiddenPresets`).
+   - Første gang spørger appen, om stemmerne må sendes til Peter (`shareVotes`; kan ændres under Settings).
+   - Ja: `src/main/votes.js` sender dem i portioner som issues i `the-grid-releases`. Der sendes presetnavn, stemme, version og et tilfældigt id.
+   - `node scripts/collect-votes.js` viser dem. Med `--apply` kommer flest derez på ban-listen og flest kan-lide på behold-listen (Peters egne valg går forud), og issues lukkes.
+   - Fra kildekoden (Peter selv) skriver K/D direkte i listerne.
+9. **Fjernet af Peter:** navnene i `scripts/preset-bans.txt` kommer aldrig med. Listen ligger også i pakken, så `visualizer.js` fjerner de samme navne blandt de indbyggede presets.
 
 ## Køre det igen
 

@@ -182,6 +182,8 @@
     const last = state.settings.visualizer.lastPreset;
     if (!(last && viz.load(last, 0))) viz.next({ random: true, blendSeconds: 0 });
     viz.start();
+    // Presets, brugeren har derezzet med D, vises ikke igen.
+    if (!REVIEW && state.settings.hiddenPresets && state.settings.hiddenPresets.length) viz.hide(...state.settings.hiddenPresets);
     // Blink-vagten: blinker et preset konstant (fx i en hurtig del), skiftes der videre. Ikke mens brugeren selv har
     // valgt med pilene, uden automatiske skift, eller i review-tilstanden, hvor blinkerne skal ses.
     flashGuard = new window.VisampFlashGuard.FlashGuard();
@@ -232,14 +234,38 @@
     });
   }
 
+  /**
+   * K (kan lide) og D (derez) på det preset, der vises. I review-tilstanden går det videre i rækkefølge. Ellers
+   * skjules et derezzet preset for brugeren selv, og stemmen sendes til Peter, hvis brugeren har sagt ja første
+   * gang (src/main/votes.js). Fra kildekoden skriver hovedprocessen direkte i Peters ban- og behold-lister.
+   */
   async function reviewVote(verdict) {
-    if (!REVIEW || !viz || !viz.current) return;
+    if (!viz || !viz.current) return;
     const name = viz.current;
-    if (!reviewVotes.has(name)) await call(bridge.review.vote(name, verdict));
-    reviewVotes.set(name, verdict);
-    toast(t(verdict === 'keep' ? 'review.keep' : 'review.ban', { name }), 'info', 2500);
-    // Videre i rækkefølge, så alle bliver set.
-    viz.load(viz.sequentialName(1), 0);
+    if (REVIEW) {
+      if (!reviewVotes.has(name)) await call(bridge.votes.add(name, verdict));
+      reviewVotes.set(name, verdict);
+      toast(t(verdict === 'keep' ? 'review.keep' : 'review.ban', { name }), 'info', 2500);
+      viz.load(viz.sequentialName(1), 0); // videre i rækkefølge, så alle bliver set
+      return;
+    }
+    if (state.info.packaged && state.settings.shareVotes == null) {
+      // Første stemme: spørg, om stemmerne må sendes til Peter. Svaret huskes og kan ændres under Settings.
+      const yes = window.confirm(t('votes.ask'));
+      state.settings.shareVotes = yes;
+      saveSettingsSoon({ shareVotes: yes });
+    }
+    await call(bridge.votes.add(name, verdict));
+    if (verdict === 'keep') {
+      toast(t('votes.liked', { name }), 'info', 2500);
+      return;
+    }
+    const hidden = [...(state.settings.hiddenPresets || []), name];
+    state.settings.hiddenPresets = hidden;
+    saveSettingsSoon({ hiddenPresets: hidden });
+    viz.hide(name);
+    toast(t('votes.derezzed', { name }), 'info', 3000);
+    nextPreset();
   }
 
   let presetNameTimer = null;
@@ -1589,6 +1615,7 @@
     $('set-intro').checked = state.settings.showIntro !== false;
     $('set-intro-style').value = state.settings.introStyle === 'duel' ? 'duel' : 'war';
     $('set-intro-music').checked = state.settings.introMusic !== false;
+    $('set-share-votes').checked = state.settings.shareVotes === true;
     renderSpotifyStatus();
     renderVizToggles();
     renderCaptureStatus();
@@ -1759,6 +1786,10 @@
     $('set-intro-style').addEventListener('change', (e) => {
       state.settings.introStyle = e.target.value;
       saveSettingsSoon({ introStyle: e.target.value });
+    });
+    $('set-share-votes').addEventListener('change', (e) => {
+      state.settings.shareVotes = e.target.checked;
+      saveSettingsSoon({ shareVotes: e.target.checked });
     });
     $('set-intro').addEventListener('change', (e) => {
       state.settings.showIntro = e.target.checked;

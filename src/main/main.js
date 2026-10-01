@@ -14,7 +14,8 @@ const { parseSpotifyInput, isShortLink, findSpotifyLinkInText } = require('./spo
 const { SpotifyError } = require('./errors');
 const { iconPng } = require('./icon');
 const { DefaultDeviceWatcher } = require('./audio-devices');
-const { startUpdater } = require('./updater');
+const { startUpdater, readToken } = require('./updater');
+const { VoteQueue } = require('./votes');
 const i18n = require('../shared/i18n');
 
 /**
@@ -178,21 +179,42 @@ function handle(channel, fn) {
 // Den udgave, der kørte sidst (sat nedenfor ved start): er den ældre, er appen lige blevet opdateret.
 let UPDATED_FROM = null;
 
+/** Stemmekøen til Peter (src/main/votes.js); kun i den installerede app. */
+let voteQueue = null;
+
+/** Brugerens anonyme stemme-id (oprettes første gang). */
+function votesId() {
+  let id = store.getSettings().votesId;
+  if (!id) {
+    id = require('node:crypto').randomBytes(4).toString('hex');
+    store.updateSettings({ votesId: id });
+  }
+  return id;
+}
+
 function registerIpc() {
-  if (IS_REVIEW) {
-    // K: behold (scripts/preset-keeps.txt), D: ban (scripts/preset-bans.txt). Kun fra kildekoden.
-    handle('review:vote', (_event, name, verdict) => {
+  // K = behold, D = derez. Fra kildekoden (Peter selv, også review-tilstanden) skrives de direkte i
+  // scripts/preset-keeps.txt og scripts/preset-bans.txt. I den installerede app går de til Peter, hvis
+  // brugeren har sagt ja (shareVotes); ellers bliver de kun på pc'en.
+  handle('votes:add', (_event, name, verdict) => {
+    const line = String(name || '').replace(/[\r\n]+/g, ' ').trim();
+    if (!line) return { recorded: false };
+    if (IS_REVIEW || !app.isPackaged) {
       const fs = require('node:fs');
       const file = path.join(app.getAppPath(), 'scripts', verdict === 'keep' ? 'preset-keeps.txt' : 'preset-bans.txt');
-      const line = String(name).replace(/[\r\n]+/g, ' ').trim();
-      if (!line) return false;
       fs.appendFileSync(file, line + '\n');
-      return true;
-    });
-  }
+      return { recorded: true, where: 'lists' };
+    }
+    if (store.getSettings().shareVotes === true && voteQueue) {
+      voteQueue.add({ preset: line, vote: verdict });
+      return { recorded: true, where: 'peter' };
+    }
+    return { recorded: false };
+  });
   handle('app:info', () => ({
     version: app.getVersion(),
     updatedFrom: UPDATED_FROM,
+    packaged: app.isPackaged,
     selftest: IS_SELFTEST,
     appName: i18n.APP_NAME,
     locale: app.getLocale(),
@@ -258,6 +280,11 @@ function registerIpc() {
     if ('introMusic' in patch) clean.introMusic = Boolean(patch.introMusic);
     if (['war', 'duel'].includes(patch.introStyle)) clean.introStyle = patch.introStyle;
     if ('onboardingDone' in patch) clean.onboardingDone = Boolean(patch.onboardingDone);
+    // Stemmer: om de må sendes til Peter, og de presets brugeren har derezzet (skjules for brugeren selv).
+    if ('shareVotes' in patch) clean.shareVotes = patch.shareVotes === null ? null : Boolean(patch.shareVotes);
+    if (Array.isArray(patch.hiddenPresets)) {
+      clean.hiddenPresets = patch.hiddenPresets.filter((n) => typeof n === 'string').map((n) => n.slice(0, 300)).slice(-2000);
+    }
     return publicSettings(store.updateSettings(clean));
   });
 
@@ -561,6 +588,23 @@ async function main() {
     if (last !== app.getVersion()) store.updateSettings({ lastVersion: app.getVersion() });
   }
   mainWindow = createWindow();
+  if (!IS_SELFTEST && app.isPackaged) {
+    const publish = require('./update-config');
+    voteQueue = new VoteQueue({
+      dir: app.getPath('userData'),
+      token: readToken(),
+      owner: publish.owner,
+      repo: publish.repo,
+      version: app.getVersion(),
+      getId: votesId,
+      log: console,
+    });
+    // Stemmer fra sidst (uden net, eller lukket før de blev sendt) sendes kort efter start.
+    setTimeout(() => voteQueue.flush(), 15000);
+    app.on('before-quit', () => {
+      voteQueue.flush();
+    });
+  }
   if (!IS_SELFTEST) {
     startUpdater({
       log: console,

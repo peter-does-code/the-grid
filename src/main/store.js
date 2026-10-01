@@ -17,6 +17,8 @@ const DEFAULT_SETTINGS = {
   introMusic: true, // "Init" af Nine Inch Nails under introen
   introStyle: 'war', // 'war' (den lange kamp) eller 'duel' (kamp og duel)
   onboardingDone: false,
+  shareVotes: null, // null = ikke spurgt endnu; true/false = brugerens svar (stemmer til Peter, src/main/votes.js)
+  hiddenPresets: [], // presets brugeren har derezzet med D
   lastInput: '',
   visualizer: {
     autoCycle: true,

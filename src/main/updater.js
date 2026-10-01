@@ -70,4 +70,4 @@ function startUpdater({ log = console, send, publish }) {
   return autoUpdater;
 }
 
-module.exports = { startUpdater };
+module.exports = { startUpdater, readToken };

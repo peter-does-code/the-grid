@@ -205,6 +205,12 @@
       return Math.min(1, (i + step) / beats);
     }
 
+    /** Fjerner presets fra udvalget (brugerens D, "derez"). Det viste preset bliver stående, til der skiftes. */
+    hide(...names) {
+      const gone = new Set(names);
+      this.names = this.names.filter((n) => !gone.has(n));
+    }
+
     /** Næste overgang: { beats, pattern } (se installTransitions). Gælder kun det næste skift. */
     setNextTransition(transition) {
       this.nextTransition = transition || null;

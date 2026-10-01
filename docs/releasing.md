@@ -22,7 +22,7 @@ Drews The Grid opdaterer sig selv fra GitHub. Peter udgiver en ny version med é
    2. Sæt navn: `the-grid-updates`.
    3. Sæt udløb: det længste, GitHub tillader. Skriv datoen ned nedenfor.
    4. Sæt Repository access: **Only select repositories** → `the-grid-releases`.
-   5. Sæt Permissions: **Contents: Read-only** og intet andet (Metadata: Read-only kommer automatisk).
+   5. Sæt Permissions: **Contents: Read-only** og **Issues: Read and write**, intet andet (Metadata: Read-only kommer automatisk). Issues bruges til brugernes stemmer på presets (`src/main/votes.js`, se docs/presets.md); tokenen kan stadig ikke se koden.
    6. Gem tokenen i `%USERPROFILE%\.the-grid\update-token.txt`, uden andet i filen. Den ligger uden for projektet og kommer aldrig i git.
 4. **Første gang Drew får opdateringer:** den første version med opdateringer skal installeres på den gamle måde. Send Drew installationsfilen én gang; derefter opdaterer den sig selv.
 
