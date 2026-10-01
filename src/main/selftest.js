@@ -7,6 +7,8 @@ const { runScript } = require('./powershell');
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /** En kort stereo-WAV med bas-slag, toner og hi-hat, så både bas, mellemtone og diskant giver udslag. */
+const QUIET = process.argv.includes('--quiet');
+
 function writeTestWav(file, { seconds = 3, sampleRate = 44100, gain = 0.35 } = {}) {
   const frames = Math.floor(seconds * sampleRate);
   const data = Buffer.alloc(frames * 4);
@@ -104,7 +106,9 @@ async function runSelftest({ win, ipcMain, outDir, full = false }) {
   await sleep(3500); // lad lydfangst og første preset komme i gang
 
   const wav = path.join(outDir, 'selftest-tone.wav');
-  writeTestWav(wav);
+  // --quiet: testlyden og Init næsten uhørligt (Peter 01-10-2026: testene spillede for højt). Lydfangst og
+  // automatisk lydniveau virker stadig; kun lydstyrken i højttalerne er lav.
+  writeTestWav(wav, { gain: QUIET ? 0.02 : 0.35 });
   win.webContents.send('selftest:phase', 'audio-start');
   const playing = playWav(wav).catch((err) => consoleLines.push(`[main] Could not play the test sound: ${err.message}`));
   await sleep(1800);
@@ -139,7 +143,7 @@ async function runSelftest({ win, ipcMain, outDir, full = false }) {
   if (audioLine) {
     try {
       const state = JSON.parse(audioLine.slice(audioLine.indexOf('{')));
-      music = { ok: !state.paused && state.volume > 0.5 && state.currentTime > 2 && state.error === null, ...state };
+      music = { ok: !state.paused && state.volume > (QUIET ? 0.02 : 0.5) && state.currentTime > 2 && state.error === null, ...state };
     } catch (err) {
       music = { ok: false, detail: String(err) };
     }

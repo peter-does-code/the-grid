@@ -14,7 +14,8 @@
     "musictest": "node scripts/start.js --musictest",
     "dist": "node scripts/prepare-build.js && electron-builder --win nsis --x64",
     "dist:dir": "node scripts/prepare-build.js && electron-builder --win dir --x64",
-    "release": "node scripts/release.js"
+    "release": "node scripts/release.js",
+    "selftest:quiet": "node scripts/start.js --selftest --quiet"
   },
   "author": "Peter <pse@wezimplify.com>",
   "license": "UNLICENSED",

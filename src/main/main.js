@@ -215,6 +215,7 @@ function registerIpc() {
     version: app.getVersion(),
     updatedFrom: UPDATED_FROM,
     packaged: app.isPackaged,
+    quiet: process.argv.includes('--quiet'), // selvtesten med næsten uhørlig lyd
     selftest: IS_SELFTEST,
     appName: i18n.APP_NAME,
     locale: app.getLocale(),

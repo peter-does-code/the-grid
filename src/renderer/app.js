@@ -1071,7 +1071,8 @@
    * Spiller Init fra `from` sekunder, eventuelt i løkke mellem loop[0] og loop[1]. Returnerer { stop(sekunder) }.
    * Selvtesten spiller den ikke (den laver sin egen testlyd).
    */
-  function playInit({ from = 0, loop = null, volume = 0.85, force = false, onEnded = null } = {}) {
+  function playInit({ from = 0, loop = null, volume: wanted = 0.85, force = false, onEnded = null } = {}) {
+    const volume = state.info && state.info.quiet ? wanted * 0.03 : wanted; // selvtest med --quiet
     if (state.info.selftest && !force) return { stop() {}, time: () => null, duration: () => null };
     const audio = new Audio(`${INIT_TRACK}#t=${from}`);
     audio.volume = 0;
