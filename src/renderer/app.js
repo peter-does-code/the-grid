@@ -71,10 +71,13 @@
   }
 
   let toastTimer = null;
-  function toast(message, kind = 'info', ms = 4500) {
+  function toast(message, kind = 'info', ms = 4500, onClick = null) {
     const el = $('toast');
     el.textContent = message;
     el.dataset.kind = kind;
+    // En besked kan være klikbar (fx "genstart nu" ved en opdatering).
+    el.onclick = onClick;
+    el.classList.toggle('clickable', Boolean(onClick));
     el.hidden = false;
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => {
@@ -135,12 +138,32 @@
       updateStatus.state === 'ready' ? `${base} ${t('update.about.ready', { version: `v${updateStatus.version}` })}` : base;
   }
 
+  /**
+   * En tvungen opdatering: genstart i et øjeblik uden musik (visualizeren sover), med 10 s varsel. Kommer der
+   * musik i mellemtiden, ventes der igen. Efter 3 timer genstartes der alligevel.
+   */
+  function forcedRestart() {
+    const since = Date.now();
+    const tryNow = () => {
+      if (!sleeping && Date.now() - since < 3 * 3600 * 1000) return setTimeout(tryNow, 5000);
+      toast(t('update.forced', { version: `v${updateStatus.version}` }), 'info', 11000);
+      setTimeout(() => {
+        if (!sleeping && Date.now() - since < 3 * 3600 * 1000) return tryNow();
+        window.visamp.update.installNow();
+      }, 10000);
+    };
+    tryNow();
+  }
+
   function setupUpdates() {
     if (state.info.updatedFrom) toast(t('update.done', { version: `v${state.info.version}` }), 'info', 7000);
     const onStatus = (status) => {
       const wasReady = updateStatus.state === 'ready';
       updateStatus = status || { state: 'idle' };
-      if (updateStatus.state === 'ready' && !wasReady) toast(t('update.ready', { version: `v${updateStatus.version}` }), 'info', 8000);
+      if (updateStatus.state === 'ready' && !wasReady) {
+        if (updateStatus.force) forcedRestart();
+        else toast(t('update.ready', { version: `v${updateStatus.version}` }), 'info', 15000, () => window.visamp.update.installNow());
+      }
       showUpdateInAbout();
     };
     window.visamp.update.onStatus(onStatus);
@@ -184,11 +207,13 @@
     viz.start();
     // Presets, brugeren har derezzet med D, vises ikke igen.
     if (!REVIEW && state.settings.hiddenPresets && state.settings.hiddenPresets.length) viz.hide(...state.settings.hiddenPresets);
+    // Favoritter (K) vises oftere.
+    if (!REVIEW) viz.setFavorites(state.settings.favoritePresets || []);
     // Blink-vagten: blinker et preset konstant (fx i en hurtig del), skiftes der videre. Ikke mens brugeren selv har
     // valgt med pilene, uden automatiske skift, eller i review-tilstanden, hvor blinkerne skal ses.
     flashGuard = new window.VisampFlashGuard.FlashGuard();
     viz.onLuma = (luma) => {
-      if (REVIEW || autoHold || sleeping || !state.settings.visualizer.autoCycle) return;
+      if (REVIEW || autoHold || sleeping || presetListOpen() || !state.settings.visualizer.autoCycle) return;
       if (flashGuard.feed(nowSeconds(), luma)) {
         console.info('Flash guard: switching away from', viz.current);
         nextPreset();
@@ -252,6 +277,17 @@
     await votePreset(name, verdict);
   }
 
+  /** ↺ i preset-listen: et derezzet preset kommer tilbage. */
+  function restorePreset(name) {
+    state.settings.hiddenPresets = (state.settings.hiddenPresets || []).filter((n) => n !== name);
+    saveSettingsSoon({ hiddenPresets: state.settings.hiddenPresets });
+    viz.unhide(name);
+    const li = $('preset-list').querySelector(`li[data-name="${CSS.escape(name)}"]`);
+    if (li) li.replaceWith(presetRow(name, false));
+    updatePresetCount();
+    toast(t('presets.restored', { name }), 'info', 2500);
+  }
+
   /** En stemme på et vilkårligt preset (D/K på det viste, eller × i preset-listen). Derez skjuler det for brugeren. */
   async function votePreset(name, verdict) {
     if (state.info.packaged && state.settings.shareVotes == null) {
@@ -260,18 +296,34 @@
       state.settings.shareVotes = yes;
       saveSettingsSoon({ shareVotes: yes });
     }
-    await call(bridge.votes.add(name, verdict));
     if (verdict === 'keep') {
-      toast(t('votes.liked', { name }), 'info', 2500);
+      // K slår favorit til og fra (personlig liste, vises oftere). Kun når den slås til, tæller den som stemme.
+      const favs = new Set(state.settings.favoritePresets || []);
+      const on = !favs.has(name);
+      if (on) favs.add(name);
+      else favs.delete(name);
+      state.settings.favoritePresets = [...favs];
+      saveSettingsSoon({ favoritePresets: state.settings.favoritePresets });
+      viz.setFavorites(favs);
+      const li = $('preset-list').querySelector(`li[data-name="${CSS.escape(name)}"]`);
+      if (li) li.classList.toggle('fav', on);
+      if (on) await call(bridge.votes.add(name, verdict));
+      toast(t(on ? 'votes.liked' : 'votes.unliked', { name }), 'info', 2500);
       return;
+    }
+    await call(bridge.votes.add(name, verdict));
+    if ((state.settings.favoritePresets || []).includes(name)) {
+      state.settings.favoritePresets = state.settings.favoritePresets.filter((n) => n !== name);
+      saveSettingsSoon({ favoritePresets: state.settings.favoritePresets });
+      viz.setFavorites(state.settings.favoritePresets);
     }
     const hidden = [...(state.settings.hiddenPresets || []), name];
     state.settings.hiddenPresets = hidden;
     saveSettingsSoon({ hiddenPresets: hidden });
     viz.hide(name);
     const li = $('preset-list').querySelector(`li[data-name="${CSS.escape(name)}"]`);
-    if (li) li.remove();
-    $('preset-count').textContent = `(${viz.names.length})`;
+    if (li) li.replaceWith(presetRow(name, true));
+    updatePresetCount();
     toast(t('votes.derezzed', { name }), 'info', 3000);
     if (name === viz.current) nextPreset();
   }
@@ -285,6 +337,11 @@
     el.classList.add('show');
     clearTimeout(presetNameTimer);
     presetNameTimer = setTimeout(() => el.classList.remove('show'), 3500);
+  }
+
+  function presetListOpen() {
+    const el = document.getElementById('presets-dialog');
+    return Boolean(el && el.open);
   }
 
   /** Pilene (taster og knapper): vælg selv, og sæt de automatiske skift på pause, til mellemrum trykkes. */
@@ -313,7 +370,8 @@
     const m = state.settings.music;
     return {
       // Har brugeren selv valgt med pilene, holder de automatiske skift pause, til der trykkes mellemrum.
-      autoCycle: v.autoCycle && !autoHold,
+      // Heller ikke mens preset-listen (L) er åben: den skal ikke skifte under én.
+      autoCycle: v.autoCycle && !autoHold && !presetListOpen(),
       cycleSeconds: v.cycleSeconds,
       blendSeconds: v.blendSeconds,
       beatSync: m.beatSync,
@@ -1647,31 +1705,42 @@
     }
   }
 
+  /** En række i preset-listen: ★ for favoritter, overstreget for derezzede (med ↺ for at få det tilbage). */
+  function presetRow(name, hidden) {
+    const li = document.createElement('li');
+    li.dataset.name = name;
+    li.title = name;
+    if (viz.isFavorite(name)) li.classList.add('fav');
+    if (hidden) li.classList.add('derezzed');
+    const label = document.createElement('span');
+    label.className = 'preset-name-text';
+    label.textContent = name;
+    // × derezzer presettet (skjuler det og tæller som en D-stemme); ↺ tager et derezzet preset tilbage.
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = hidden ? 'preset-restore' : 'preset-del';
+    btn.textContent = hidden ? '↺' : '×';
+    btn.title = t(hidden ? 'presets.restore' : 'presets.derez');
+    btn.setAttribute('aria-label', btn.title);
+    li.append(label, btn);
+    return li;
+  }
+
+  function updatePresetCount() {
+    const hidden = (state.settings.hiddenPresets || []).length;
+    const favs = (state.settings.favoritePresets || []).length;
+    $('preset-count').textContent = t('presets.count', { count: viz.names.length, favs, hidden });
+  }
+
   function openPresets() {
     if (!viz) return;
     const listEl = $('preset-list');
-    if (!listEl.childElementCount) {
-      const fragment = document.createDocumentFragment();
-      for (const name of viz.names) {
-        const li = document.createElement('li');
-        li.dataset.name = name;
-        li.title = name;
-        const label = document.createElement('span');
-        label.className = 'preset-name-text';
-        label.textContent = name;
-        // × derezzer presettet (skjuler det for brugeren og tæller som en D-stemme).
-        const del = document.createElement('button');
-        del.type = 'button';
-        del.className = 'preset-del';
-        del.textContent = '×';
-        del.title = t('presets.derez');
-        del.setAttribute('aria-label', t('presets.derez'));
-        li.append(label, del);
-        fragment.append(li);
-      }
-      listEl.append(fragment);
-    }
-    $('preset-count').textContent = `(${viz.names.length})`;
+    // Bygges hver gang, så favoritter og derezzede altid passer.
+    const hiddenSet = new Set(state.settings.hiddenPresets || []);
+    const fragment = document.createDocumentFragment();
+    for (const name of viz.allNames) fragment.append(presetRow(name, hiddenSet.has(name)));
+    listEl.replaceChildren(fragment);
+    updatePresetCount();
     $('preset-filter').value = '';
     filterPresets('');
     markCurrentPreset();
@@ -1887,6 +1956,12 @@
         votePreset(li.dataset.name, 'derez');
         return;
       }
+      if (event.target.closest('.preset-restore')) {
+        event.stopPropagation();
+        restorePreset(li.dataset.name);
+        return;
+      }
+      if (li.classList.contains('derezzed')) return; // derezzede vises ikke; ↺ tager dem tilbage
       loadPresetByName(li.dataset.name);
     });
 
@@ -1939,9 +2014,9 @@
       b: () => transport('next'),
       // Mellemrum og de andre genveje skifter uden at vise navnet; det gør kun pilene.
       ' ': () => spacePreset(),
-      n: () => nextPreset(),
+      n: () => spacePreset(), // som mellemrum (også genoptage automatiske skift)
       k: () => reviewVote('keep'),
-      d: () => reviewVote('ban'),
+      d: () => reviewVote('derez'),
       h: () => nextPreset({ hardCut: true }),
       backspace: () => prevPreset(),
       p: () => prevPreset(),

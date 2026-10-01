@@ -12,7 +12,8 @@ function sha512(file) {
   return crypto.createHash('sha512').update(fs.readFileSync(file)).digest('base64');
 }
 
-function writeLatestYml(installer, version, releaseDate = new Date().toISOString()) {
+/** `force`: appen genstarter selv, når opdateringen er hentet (se setupUpdates i app.js). */
+function writeLatestYml(installer, version, releaseDate = new Date().toISOString(), { force = false } = {}) {
   const name = path.basename(installer);
   const hash = sha512(installer);
   const size = fs.statSync(installer).size;
@@ -27,6 +28,7 @@ function writeLatestYml(installer, version, releaseDate = new Date().toISOString
     `path: ${name}`,
     `sha512: ${hash}`,
     `releaseDate: '${releaseDate}'`,
+    ...(force ? ['force: true', "releaseNotes: '[force]'"] : []),
     '',
   ];
   const out = path.join(path.dirname(installer), 'latest.yml');

@@ -5,6 +5,7 @@
  *
  *   npm run release            0.1.0 → 0.1.1
  *   npm run release -- minor   0.1.0 → 0.2.0
+ *   npm run release -- --force tvinger brugernes app til at opdatere med det samme (genstarter selv)
  *
  * 1. Kører testene; fejler én, stopper udgivelsen.
  * 2. Hæver versionen i package.json.
@@ -29,7 +30,10 @@ const root = path.join(__dirname, '..');
 const pkgFile = path.join(root, 'package.json');
 const tokenSource = path.join(os.homedir(), '.the-grid', 'update-token.txt');
 const tokenTarget = path.join(root, 'build', 'update-token', 'update-token.txt');
-const bump = process.argv[2] || 'patch';
+const bump = process.argv.slice(2).find((a) => !a.startsWith('--')) || 'patch';
+// --force: brugernes app genstarter selv, når opdateringen er hentet (i et øjeblik uden musik), i stedet for at
+// vente på, at de lukker den.
+const force = process.argv.includes('--force');
 const shell = process.platform === 'win32';
 
 function run(cmd, args, opts = {}) {
@@ -91,7 +95,7 @@ try {
 // oprette releasen; det gav "422 Published releases must have a valid tag" og en release uden latest.yml
 // (v0.1.1, 01-10-2026). latest.yml skrives her, så den altid passer til installationsfilen.
 const installer = path.join(root, 'dist', `The-Grid-Setup-${version}.exe`);
-const latest = writeLatestYml(installer, version);
+const latest = writeLatestYml(installer, version, undefined, { force });
 run(
   'gh',
   ['release', 'create', `v${version}`, installer, `${installer}.blockmap`, latest, '-R', `${owner}/${repo}`, '--title', version, '--notes', `The Grid ${version}`],

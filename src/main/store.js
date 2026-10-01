@@ -19,6 +19,7 @@ const DEFAULT_SETTINGS = {
   onboardingDone: false,
   shareVotes: null, // null = ikke spurgt endnu; true/false = brugerens svar (stemmer til Peter, src/main/votes.js)
   hiddenPresets: [], // presets brugeren har derezzet med D
+  favoritePresets: [], // brugerens favoritter (K): vises oftere
   lastInput: '',
   visualizer: {
     autoCycle: true,

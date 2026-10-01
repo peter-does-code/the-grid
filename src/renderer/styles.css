@@ -1797,6 +1797,46 @@ code {
   visibility: visible;
 }
 
+/* Derezzede presets i preset-listen: overstreget og dæmpet, med ↺ for at få dem tilbage. */
+.preset-list li.derezzed .preset-name-text {
+  text-decoration: line-through;
+  opacity: 0.45;
+}
+
+.preset-list li.derezzed {
+  cursor: default;
+}
+
+.preset-restore {
+  flex: none;
+  margin-left: 6px;
+  padding: 0 6px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  line-height: 1.2;
+  cursor: pointer;
+  opacity: 0.8;
+}
+
+.preset-restore:hover {
+  opacity: 1;
+  color: #00e5ff;
+}
+
+/* Favoritter (K) i preset-listen. */
+.preset-list li.fav .preset-name-text::before {
+  content: '★ ';
+  color: var(--accent, #ffb000);
+}
+
+/* Klikbar besked (fx "genstart nu"). */
+#toast.clickable {
+  cursor: pointer;
+  text-decoration: underline;
+}
+
 .preset-del:hover {
   opacity: 1;
   color: #ff5a3c;

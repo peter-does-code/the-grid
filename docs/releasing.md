@@ -44,6 +44,10 @@ npm run release -- minor   # 0.1.0 → 0.2.0
 
 Drews app finder den nye version inden for 4 timer eller ved næste start.
 
+- **Normal udgivelse:** beskeden "Update vX downloaded. Click here to restart now" kan klikkes for at installere med det samme; ellers installeres den, når The Grid lukkes.
+- **Tvungen udgivelse:** `npm run release -- --force` skriver `force: true` i `latest.yml`. Brugerens app genstarter så selv, når opdateringen er hentet. Det sker i et øjeblik uden musik, med 10 s varsel, og senest efter 3 timer (`forcedRestart` i `app.js`). Det virker fra v0.1.8; ældre udgaver kender ikke markeringen og venter, til de lukkes.
+- **Kun fra en ren arbejdsmappe:** `release.js` stopper, hvis der er ændringer, der ikke er committet, og committer selv kun versionen.
+
 ## Vigtigt
 
 - **Forny læse-tokenen, før den udløber.** Den nye token kan kun nå ud til Drew gennem en opdatering, som appen henter med den gamle. Udløber den gamle først, holder opdateringerne op, og Drew skal have en installationsfil igen. Appen virker stadig; kun opdateringerne stopper.

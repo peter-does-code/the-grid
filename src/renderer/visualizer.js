@@ -21,6 +21,10 @@
   const RECENT_EXCLUDE = 150;
   const PICK_TOP = 12; // valget trækkes blandt de bedste ...
   const PICK_TEMPERATURE = 0.25; // ... vægtet efter score (lavere = mere grådigt)
+  // Brugerens favoritter (K): et tillæg i valget, og de må komme igen efter 20 skift i stedet for 150.
+  const FAVORITE_BONUS = 0.8;
+  const FAVORITE_EXCLUDE = 20;
+  const FAVORITE_SHARE = 0.3; // ved tilfældig rækkefølge: så stor en andel af skiftene går til en favorit
 
   function unwrap(mod) {
     return mod && mod.default ? mod.default : mod;
@@ -57,6 +61,7 @@
       this.audioContext = audioContext || new AudioContext({ latencyHint: 'interactive' });
       this.presets = collectPresets();
       this.names = Object.keys(this.presets).sort((a, b) => a.localeCompare(b, 'en'));
+      this.allNames = this.names.slice(); // også de skjulte (derezzede), til preset-listen
       this.failed = new Set();
       this.history = [];
       this.historyIndex = -1;
@@ -205,6 +210,12 @@
       return Math.min(1, (i + step) / beats);
     }
 
+    /** Tager et derezzet preset tilbage i udvalget. */
+    unhide(name) {
+      if (!this.presets[name] || this.names.includes(name)) return;
+      this.names = this.allNames.filter((n) => n === name || this.names.includes(n));
+    }
+
     /** Fjerner presets fra udvalget (brugerens D, "derez"). Det viste preset bliver stående, til der skiftes. */
     hide(...names) {
       const gone = new Set(names);
@@ -239,8 +250,29 @@
       return true;
     }
 
+    /** Brugerens favoritter (K, gemt i indstillingerne): vises oftere. */
+    setFavorites(names) {
+      this.favorites = new Set(names || []);
+    }
+
+    isFavorite(name) {
+      return Boolean(this.favorites && this.favorites.has(name));
+    }
+
+    /** Vist for nylig? Favoritter tæller kun de seneste FAVORITE_EXCLUDE skift med. */
+    recentSets() {
+      const all = new Set(this.history.slice(-Math.min(RECENT_EXCLUDE, Math.floor(this.names.length / 2))));
+      const fav = new Set(this.history.slice(-FAVORITE_EXCLUDE));
+      return (name) => (this.isFavorite(name) ? fav.has(name) : all.has(name));
+    }
+
     randomName() {
-      const recent = new Set(this.history.slice(-RECENT_EXCLUDE));
+      const isRecent = this.recentSets();
+      if (this.favorites && this.favorites.size && Math.random() < FAVORITE_SHARE) {
+        const favs = this.names.filter((n) => this.isFavorite(n) && !isRecent(n) && !this.failed.has(n));
+        if (favs.length) return favs[Math.floor(Math.random() * favs.length)];
+      }
+      const recent = { has: isRecent };
       let pool = this.names.filter((n) => !recent.has(n) && !this.failed.has(n));
       if (pool.length === 0) pool = this.names.filter((n) => n !== this.current && !this.failed.has(n));
       return pool[Math.floor(Math.random() * pool.length)];
@@ -291,11 +323,11 @@
      * efter score, så valget følger musikken uden at de samme få presets vinder hver gang.
      */
     pickSmart(score, random = Math.random) {
-      const recent = new Set(this.history.slice(-Math.min(RECENT_EXCLUDE, Math.floor(this.names.length / 2))));
-      let pool = this.names.filter((n) => !recent.has(n) && !this.failed.has(n));
+      const isRecent = this.recentSets();
+      let pool = this.names.filter((n) => !isRecent(n) && !this.failed.has(n));
       if (pool.length === 0) pool = this.names.filter((n) => n !== this.current && !this.failed.has(n));
       const top = pool
-        .map((name) => [name, score(this.profile(name))])
+        .map((name) => [name, score(this.profile(name)) + (this.isFavorite(name) ? FAVORITE_BONUS : 0)])
         .sort((a, b) => b[1] - a[1])
         .slice(0, PICK_TOP);
       if (!top.length) return null;

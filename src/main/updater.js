@@ -54,7 +54,11 @@ function startUpdater({ log = console, send, publish }) {
   };
   autoUpdater.on('update-available', (info) => set({ state: 'downloading', version: info.version }));
   autoUpdater.on('download-progress', (p) => set({ state: 'downloading', version: status.version, percent: Math.round(p.percent) }));
-  autoUpdater.on('update-downloaded', (info) => set({ state: 'ready', version: info.version }));
+  autoUpdater.on('update-downloaded', (info) => {
+    // En tvungen udgivelse (npm run release -- --force) har force: true i latest.yml.
+    const force = Boolean(info.force) || /\[force\]/i.test(String(info.releaseNotes || ''));
+    set({ state: 'ready', version: info.version, force });
+  });
   // Ingen forbindelse eller GitHub nede: prøv igen ved næste tjek, uden at forstyrre.
   autoUpdater.on('error', (err) => log.warn('Update check failed:', (err && err.message) || err));
 

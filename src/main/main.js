@@ -283,6 +283,9 @@ function registerIpc() {
     if ('onboardingDone' in patch) clean.onboardingDone = Boolean(patch.onboardingDone);
     // Stemmer: om de må sendes til Peter, og de presets brugeren har derezzet (skjules for brugeren selv).
     if ('shareVotes' in patch) clean.shareVotes = patch.shareVotes === null ? null : Boolean(patch.shareVotes);
+    if (Array.isArray(patch.favoritePresets)) {
+      clean.favoritePresets = patch.favoritePresets.filter((n) => typeof n === 'string').map((n) => n.slice(0, 300)).slice(-2000);
+    }
     if (Array.isArray(patch.hiddenPresets)) {
       clean.hiddenPresets = patch.hiddenPresets.filter((n) => typeof n === 'string').map((n) => n.slice(0, 300)).slice(-2000);
     }
