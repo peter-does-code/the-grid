@@ -7,7 +7,7 @@ Drews The Grid opdaterer sig selv fra GitHub. Peter udgiver en ny version med é
 - **To private repoer på GitHub-kontoen peter-does-code:**
   - `the-grid`: koden.
   - `the-grid-releases`: kun installationsfilerne (GitHub Releases).
-- **Appen tjekker for opdateringer** 10 s efter start og derefter hvert 20. minut (`src/main/updater.js`, electron-updater). En ny version hentes i baggrunden og installeres, når The Grid lukkes. Drew ser to beskeder:
+- **Appen tjekker for opdateringer** 10 s efter start og derefter hver 4. time (`src/main/updater.js`, electron-updater). En ny version hentes i baggrunden og installeres, når The Grid lukkes. Drew ser to beskeder:
   - "Update vX downloaded. It installs when you close The Grid."
   - efter genstart: "System upgraded to vX. Greetings, program."
 - **Appen bruger en læse-token** til `the-grid-releases`, fordi repoet er privat. Den ligger i installationsfilen (`resources/update-token.txt`) og giver kun adgang til at hente filer fra det ene repo, ikke til koden.
@@ -42,10 +42,9 @@ npm run release -- minor   # 0.1.0 → 0.2.0
 3. Bygger installationsfilen med læse-tokenen (`--publish never`), skriver `latest.yml` (`scripts/lib/update-info.js`) og lægger installationsfil, blockmap og `latest.yml` op som én release i `the-grid-releases` med `gh release create`. Kopien af tokenen i `build/` slettes igen.
 4. Committer, tagger `vX.Y.Z` og pusher koden til `the-grid`.
 
-Drews app finder den nye version inden for 20 minutter eller ved næste start.
+Drews app finder den nye version ved næste start eller inden for 4 timer.
 
-- **Normal udgivelse:** beskeden "Update vX downloaded. Click here to restart now" kan klikkes for at installere med det samme; ellers installeres den, når The Grid lukkes.
-- **Tvungen udgivelse:** `npm run release -- --force` skriver `force: true` i `latest.yml`. Brugerens app genstarter så selv, når opdateringen er hentet. Det sker i et øjeblik uden musik, med 10 s varsel, og senest efter 3 timer (`forcedRestart` i `app.js`). Det virker fra v0.1.8; ældre udgaver kender ikke markeringen og venter, til de lukkes.
+- **Alle opdateringer installeres med det samme** (fra v0.1.10). Appen tjekker ved hver start og hver 4. time, henter en ny udgave og genstarter efter 10 s varsel. Musikken spiller videre i Spotify, og introen springes over efter en opdatering. `--force` til release.js er ikke længere nødvendigt.
 - **Kun fra en ren arbejdsmappe:** `release.js` stopper, hvis der er ændringer, der ikke er committet, og committer selv kun versionen.
 
 ## Vigtigt

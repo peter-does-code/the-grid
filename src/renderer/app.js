@@ -139,20 +139,12 @@
   }
 
   /**
-   * En tvungen opdatering: genstart i et øjeblik uden musik (visualizeren sover), med 10 s varsel. Kommer der
-   * musik i mellemtiden, ventes der igen. Efter 3 timer genstartes der alligevel.
+   * En hentet opdatering installeres med det samme (Peter 01-10-2026: "full update and restart when detected"):
+   * 10 s varsel, så genstart. Musikken spiller videre i Spotify; efter genstarten springes introen over.
    */
-  function forcedRestart() {
-    const since = Date.now();
-    const tryNow = () => {
-      if (!sleeping && Date.now() - since < 3 * 3600 * 1000) return setTimeout(tryNow, 5000);
-      toast(t('update.forced', { version: `v${updateStatus.version}` }), 'info', 11000);
-      setTimeout(() => {
-        if (!sleeping && Date.now() - since < 3 * 3600 * 1000) return tryNow();
-        window.visamp.update.installNow();
-      }, 10000);
-    };
-    tryNow();
+  function restartForUpdate() {
+    toast(t('update.restarting', { version: `v${updateStatus.version}` }), 'info', 11000);
+    setTimeout(() => window.visamp.update.installNow(), 10000);
   }
 
   function setupUpdates() {
@@ -161,8 +153,7 @@
       const wasReady = updateStatus.state === 'ready';
       updateStatus = status || { state: 'idle' };
       if (updateStatus.state === 'ready' && !wasReady) {
-        if (updateStatus.force) forcedRestart();
-        else toast(t('update.ready', { version: `v${updateStatus.version}` }), 'info', 15000, () => window.visamp.update.installNow());
+        restartForUpdate();
       }
       showUpdateInAbout();
     };
@@ -2342,7 +2333,8 @@
     applyTheme(state.settings.theme || 'grid');
 
     // Introen starter med det samme, så resten af opstarten sker bag den.
-    const showIntro = !state.info.selftest && !REVIEW && state.settings.showIntro !== false;
+    // Lige efter en opdatering (genstart midt i en session) springes introen over.
+    const showIntro = !state.info.selftest && !REVIEW && !state.info.updatedFrom && state.settings.showIntro !== false;
     const introDone = showIntro ? playIntro() : Promise.resolve();
     if (!showIntro) $('intro').hidden = true;
 

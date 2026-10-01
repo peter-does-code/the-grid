@@ -331,8 +331,7 @@
     'review.keep': 'Kept: {name}',
     'review.ban': 'Derezzed: {name}',
     'update.done': 'System upgraded to {version}. Greetings, program.',
-    'update.ready': 'Update {version} downloaded. Click here to restart now, or it installs when you close The Grid.',
-    'update.forced': 'Update {version} is required. The Grid restarts in 10 seconds.',
+    'update.restarting': 'Update {version} downloaded. The Grid restarts in 10 seconds to install it.',
     'update.about.ready': 'Update {version} is ready: restart The Grid to install it.',
 
     // --- Fejl fra hovedprocessen (efter kode) ---

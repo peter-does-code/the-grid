@@ -4,8 +4,8 @@
  * Automatiske opdateringer fra GitHub Releases (electron-updater). Kun i den installerede app, ikke under
  * `npm start` eller testene.
  *
- * Appen tjekker 10 s efter start og derefter hvert 20. minut, henter en ny udgave i baggrunden og installerer
- * den, når The Grid lukkes. Rendereren får besked (`update:status`), så den kan vise en kort tekst, og kan
+ * Appen tjekker 10 s efter start og derefter hver 4. time, henter en ny udgave i baggrunden og installerer
+ * den med det samme: 10 s varsel, så genstart (restartForUpdate i app.js). Rendereren får besked (`update:status`), så den kan vise en kort tekst, og kan
  * bede om at installere med det samme (`update:installNow`).
  *
  * Hvor der hentes fra, står i package.json under build.publish (electron-builder lægger det i
@@ -17,7 +17,7 @@ const path = require('node:path');
 const { app, ipcMain } = require('electron');
 
 const FIRST_CHECK_MS = 10 * 1000;
-const CHECK_EVERY_MS = 20 * 60 * 1000; // 4 timer var for længe (Peter 01-10-2026); GitHub tillader 5.000 kald i timen
+const CHECK_EVERY_MS = 4 * 3600 * 1000; // og ved hver start; en fundet opdatering installeres straks (app.js)
 
 function readToken() {
   try {
