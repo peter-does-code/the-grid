@@ -47,8 +47,10 @@ const IS_PRESETTEST = process.argv.includes('--presettest');
 // Review-tilstand (node scripts/start.js --review): kun presets til gennemsyn (src/renderer/presets/review-pack.js),
 // i et eget vindue ved siden af en åben The Grid. K beholder, D derezzer (ban).
 const IS_REVIEW = process.argv.includes('--review');
-if (!IS_SELFTEST && !IS_MUSICTEST && !IS_PRESETTEST && !IS_REVIEW) migrateFromVisamp();
-if (IS_MUSICTEST || IS_PRESETTEST || IS_REVIEW) {
+// Opdateringstjekket (--update-check) kører ved siden af en åben The Grid (release.js kører det, mens Peters app er åben).
+const IS_UPDATECHECK = process.argv.some((arg) => arg === '--update-check' || arg.startsWith('--update-check='));
+if (!IS_SELFTEST && !IS_MUSICTEST && !IS_PRESETTEST && !IS_REVIEW && !IS_UPDATECHECK) migrateFromVisamp();
+if (IS_MUSICTEST || IS_PRESETTEST || IS_REVIEW || IS_UPDATECHECK) {
   // Egen datamappe, så testen kan køre ved siden af en åben The Grid.
   app.setPath('userData', require('node:fs').mkdtempSync(path.join(os.tmpdir(), 'the-grid-musictest-')));
 }
@@ -520,6 +522,11 @@ async function main() {
     // sendt (app.exit med det samme tabte den, når outputtet gik gennem et rør).
     const result = await require('./updater').checkOnce({ publish: require('./update-config') });
     const json = JSON.stringify(result, null, 2);
+    try {
+      require('node:fs').rmSync(app.getPath('userData'), { recursive: true, force: true }); // egen midlertidig datamappe
+    } catch {
+      // Chromium kan holde enkelte filer; mappen ligger i %TEMP%.
+    }
     const file = updateCheckArg.slice('--update-check='.length);
     if (file) {
       require('node:fs').writeFileSync(file, json);
@@ -666,7 +673,7 @@ async function main() {
 
 app.on('window-all-closed', () => app.quit());
 
-if (IS_SELFTEST || IS_DIAGNOSE || IS_MUSICTEST || IS_REVIEW || app.requestSingleInstanceLock()) {
+if (IS_SELFTEST || IS_DIAGNOSE || IS_MUSICTEST || IS_REVIEW || IS_UPDATECHECK || app.requestSingleInstanceLock()) {
   main().catch((err) => {
     console.error(err);
     app.exit(1);
