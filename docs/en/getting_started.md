@@ -5,8 +5,10 @@ Greetings, program. The Grid is a music visualizer in the spirit of Winamp and M
 ## What you need
 
 - Windows 10 or 11 (64-bit).
-- The Spotify desktop app, logged in with your Premium account.
-- Peter must have added your Spotify email to his Spotify developer app. He has already done this. If you ever see "Access denied: your program isn't registered on this Grid", ask him to check it.
+- The Spotify desktop app, logged in. Spotify Premium is needed for The Grid to start and skip songs for you; without it the visuals still work, and The Grid opens songs in Spotify instead.
+- **Before you install: send Peter the email address of your Spotify account.** You find it on spotify.com under **Account → Edit profile**. The Grid logs in through Peter's Spotify developer app, and Spotify only lets people on that app's list log in (up to 5 people). Peter adds you in a minute. If you log in before he has, you'll see "Access denied: your program isn't registered on this Grid"; just try again once he says it's done.
+
+  Alternatively, if you have Spotify Premium, you can make your own Spotify developer app instead of using Peter's: create one at developer.spotify.com (Dashboard → Create app, redirect URI exactly `http://127.0.0.1:43117/callback`, tick Web API), then paste its **Client ID** in The Grid under **Settings → Use your own Spotify developer app (advanced)**. Then you don't need to be on Peter's list.
 
 ## Install
 

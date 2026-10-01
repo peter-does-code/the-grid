@@ -133,6 +133,7 @@ for (const seed of [1, 2, 3, 4]) {
     // En rigtig kamp: finalen afgøres af et drab (taberen kører ind i vinderens væg), og de fleste
     // dør, fordi en modstander skar dem af, ikke fordi de kørte ind i en tilfældig væg.
     const { winner, loser } = intro.finalPair;
+    assert.notEqual(winner.team, loser.team, 'de to sidste er fra hvert sit hold');
     assert.equal(loser.cause, 'enemy', `finalen endte med ${loser.cause}`);
     assert.equal(loser.killedBy, winner.id, 'vinderen skar taberen af');
     const dead = intro.cycles.filter((c) => !c.alive);
@@ -151,9 +152,20 @@ for (const seed of [5, 6, 7, 8, 9]) {
     assert.ok(winnerSeen, 'der er en vinder');
     assert.ok(['blue', 'orange'].includes(winnerSeen.name));
     assert.equal(intro.cycles.filter((c) => c.alive).length, 1);
+    assert.notEqual(intro.finalPair.winner.team, intro.finalPair.loser.team, 'de to sidste er fra hvert sit hold');
     assert.ok(intro.winnerAt > 12, `vinderen fundet efter ${intro.winnerAt.toFixed(1)} s`);
   });
 }
+
+test('epic battle: 40 cykler i en større arena kæmper i ca. et minut, til ét hold vinder', () => {
+  const { intro, done, t } = run({ lines: [], cycles: 40, gridCells: 90, battleSeconds: 45, random: seeded(3) }, 120, 'war');
+  assert.ok(done && !done.skipped && done.winner, 'der er en vinder');
+  assert.equal(intro.cycles.length, 40);
+  assert.ok(intro.rows >= 80, `arenaen er ${intro.cols}x${intro.rows}`);
+  assert.ok(intro.winnerAt > 40 && t < 85, `vinder efter ${intro.winnerAt.toFixed(1)} s, slut ${t.toFixed(1)} s`);
+  const dead = intro.cycles.filter((c) => !c.alive);
+  assert.ok(dead.filter((c) => c.cause === 'enemy').length / dead.length >= 0.5, 'de fleste bliver skåret af');
+});
 
 test('FLYNN LIVES med den lange kamp', () => {
   const { intro, done } = run({ lines: ['FLYNN', 'LIVES'], cycles: 10, duelAt: 7, random: seeded(10) }, 40, 'war');

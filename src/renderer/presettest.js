@@ -189,6 +189,12 @@
       for (let lag = 0; lag <= 3; lag++) best = Math.max(best, corr(changes.slice(lag), kicks.slice(1, kicks.length - lag)));
       // ... og lysstyrken selv (nogle presets blinker på slaget i stedet for at bevæge sig).
       const lumas = shots.map((s) => s.luma);
+      // Blink: hvor tit hele billedets lysstyrke springer (stroboskop), og hvor tit billedet er næsten hvidt.
+      let jumps = 0;
+      for (let i = 1; i < lumas.length; i++) if (Math.abs(lumas[i] - lumas[i - 1]) > 0.06) jumps += 1;
+      result.flicker = jumps / Math.max(1, lumas.length - 1);
+      result.whiteFrames = shots.filter((s) => s.luma > 0.7).length / shots.length;
+      result.lumaSpread = Math.sqrt(lumas.reduce((acc, l) => acc + (l - result.luma) ** 2, 0) / lumas.length);
       for (let lag = 0; lag <= 3; lag++) best = Math.max(best, corr(lumas.slice(lag), kicks.slice(0, kicks.length - lag)));
       result.beatSync = Math.max(0, best);
     } catch (err) {
@@ -196,7 +202,7 @@
     }
     result.linkFailed = linkFailures > 0;
     if (linkLog) result.linkLog = linkLog;
-    for (const k of ['luma', 'colorful', 'detail', 'motion', 'silentMotion', 'beatSync']) {
+    for (const k of ['luma', 'colorful', 'detail', 'motion', 'silentMotion', 'beatSync', 'flicker', 'whiteFrames', 'lumaSpread']) {
       if (typeof result[k] === 'number') result[k] = Math.round(result[k] * 10000) / 10000;
     }
     return result;

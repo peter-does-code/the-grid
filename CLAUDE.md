@@ -11,7 +11,7 @@ Dokumentation i `docs/` (indeks: `docs/README.md`). Drews vejledning: `docs/en/g
 | Kommando | Hvad |
 |---|---|
 | `npm start` eller dobbeltklik på `The Grid.cmd` | Start appen fra kildekoden |
-| `npm test` | 110 unit-tests (Node test runner, ingen Electron) |
+| `npm test` | 113 unit-tests (Node test runner, ingen Electron) |
 | `npm run selftest` | Hurtig selvtest (ca. 20 s): starter appen, afspiller en 3 sekunders testlyd, tjekker lydfangst og rendering, tager skærmbilleder af dialogerne, introens start, fuld skærm og Clu-temaet, og tjekker at Init kan høres (afspiller den i 4 s). **Laver lyd på pc'en.** |
 | `npm run selftest:full` | Fuld selvtest (ca. 90 s): også introens faser, den anden intro, Game Grid-vinderen og alle påskeæg, i realtid. Før en ny installationsfil, og efter ændringer i intro eller påskeæg. |
 | `node scripts/start.js --selftest --selftest-out=<mappe>` | Selvtest med valgfri output-mappe |
@@ -84,7 +84,6 @@ Peter vil have så mange Tron-referencer og påskeæg som muligt; kom gerne med 
 | Input | Virkning |
 |---|---|
 | `flynn`, `flynn lives` | Kort kamp; taberen skriver "FLYNN", vinderen "LIVES" |
-| `tron`, `the grid`, `light cycle` | Introen igen |
 | `clu` | Clus hær fejer hen over skærmen ("PERFECTION."), og temaet skifter til orange; igen: tilbage til cyan |
 | `mcp`, `end of line` | Rødt flimrende "END OF LINE." |
 | `bit`, `bit <spørgsmål>` | Bit svarer tilfældigt YES (gul) eller NO (rød) |
@@ -97,6 +96,8 @@ Peter vil have så mange Tron-referencer og påskeæg som muligt; kom gerne med 
 | `rinzler` | Orange disk drejer, "RINZLER" ryster; næste automatiske skift bliver et hårdt klip |
 | `who am i` (med mellemrum) | Bits røde NEJ: "SYNTAX ERROR. Spaces? Programs don't do spaces, User." – et vink om, at det skal skrives i ét ord |
 | `drew`, `drewbraham`, `drewtopia` | Hyldest til Drew: billedet `src/renderer/media/drew.jpg` hopper til musikken (takten fra musikmotoren, ellers 120 BPM), med Tron-gulv, identitetsringe, splinter, blink og glitch-tekst; "Init" af Nine Inch Nails (`src/renderer/media/init.mp3`) spiller fra start til slut (2:08), og showet slutter med sangen; de sidste 6 s toner Drew, teksten og the Grid ud. Faser efter sangens tid (`fadeEnd`/`fullAt` i `drew.js`, målt med `npm run musictest -- --file=`): 0-10,4 s toner Drew frem af mørket; fra første hørbare bas-slag ved 10,45 s hamrer han på skærmen (lyttet efter af Peter: 8,5 og 9,5 s er bassen, der svulmer op, ikke slag; 12,4 s var for sent); fra 23 s fuld styrke med rystelse og revner i glasset. Slagene kommer fra beat-kortet `src/renderer/media/init-beats.js` ud fra sangens egen tid . Kortet følger de faktiske bas-slag fra 10,45 til 14,2 s (bassen spiller på bagslaget mellem 11,4 og 14 s, så et fast gitter slog ved siden af) og derefter et fast gitter på 92,95 BPM; musikmotoren låser nemlig først takten i Init ved 18 s. En spillende Spotify holder pause imens. Tast eller klik afslutter før tid. Linjerne under navnet er `drew.line1`, `drew.line2`, ... i `i18n.js`; nye linjer skal bare tilføjes dér |
+| `tron` (kun i Flynns terminal) | Tron-laget over visualiseringen til og fra (`src/renderer/tron-overlay.js`): et perspektivgulv, der ruller med tempoet og lyser op på slagene, lyscykler på drops og ind imellem på en taktstart, et derez-glimt på hårde klip. Huskes (`tronOverlay` i indstillingerne). At afspille introen igen med "tron" er fjernet (Peter 01-10-2026) |
+| `epic battle` (kun i Flynns terminal) | Game Grid i stor udgave: 40 cykler på et finere gitter (`gridCells: 90`), ca. 1 minut |
 | `whoami` | Åbner Flynns terminal (ENCOM OS-12) med snydearket, se herunder |
 | `battle`, `game grid`, eller ↑↑↓↓←→←→ hvor som helst | Game Grid: kun kamp med 16 cykler, der elimineres én efter én, til ét hold vinder: "BLUE WINS" / "ORANGE WINS" |
 | Dobbeltklik på "THE GRID" i titellinjen | "Greetings, program!" |

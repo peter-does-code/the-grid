@@ -154,6 +154,7 @@
   function applyTheme(theme) {
     document.body.dataset.theme = theme;
     if (mini) mini.setPalette(theme);
+    if (tronOverlay) tronOverlay.setTheme(theme);
     $('set-theme').value = theme;
   }
 
@@ -181,8 +182,19 @@
     const last = state.settings.visualizer.lastPreset;
     if (!(last && viz.load(last, 0))) viz.next({ random: true, blendSeconds: 0 });
     viz.start();
+    // Tron-laget ("tron" i Flynns terminal) ligger over visualiseringen og lytter til musikmotoren.
+    tronOverlay = new window.Visamp.TronOverlay($('tron-overlay'));
+    tronOverlay.setTheme(currentTheme());
+    tronOverlay.setEnabled(Boolean(state.settings.tronOverlay));
     // Ingen musik endnu: start i mørke, indtil musikmotoren hører lyd.
     setSleeping(true);
+  }
+
+  let tronOverlay = null;
+  function setTronOverlay(on) {
+    state.settings.tronOverlay = on;
+    saveSettingsSoon({ tronOverlay: on });
+    if (tronOverlay) tronOverlay.setEnabled(on);
   }
 
   function onPresetChange(name) {
@@ -246,6 +258,7 @@
     if (!viz) return;
     const hard = action.hard || rinzlerArmed;
     rinzlerArmed = false;
+    if (hard && tronOverlay) tronOverlay.event('cut');
     viz.next({ random: state.settings.visualizer.random, blendSeconds: hard ? 0 : action.blendSeconds, pick: smartPick() });
   }
 
@@ -287,6 +300,7 @@
     sleeping = asleep;
     if (viz) viz.setAsleep(asleep);
     if (mini) mini.setMuted(asleep);
+    if (tronOverlay) tronOverlay.setAsleep(asleep);
     $('viz-idle').classList.toggle('show', asleep);
   }
 
@@ -313,6 +327,10 @@
     }
     for (const e of events) {
       if (e.type === 'beat' && drewShow) drewShow.beat(e);
+      if (tronOverlay) {
+        if (e.type === 'beat') tronOverlay.beat(e);
+        else if (e.type === 'drop' || e.type === 'section') tronOverlay.event(e.type);
+      }
       if (e.type === 'beat') {
         beatDot.classList.add('on');
         beatDot.classList.toggle('down', Boolean(e.downbeat));
@@ -783,7 +801,11 @@
     const c = state.collection;
     let target;
     if (c && c.uri && c.type !== 'track' && !c.itemsRestricted) {
-      target = { contextUri: c.uri, position: track.position, trackUri: track.uri };
+      // Startnummeret angives med URI: Spotifys afspiller springer numre over, der ikke længere findes, når den
+      // tæller positioner, så efter et forsvundet nummer ramte positionen nummeret nedenunder (01-10-2026).
+      // Står nummeret flere gange i playlisten, er URI'en tvetydig; så bruges positionen.
+      const copies = (c.tracks || []).filter((x) => x.uri === track.uri).length;
+      target = copies > 1 ? { contextUri: c.uri, position: track.position, trackUri: track.uri } : { contextUri: c.uri, trackUri: track.uri };
     } else if (c && c.uri && c.itemsRestricted) {
       target = { contextUri: c.uri, trackUri: track.uri };
     } else {
@@ -1161,8 +1183,17 @@
           battleSeconds: 16,
           winnerText: (name) => (name ? { title: t(`battle.win.${name}`), sub: t(`battle.win.${name}.sub`) } : { title: t('battle.draw'), sub: '' }),
         });
-      case 'tron':
-        return playIntro();
+      case 'epic':
+        // "epic battle" i Flynns terminal: Game Grid med 40 cykler i en større arena (finere gitter), ca. 1 minut.
+        toast(t('egg.epic'));
+        return playIntro({
+          style: 'war',
+          lines: [],
+          cycles: 40,
+          gridCells: 90,
+          battleSeconds: 45,
+          winnerText: (name) => (name ? { title: t(`battle.win.${name}`), sub: t(`battle.win.${name}.sub`) } : { title: t('battle.draw'), sub: '' }),
+        });
       case 'clu': {
         // Clus hær fejer hen over the Grid; temaet skifter, mens fejningen dækker skærmen.
         const toClu = currentTheme() !== 'clu';
@@ -1209,7 +1240,8 @@
         return runDrew();
       case 'spaces':
         // "who am i" med mellemrum: Bits røde NEJ og en syntaksfejl.
-        return showEgg('spaces', { text: t('egg.spaces'), sub: t('egg.spaces.sub'), art: 'star', ms: 4200 });
+        // 8 s: undertekstens ca. 20 ord skal kunne nås (4,2 s var for kort, Peter 01-10-2026). Tast eller klik lukker.
+        return showEgg('spaces', { text: t('egg.spaces'), sub: t('egg.spaces.sub'), art: 'star', ms: 8000 });
       default:
         return false;
     }
@@ -1255,13 +1287,18 @@
   function cheatSheetLines() {
     // Ord til link-feltet i én tabel; Konami-koden og musetricket for sig, da pilene ikke er lige brede.
     const rows = window.Visamp.EGG_CHEAT_SHEET;
-    const typed = rows.filter((row) => row[2]);
+    const typed = rows.filter((row) => row[2] && row[3] !== 'terminal');
+    const terminalOnly = rows.filter((row) => row[3] === 'terminal');
     const other = rows.filter((row) => !row[2]);
-    const width = Math.max(...typed.map(([input]) => input.length)) + 3;
+    const width = Math.max(...typed.map(([input]) => input.length), ...terminalOnly.map(([input]) => input.length)) + 3;
     return [
       t('sheet.title'),
       '',
       ...typed.map(([input, key]) => `  ${input.padEnd(width)}${t(key)}`),
+      '',
+      t('sheet.terminal'),
+      '',
+      ...terminalOnly.map(([input, key]) => `  ${input.padEnd(width)}${t(key)}`),
       '',
       t('sheet.anywhere'),
       '',
@@ -1290,6 +1327,24 @@
         break;
       case 'uname':
         termPrint([t('term.uname')]);
+        break;
+      case 'tron': {
+        // Kun her: Tron-laget over visualiseringen, til og fra. Huskes til næste start.
+        const on = !state.settings.tronOverlay;
+        setTronOverlay(on);
+        termPrint([t(on ? 'term.tron.on' : 'term.tron.off')]);
+        break;
+      }
+      case 'epic':
+        if ((args[0] || '').toLowerCase() !== 'battle') {
+          termPrint([t('term.notFound', { cmd: name })]);
+          break;
+        }
+        termPrint([t('term.running', { cmd: 'epic battle' })]).then(async () => {
+          $('terminal-dialog').close();
+          await runEgg('epic');
+          returnToTerminal('epic battle');
+        });
         break;
       case 'clear':
       case 'cls':
@@ -1959,6 +2014,23 @@
         await new Promise((resolve) => setTimeout(resolve, 450));
         runEgg('battle');
         await waitForIntro(() => intro.winnerAt && intro.winnerAt + 1.2);
+      } else if (view === 'tron-overlay') {
+        // Tron-laget ("tron" i terminalen) over billedet, lige efter et drop. Indstillingen gemmes ikke.
+        if (intro && intro.running) intro.finish(true);
+        await new Promise((resolve) => setTimeout(resolve, 450));
+        setSleeping(false);
+        tronOverlay.setEnabled(true);
+        tronOverlay.setAsleep(false);
+        tronOverlay.beat({ downbeat: true, bpm: 120 });
+        tronOverlay.event('drop');
+        await new Promise((resolve) => setTimeout(resolve, 1100));
+      } else if (view === 'battle-epic') {
+        // "epic battle" i terminalen: 40 cykler midt i kampen.
+        tronOverlay.setEnabled(Boolean(state.settings.tronOverlay));
+        if (intro && intro.running) intro.finish(true);
+        await new Promise((resolve) => setTimeout(resolve, 450));
+        runEgg('epic');
+        await waitForIntro(12);
       } else if (view === 'fullscreen') {
         // Fuld skærm kræver et klik fra brugeren; selvtesten sætter samme CSS-tilstand direkte.
         if (intro && intro.running) intro.finish(true);
@@ -1976,7 +2048,13 @@
       } else if (view === 'drew-audio') {
         // Afspiller Init rigtigt i fire sekunder og logger lydens tilstand (laver lyd).
         if (stopEgg) stopEgg(true);
-        if (drewShow) drewShow.stop();
+        // Som ved "drew": vent, til det forrige show har ryddet op. Ellers nulstiller dets oprydning
+        // referencen til det nye show, og målingen bliver null.
+        if (drewShow) {
+          drewShow.stop();
+          drewShow = null;
+          await new Promise((resolve) => setTimeout(resolve, 400));
+        }
         runDrew({ forceMusic: true });
         for (const ms of [300, 1500, 4000]) {
           await new Promise((resolve) => setTimeout(resolve, ms === 300 ? 300 : ms === 1500 ? 1200 : 2500));

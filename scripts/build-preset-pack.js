@@ -50,6 +50,28 @@ for (const pack of ['butterchurnPresets', 'butterchurnPresetsExtra', 'butterchur
   for (const name of Object.keys((mod.default || mod).getPresets())) existing.add(name.toLowerCase());
 }
 
+// Presets, Peter har bedt om at få fjernet (scripts/preset-bans.txt).
+const banned = new Set(
+  fs
+    .readFileSync(path.join(__dirname, 'preset-bans.txt'), 'utf8')
+    .split('\n')
+    .map((l) => l.trim().toLowerCase())
+    .filter((l) => l && !l.startsWith('#'))
+);
+
+// Blink: --flicker=<fil>,<fil> med målinger fra --presettest (flicker = andel af billeder, hvor hele billedets
+// lysstyrke springer). Over 0,5 er det konstant stroboskop (Peters klage 01-10-2026: "flashing white lights constantly").
+const flickerArg = args.find((a) => a.startsWith('--flicker='));
+const flicker = new Map();
+for (const file of flickerArg ? flickerArg.slice('--flicker='.length).split(',') : []) {
+  for (const line of fs.readFileSync(file, 'utf8').split('\n')) {
+    if (!line.trim()) continue;
+    const r = JSON.parse(line);
+    if (typeof r.flicker === 'number') flicker.set(r.file, r.flicker);
+  }
+}
+const MAX_FLICKER = 0.5;
+
 const rejected = {};
 const reject = (why) => {
   rejected[why] = (rejected[why] || 0) + 1;
@@ -61,11 +83,14 @@ const ok = results.filter((r) => {
   if (r.error) return reject('fejl');
   if (r.linkFailed) return reject('shader kan ikke oversættes');
   if (existing.has(m.name.toLowerCase())) return reject('findes allerede');
+  if (banned.has(m.name.toLowerCase())) return reject('fjernet af Peter');
   if (r.luma < LIMITS.minLuma) return reject('sort');
   if (r.luma > LIMITS.maxLuma) return reject('hvidt');
   if (r.detail < LIMITS.minDetail) return reject('fladt');
   if (r.motion < LIMITS.minMotion) return reject('står stille');
   if (r.msPerFrame > LIMITS.maxMsPerFrame) return reject('for tungt');
+  if ((flicker.get(r.file) || 0) >= MAX_FLICKER) return reject('blinker');
+  if (flickerArg && !flicker.has(r.file)) return reject('blink ikke målt');
   return true;
 });
 
@@ -145,7 +170,9 @@ const js =
   ' * MilkDrop-presets er frigivet frit af deres forfattere (se docs/presets.md). */\n' +
   'window.gridPresetsCreamOfTheCrop = { getPresets: function () { return ' +
   JSON.stringify(presets) +
-  '; } };\n';
+  '; },\n  // Fra scripts/preset-bans.txt: visualizer.js fjerner også de indbyggede presets med disse navne.\n  bans: ' +
+  JSON.stringify([...banned]) +
+  ' };\n';
 fs.writeFileSync(path.join(outDir, 'cream-of-the-crop.js'), js);
 const list = final
   .map((r) => {

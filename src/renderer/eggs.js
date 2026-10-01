@@ -13,8 +13,6 @@
     flynn: 'flynn',
     'flynn lives': 'flynn',
     'kevin flynn': 'flynn',
-    tron: 'tron',
-    'tron legacy': 'tron',
     clu: 'clu',
     mcp: 'mcp',
     'master control program': 'mcp',
@@ -39,10 +37,6 @@
     'os 12': 'encom',
     zen: 'zen',
     rinzler: 'rinzler',
-    'light cycle': 'tron',
-    lightcycle: 'tron',
-    grid: 'tron',
-    'the grid': 'tron',
     // Flynns terminal, som Sam finder i kælderen under Flynn's Arcade i Tron: Legacy. Det første, han skriver, er whoami.
     whoami: 'terminal',
     drew: 'drew',
@@ -62,7 +56,6 @@
    */
   const CHEAT_SHEET = [
     ['flynn', 'sheet.flynn', 'flynn'],
-    ['tron / the grid', 'sheet.tron', 'tron'],
     ['clu', 'sheet.clu', 'clu'],
     ['mcp / end of line', 'sheet.mcp', 'mcp'],
     ['bit <question>', 'sheet.bit', 'bit'],
@@ -77,6 +70,9 @@
     ['whoami', 'sheet.whoami', 'terminal'],
     ['who am i', 'sheet.spaces', 'spaces'],
     ['battle / game grid', 'sheet.battle', 'battle'],
+    // Kun i Flynns terminal (fjerde felt 'terminal'): de virker ikke fra link-feltet.
+    ['tron', 'sheet.overlay', 'overlay', 'terminal'],
+    ['epic battle', 'sheet.epic', 'epic', 'terminal'],
     ['↑ ↑ ↓ ↓ ← → ← →', 'sheet.konami', null],
     ['double-click THE GRID', 'sheet.wordmark', null],
   ];

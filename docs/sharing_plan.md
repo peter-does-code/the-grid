@@ -15,6 +15,7 @@ Oprettet 30-09-2026. Levende dokument; opdatér afkrydsningerne undervejs.
 - **Tron-præg:** introen med lyscykler, der kæmper og skriver "WELCOME TO THE GRID", Tron-tema som standard, og så mange påskeæg som muligt (Peters ønske; se CLAUDE.md).
 - **Drew bruger Peters Spotify-udvikler-app.** Spotify tillader op til 5 brugere pr. udvikler-app, og kun ejeren (Peter) skal have Premium. Delingen er udtrykkeligt tilladt, se https://developer.spotify.com/documentation/web-api/concepts/quota-modes.
   - [x] Peter har tilføjet Drews navn og Spotify-e-mail under Settings, User Management (30-09-2026)
+  - [ ] To venner mere har fået installationsfilen (01-10-2026). Deres Spotify-e-mails skal også under User Management. Med Peter og Drew er det 4 af 5 pladser. Vejledningen (`docs/en/getting_started.md`) beder nu brugeren sende sin e-mail først og nævner egen udvikler-app som alternativ.
   - [ ] Peter omdøber appen på Spotify-dashboardet fra "Winamp" til "The Grid" under Settings, Basic Information. Navnet vises på Drews login-side hos Spotify.
 - **Peters Client ID er bygget ind** som standard. Det er ikke hemmeligt, fordi login bruger PKCE, og der findes ingen client secret. Under Indstillinger kan en egen udvikler-app bruges i stedet.
 - **Drew har Spotify Premium**, så afspilningsstyring virker for ham.

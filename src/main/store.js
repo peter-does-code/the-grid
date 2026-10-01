@@ -17,6 +17,7 @@ const DEFAULT_SETTINGS = {
   introMusic: true, // "Init" af Nine Inch Nails under introen
   introStyle: 'war', // 'war' (den lange kamp) eller 'duel' (kamp og duel)
   onboardingDone: false,
+  tronOverlay: false, // Tron-laget over visualiseringen ("tron" i Flynns terminal)
   lastInput: '',
   visualizer: {
     autoCycle: true,

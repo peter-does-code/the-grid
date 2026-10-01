@@ -244,6 +244,7 @@ function registerIpc() {
     if ('introMusic' in patch) clean.introMusic = Boolean(patch.introMusic);
     if (['war', 'duel'].includes(patch.introStyle)) clean.introStyle = patch.introStyle;
     if ('onboardingDone' in patch) clean.onboardingDone = Boolean(patch.onboardingDone);
+    if ('tronOverlay' in patch) clean.tronOverlay = Boolean(patch.tronOverlay);
     return publicSettings(store.updateSettings(clean));
   });
 

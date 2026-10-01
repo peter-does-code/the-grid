@@ -180,12 +180,21 @@
     }
 
     /** Må cyklen slippe for at dø lige nu? */
+    /**
+     * Den sidste fra et hold må ikke dø før finalen, heller ikke som bytte eller dømt: de to sidste er altid
+     * én fra hvert hold (både i introen og i Game Grid).
+     */
+    lastOfTeam(cycle) {
+      if (this.finalPair) return false;
+      return !this.cycles.some((c) => c !== cycle && c.alive && c.team === cycle.team);
+    }
+
     shouldSave(cycle, t) {
+      if (this.lastOfTeam(cycle)) return true;
       if (cycle.prey) return false; // bliver skåret af lige nu
       if (t < (cycle.protectedUntil || 0)) return true;
       if (cycle.finalLoser) return false;
       const alive = this.aliveCycles();
-      if (!this.battleOnly && alive.filter((c) => c.team === cycle.team).length <= 1) return true;
       if (cycle.doomed) return false;
       return alive.length - 1 < this.target(t); // for mange er døde for tidligt
     }
@@ -283,7 +292,7 @@
       const busy = (c) => c.mode !== 'ai' || c.prey || c.hunting || c.doomed || t < c.delay + 1;
       const alive = this.aliveCycles();
       const teamSize = [0, 1].map((team) => alive.filter((c) => c.team === team).length);
-      let preys = forcedPrey ? [forcedPrey] : alive.filter((c) => !busy(c) && (this.battleOnly || teamSize[c.team] > 1));
+      let preys = forcedPrey ? [forcedPrey] : alive.filter((c) => !busy(c) && teamSize[c.team] > 1);
       // Det største hold mister helst én, så de to sidste bliver én fra hvert hold.
       if (!forcedPrey && !this.battleOnly && teamSize[0] !== teamSize[1]) {
         const bigger = preys.filter((c) => teamSize[c.team] > teamSize[1 - c.team]);
@@ -431,7 +440,8 @@
         // Byttet holder kursen, til det har ramt væggen eller er kommet forbi krydset (jægeren var for sen).
         const [dx, dy] = DIRS[preyDir];
         const passed = (prey.x - cross[0]) * dx + (prey.y - cross[1]) * dy > 0;
-        const over = !prey.alive || passed || t > hunt.deadline;
+        // Er byttet blevet holdets sidste, slipper det (de to sidste skal være én fra hvert hold).
+        const over = !prey.alive || passed || t > hunt.deadline || (!hunt.final && this.lastOfTeam(prey));
         if (!over) continue;
         hunt.done = true;
         prey.prey = null;
@@ -508,7 +518,7 @@
     doomOne(alive, t) {
       const teamSize = [0, 1].map((team) => alive.filter((c) => c.team === team && !c.doomed).length);
       const candidates = alive.filter(
-        (c) => c.mode === 'ai' && !c.doomed && !c.prey && !c.hunting && t >= c.delay + 1 && (this.battleOnly || teamSize[c.team] > 1)
+        (c) => c.mode === 'ai' && !c.doomed && !c.prey && !c.hunting && t >= c.delay + 1 && teamSize[c.team] > 1
       );
       const bigger = candidates.filter((c) => teamSize[c.team] >= Math.max(...teamSize));
       const pool = bigger.length ? bigger : candidates;
@@ -692,8 +702,14 @@
         // eller arenaens kant) undviges, hvis der er en vej ud. Byttet i et drab og de dømte undviger ikke.
         const cause = this.causeOf(cycle, cycle.x + dx, cycle.y + dy);
         // Byttet dør i jægerens væg; andre dør kun af en modstanders væg, når instruktøren vil have et drab.
-        const killed = cause === 'enemy' && (cycle.prey || !this.shouldSave(cycle, t));
-        if (killed || cycle.doomed) {
+        const last = this.lastOfTeam(cycle);
+        if (last && (cycle.prey || cycle.doomed)) {
+          // Holdets sidste: jagten og dommen gælder ikke længere.
+          if (cycle.prey) this.release(cycle);
+          cycle.doomed = false;
+        }
+        const killed = !last && cause === 'enemy' && (cycle.prey || !this.shouldSave(cycle, t));
+        if (killed || (cycle.doomed && !last)) {
           this.crash(cycle, cycle.x + dx, cycle.y + dy, t);
           return;
         }
@@ -741,6 +757,12 @@
       const nx = cycle.x + dx;
       const ny = cycle.y + dy;
       if (nx < 0 || ny < 0 || nx >= this.cols || ny >= this.rows) {
+        if (this.lastOfTeam(cycle)) {
+          // Holdets sidste må ikke dø før finalen: vend om i stedet.
+          this.turn(cycle);
+          cycle.dir = (cycle.dir + 2) % 4;
+          return;
+        }
         cycle.cause = "border";
         this.derez(cycle, t); // arenaens kant kan ingen køre igennem
         return;

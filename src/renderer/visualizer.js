@@ -32,6 +32,10 @@
       }
       Object.assign(all, pack.getPresets());
     }
+    // Presets, Peter har fjernet (scripts/preset-bans.txt, lagt i preset-pakken af build-preset-pack.js).
+    const ours = unwrap(window.gridPresetsCreamOfTheCrop);
+    const bans = new Set(((ours && ours.bans) || []).map((n) => String(n).toLowerCase()));
+    for (const name of Object.keys(all)) if (bans.has(name.toLowerCase())) delete all[name];
     return all;
   }
 

@@ -84,7 +84,7 @@ async function savePng(win, file) {
  * ca. 90 s) venter også introens faser, Game Grid-vinderen og alle påskeæg igennem i realtid.
  */
 const QUICK_VIEWS = ['settings', 'presets', 'help', 'terminal', 'guide', 'welcome', 'intro', 'fullscreen', 'drew-audio', 'clu'];
-const FULL_VIEWS = ['settings', 'presets', 'help', 'terminal', 'guide', 'welcome', 'intro', 'intro-battle', 'intro-duel', 'intro-text', 'intro-classic', 'battle-win', 'fullscreen', 'egg-users', 'egg-greetings', 'egg-encom', 'egg-zen', 'egg-rinzler', 'egg-spaces', 'egg-jazz', 'egg-clu', 'drew', 'drew-pound', 'drew-audio', 'terminal-return', 'clu'];
+const FULL_VIEWS = ['settings', 'presets', 'help', 'terminal', 'guide', 'welcome', 'intro', 'intro-battle', 'intro-duel', 'intro-text', 'intro-classic', 'battle-win', 'tron-overlay', 'battle-epic', 'fullscreen', 'egg-users', 'egg-greetings', 'egg-encom', 'egg-zen', 'egg-rinzler', 'egg-spaces', 'egg-jazz', 'egg-clu', 'drew', 'drew-pound', 'drew-audio', 'terminal-return', 'clu'];
 
 async function runSelftest({ win, ipcMain, outDir, full = false }) {
   const startedAt = Date.now();
@@ -124,7 +124,7 @@ async function runSelftest({ win, ipcMain, outDir, full = false }) {
   // Rendereren bekræfter først, når visningen er tegnet, så billedet aldrig viser det forrige trin.
   // "intro" er midt i lyscykel-kampen, "intro-text" når "WELCOME TO THE GRID" er skrevet færdig.
   for (const view of full ? FULL_VIEWS : QUICK_VIEWS) {
-    const timeoutMs = /^(intro|egg-|terminal-return|battle|drew)/.test(view) ? 30000 : 3000;
+    const timeoutMs = /^(intro|egg-|terminal-return|battle|drew|tron)/.test(view) ? 30000 : 3000;
     const shown = waitForShown(ipcMain, view, timeoutMs);
     win.webContents.send('selftest:show', view);
     if (!(await shown)) consoleLines.push(`[main] The renderer did not confirm the view "${view}" within ${timeoutMs / 1000} seconds.`);

@@ -101,6 +101,8 @@
       this.battleOnly = this.lines.length === 0;
       this.battleEnd = opts.battleSeconds || (this.battleOnly ? 14 : 4.8);
       this.cycleCount = opts.cycles || 16;
+      // Arenaens opløsning: så mange celler på den korte led. Flere cykler kræver flere celler ("epic battle").
+      this.gridCells = opts.gridCells || 50;
       this.onDone = opts.onDone || (() => {});
       this.random = opts.random || Math.random;
       this.running = false;
@@ -130,7 +132,7 @@
       this.H = Math.round(window.innerHeight * dpr);
       this.canvas.width = this.W;
       this.canvas.height = this.H;
-      this.cell = Math.max(8 * dpr, Math.round(Math.min(this.W, this.H) / 50));
+      this.cell = Math.max(6 * dpr, Math.round(Math.min(this.W, this.H) / this.gridCells));
       this.cols = Math.floor(this.W / this.cell);
       this.rows = Math.floor(this.H / this.cell);
       this.ox = (this.W - this.cols * this.cell) / 2;

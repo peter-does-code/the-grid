@@ -1,0 +1,5 @@
+# Presets, Peter ikke vil have med. Ét navn pr. linje, præcis som det vises i appen (store/små bogstaver er ligegyldige).
+# Gælder Cream of the Crop-pakken (scripts/build-preset-pack.js) og de indbyggede presets (src/renderer/visualizer.js).
+Shifter - Phat - Gastly - Flexi - Krash - 120294848617(71)
+suksma - jim class --- Isosceles edit
+Hexcollie, Flexi n Suksma - Yep, LSD in my morning coffee

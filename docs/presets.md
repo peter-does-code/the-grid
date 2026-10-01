@@ -32,6 +32,11 @@ The Grid har to slags MilkDrop-presets:
    - Score: 40 % beatSync, 20 % bevægelse, 15 % farver, 15 % detaljer og 10 % behagelig lysstyrke, plus lidt, hvis billedet bevæger sig mere med musik end uden.
    - Hver stilart får pladser efter sin størrelse (mindst 2), og de bedste i stilarten vinder.
 5. **Kontaktark** af de valgte, til at se på dem: `--presettest --manifest=<mappe>/chosen.json --sheets=<mappe>`.
+6. **Blink** (01-10-2026, efter Peters klage over presets, der "bare blinker hvidt hele tiden").
+   - Preset-testen måler nu `flicker`: andelen af billeder, hvor hele billedets lysstyrke springer mere end 0,06. Den måler også `whiteFrames` (næsten hvidt) og `lumaSpread`.
+   - 86 af pakkens daværende 660 lå på 0,5 eller derover (Peters eksempler: 0,78 og 0,85). Ingen af de 395 indbyggede gjorde. Et slag på hvert kick i testmusikken giver kun ca. 0,07-0,13.
+   - `build-preset-pack.js --flicker=<filer>` sorterer alt fra 0,5 og op fra.
+7. **Fjernet af Peter:** navnene i `scripts/preset-bans.txt` kommer aldrig med. Listen ligger også i pakken, så `visualizer.js` fjerner de samme navne blandt de indbyggede presets.
 
 ## Køre det igen
 
@@ -39,7 +44,8 @@ The Grid har to slags MilkDrop-presets:
 git clone --depth 1 https://github.com/projectM-visualizer/presets-cream-of-the-crop.git <cotc>
 node scripts/convert-presets.js <cotc> <conv> --per-style=20 --workers=4
 node scripts/start.js --presettest --dir=<conv> --out=<conv>/results.jsonl
-node scripts/build-preset-pack.js <conv> <conv>/results.jsonl --total=1000
+node scripts/start.js --presettest --dir=<conv> --manifest=<conv>/chosen.json --out=<conv>/flash.jsonl
+node scripts/build-preset-pack.js <conv> <conv>/results.jsonl --total=1000 --flicker=<conv>/flash.jsonl
 ```
 
 Preset-testen tager ca. 40 min for 2.765 presets. Den kan stoppes og startes igen.
