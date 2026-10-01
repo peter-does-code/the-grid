@@ -15,6 +15,7 @@ const DEFAULT_SETTINGS = {
   theme: 'grid', // 'grid' | 'clu' | 'classic'
   showIntro: true,
   introMusic: true, // "Init" af Nine Inch Nails under introen
+  initVolume: 1, // Inits lydstyrke i forhold til Spotifys (1 = lige så højt; se initVolume i app.js)
   introStyle: 'war', // 'war' (den lange kamp) eller 'duel' (kamp og duel)
   onboardingDone: false,
   shareVotes: null, // null = ikke spurgt endnu; true/false = brugerens svar (stemmer til Peter, src/main/votes.js)

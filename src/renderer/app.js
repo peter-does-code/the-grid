@@ -912,6 +912,7 @@
     if (device && !state.volumeDragging) {
       volume.disabled = !device.supportsVolume;
       if (Number.isFinite(device.volumePercent)) {
+        state.spotifyVolume = device.volumePercent; // Init følger Spotifys lydstyrke (initVolume)
         volume.value = String(device.volumePercent);
         setSliderFill(volume, device.volumePercent);
       }
@@ -1128,8 +1129,21 @@
    * Spiller Init fra `from` sekunder, eventuelt i løkke mellem loop[0] og loop[1]. Returnerer { stop(sekunder) }.
    * Selvtesten spiller den ikke (den laver sin egen testlyd).
    */
-  function playInit({ from = 0, loop = null, volume: wanted = 0.85, force = false, onEnded = null } = {}) {
-    const volume = state.info && state.info.quiet ? wanted * 0.03 : wanted; // selvtest med --quiet
+  // Init er mastret meget højt (NIN), mens Spotify udjævner lydstyrken (ca. -14 LUFS) og har sin egen
+  // lydstyrkeskyder. Uden justering bragede Init igennem (Peter 02-10-2026). Init spilles derfor ved Spotifys
+  // lydstyrke, trukket ca. 6 dB ned, gange brugerens indstilling (100 % = som Spotify).
+  const INIT_LOUDNESS_TRIM = 0.5;
+  const INIT_FALLBACK_SPOTIFY = 0.6; // Spotifys lydstyrke kendes ikke (ikke logget ind, ingen afspiller)
+
+  function initVolume() {
+    const spotify = Number.isFinite(state.spotifyVolume) ? state.spotifyVolume / 100 : INIT_FALLBACK_SPOTIFY;
+    const user = Number.isFinite(state.settings.initVolume) ? state.settings.initVolume : 1;
+    return Math.max(0, Math.min(1, INIT_LOUDNESS_TRIM * spotify * user));
+  }
+
+  function playInit({ from = 0, loop = null, volume: wanted = null, force = false, onEnded = null } = {}) {
+    const base = wanted === null ? initVolume() : wanted;
+    const volume = state.info && state.info.quiet ? base * 0.03 : base; // selvtest med --quiet
     if (state.info.selftest && !force) return { stop() {}, time: () => null, duration: () => null };
     const audio = new Audio(`${INIT_TRACK}#t=${from}`);
     audio.volume = 0;
@@ -1683,6 +1697,7 @@
     $('set-intro').checked = state.settings.showIntro !== false;
     $('set-intro-style').value = state.settings.introStyle === 'duel' ? 'duel' : 'war';
     $('set-intro-music').checked = state.settings.introMusic !== false;
+    $('set-init-volume').value = String(Math.round(100 * (Number.isFinite(state.settings.initVolume) ? state.settings.initVolume : 1)));
     $('set-share-votes').checked = state.settings.shareVotes === true;
     renderSpotifyStatus();
     renderVizToggles();
@@ -1877,6 +1892,10 @@
 
     // Indstillinger: udseende og sprog
     $('set-theme').addEventListener('change', (e) => setTheme(e.target.value));
+    $('set-init-volume').addEventListener('input', (e) => {
+      state.settings.initVolume = Number(e.target.value) / 100;
+      saveSettingsSoon({ initVolume: state.settings.initVolume });
+    });
     $('set-intro-music').addEventListener('change', (e) => {
       state.settings.introMusic = e.target.checked;
       saveSettingsSoon({ introMusic: e.target.checked });

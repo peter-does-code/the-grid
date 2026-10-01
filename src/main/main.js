@@ -281,6 +281,7 @@ function registerIpc() {
     }
     if ('showIntro' in patch) clean.showIntro = Boolean(patch.showIntro);
     if ('introMusic' in patch) clean.introMusic = Boolean(patch.introMusic);
+    if ('initVolume' in patch) clean.initVolume = clamp(patch.initVolume, 0, 2, 1);
     if (['war', 'duel'].includes(patch.introStyle)) clean.introStyle = patch.introStyle;
     if ('onboardingDone' in patch) clean.onboardingDone = Boolean(patch.onboardingDone);
     // Stemmer: om de må sendes til Peter, og de presets brugeren har derezzet (skjules for brugeren selv).

@@ -143,7 +143,7 @@ async function runSelftest({ win, ipcMain, outDir, full = false }) {
   if (audioLine) {
     try {
       const state = JSON.parse(audioLine.slice(audioLine.indexOf('{')));
-      music = { ok: !state.paused && state.volume > (QUIET ? 0.02 : 0.5) && state.currentTime > 2 && state.error === null, ...state };
+      music = { ok: !state.paused && state.volume > (QUIET ? 0.003 : 0.1) && state.currentTime > 2 && state.error === null, ...state };
     } catch (err) {
       music = { ok: false, detail: String(err) };
     }
