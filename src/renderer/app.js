@@ -1767,7 +1767,8 @@
       saveSettingsSoon({ miniVis: state.settings.miniVis });
     });
     // Påskeæg: ordmærket hilser tilbage.
-    document.querySelector('.wordmark').addEventListener('dblclick', () => toast(t('egg.greetings')));
+    // Dobbeltklik på "THE GRID": en hilsen og versionen.
+    document.querySelector('.wordmark').addEventListener('dblclick', () => toast(t('egg.wordmark', { version: `v${state.info.version}` }), 'info', 5000));
 
     const seek = $('seek');
     seek.addEventListener('input', () => {

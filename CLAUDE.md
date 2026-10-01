@@ -103,7 +103,7 @@ Peter vil have så mange Tron-referencer og påskeæg som muligt; kom gerne med 
 | `epic battle` (link-feltet og Flynns terminal) | Game Grid i stor udgave: 40 cykler på et finere gitter (`gridCells: 90`), ca. 1 minut |
 | `whoami` | Åbner Flynns terminal (ENCOM OS-12) med snydearket, se herunder |
 | `battle`, `game grid`, eller ↑↑↓↓←→←→ hvor som helst | Game Grid: kun kamp med 16 cykler, der elimineres én efter én, til ét hold vinder: "BLUE WINS" / "ORANGE WINS" |
-| Dobbeltklik på "THE GRID" i titellinjen | "Greetings, program!" |
+| Dobbeltklik på "THE GRID" i titellinjen | "Greetings, program! You are running The Grid vX." (hilsen og version) |
 
 **Kommandoer til terminalen virker også i link-feltet** (Peters ønske 01-10-2026: når han beder om en terminal-kommando, skal den altid også virke i link-feltet). Snydearket kan stadig have en sektion for kun-terminal (fjerde felt `terminal` i `CHEAT_SHEET`), men den er tom nu.
 
