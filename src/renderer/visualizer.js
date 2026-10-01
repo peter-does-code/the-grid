@@ -24,7 +24,10 @@
   // Brugerens favoritter (K): et tillæg i valget, og de må komme igen efter 20 skift i stedet for 150.
   const FAVORITE_BONUS = 0.8;
   const FAVORITE_EXCLUDE = 20;
-  const FAVORITE_SHARE = 0.3; // ved tilfældig rækkefølge: så stor en andel af skiftene går til en favorit
+  // Ved tilfældig rækkefølge: så stor en andel af skiftene går til en favorit, når der er FAVORITE_FULL_AT
+  // favoritter; med færre er andelen tilsvarende mindre (Peter: hver tredje først, når listen er nået 20).
+  const FAVORITE_SHARE = 0.3;
+  const FAVORITE_FULL_AT = 20;
 
   function unwrap(mod) {
     return mod && mod.default ? mod.default : mod;
@@ -268,7 +271,8 @@
 
     randomName() {
       const isRecent = this.recentSets();
-      if (this.favorites && this.favorites.size && Math.random() < FAVORITE_SHARE) {
+      const share = this.favorites ? FAVORITE_SHARE * Math.min(1, this.favorites.size / FAVORITE_FULL_AT) : 0;
+      if (share && Math.random() < share) {
         const favs = this.names.filter((n) => this.isFavorite(n) && !isRecent(n) && !this.failed.has(n));
         if (favs.length) return favs[Math.floor(Math.random() * favs.length)];
       }

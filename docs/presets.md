@@ -42,7 +42,7 @@ The Grid har to slags MilkDrop-presets:
    - Reglen i `build-preset-pack.js`: en blinker (flicker 0,5 og op) kommer med, hvis takt minus blink er mindst -0,2 (`TASTE_MARGIN`). På Peters stemmer: 11 af 14 behold med, 10 af 51 ban med. Kort sagt: blink er fint, når det følger musikken.
    - Peters egne valg går altid forud: "behold" kommer altid med (uden om stilartens pladser og familiegrænsen), "ban" aldrig.
 8. **Brugernes stemmer og personlige lister** (01-10-2026).
-   - **K:** favorit (`favoritePresets`). Den får et tillæg på 0,8 i valget og må komme igen efter 20 skift i stedet for 150. Ved tilfældig rækkefølge går ca. 30 % af skiftene til en favorit. K igen fjerner den.
+   - **K:** favorit (`favoritePresets`). Den får et tillæg på 0,8 i valget og må komme igen efter 20 skift i stedet for 150. Ved tilfældig rækkefølge går op til 30 % af skiftene til en favorit, når der er 20 favoritter (1,5 % pr. favorit). K igen fjerner den.
    - **D**, eller × i preset-listen (L): derez (`hiddenPresets`). Presettet skjules for brugeren selv.
    - **Preset-listen** viser favoritter med ★ og derezzede overstreget med ↺ for at få dem tilbage. Mens listen er åben, skiftes der ikke automatisk.
    - Begge lister er personlige og ligger i brugerens egne indstillinger.

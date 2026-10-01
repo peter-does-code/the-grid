@@ -111,4 +111,4 @@ if (fs.existsSync(path.join(root, '.git'))) {
   git(['tag', `v${version}`]);
   git(['push', '--follow-tags']);
 }
-console.log(`\nDone: v${version} is on https://github.com/${owner}/${repo}/releases. Drew's app picks it up within 4 hours (or at the next start).`);
+console.log(`\nDone: v${version} is on https://github.com/${owner}/${repo}/releases. Drew's app picks it up within 20 minutes (or at the next start).`);
