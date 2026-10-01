@@ -249,6 +249,11 @@
       viz.load(viz.sequentialName(1), 0); // videre i rækkefølge, så alle bliver set
       return;
     }
+    await votePreset(name, verdict);
+  }
+
+  /** En stemme på et vilkårligt preset (D/K på det viste, eller × i preset-listen). Derez skjuler det for brugeren. */
+  async function votePreset(name, verdict) {
     if (state.info.packaged && state.settings.shareVotes == null) {
       // Første stemme: spørg, om stemmerne må sendes til Peter. Svaret huskes og kan ændres under Settings.
       const yes = window.confirm(t('votes.ask'));
@@ -264,8 +269,11 @@
     state.settings.hiddenPresets = hidden;
     saveSettingsSoon({ hiddenPresets: hidden });
     viz.hide(name);
+    const li = $('preset-list').querySelector(`li[data-name="${CSS.escape(name)}"]`);
+    if (li) li.remove();
+    $('preset-count').textContent = `(${viz.names.length})`;
     toast(t('votes.derezzed', { name }), 'info', 3000);
-    nextPreset();
+    if (name === viz.current) nextPreset();
   }
 
   let presetNameTimer = null;
@@ -1646,9 +1654,19 @@
       const fragment = document.createDocumentFragment();
       for (const name of viz.names) {
         const li = document.createElement('li');
-        li.textContent = name;
         li.dataset.name = name;
         li.title = name;
+        const label = document.createElement('span');
+        label.className = 'preset-name-text';
+        label.textContent = name;
+        // × derezzer presettet (skjuler det for brugeren og tæller som en D-stemme).
+        const del = document.createElement('button');
+        del.type = 'button';
+        del.className = 'preset-del';
+        del.textContent = '×';
+        del.title = t('presets.derez');
+        del.setAttribute('aria-label', t('presets.derez'));
+        li.append(label, del);
         fragment.append(li);
       }
       listEl.append(fragment);
@@ -1863,7 +1881,13 @@
     });
     $('preset-list').addEventListener('click', (event) => {
       const li = event.target.closest('li[data-name]');
-      if (li) loadPresetByName(li.dataset.name);
+      if (!li) return;
+      if (event.target.closest('.preset-del')) {
+        event.stopPropagation();
+        votePreset(li.dataset.name, 'derez');
+        return;
+      }
+      loadPresetByName(li.dataset.name);
     });
 
     // Luk dialoger på ×-knappen eller ved klik på baggrunden. Guiden lukkes kun med sine egne knapper.

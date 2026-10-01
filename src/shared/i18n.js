@@ -316,6 +316,7 @@
     'about': 'The Grid {version} · ENCOM OS-12 · Butterchurn/MilkDrop · End of line.',
     'votes.ask': "You just voted on a preset. Share your votes (K = like, D = derez) with Peter, so he can make The Grid better? Only the preset name and your vote are sent, nothing about you.\n\nOK = share, Cancel = keep them on this PC.",
     'settings.shareVotes': 'Share my preset votes (K / D) with Peter',
+    'presets.derez': 'Derez this preset (you will not see it again)',
     'votes.liked': 'Liked: {name}',
     'votes.derezzed': 'Derezzed: {name}. You will not see it again.',
     'help.like': 'Like this preset',

@@ -1766,6 +1766,42 @@ code {
   background: var(--pl-hover);
 }
 
+/* × derezzer et preset (vises, når musen er over rækken). */
+.preset-list li {
+  display: flex;
+  align-items: center;
+}
+
+.preset-name-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.preset-del {
+  flex: none;
+  visibility: hidden;
+  margin-left: 6px;
+  padding: 0 6px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  line-height: 1.2;
+  cursor: pointer;
+  opacity: 0.6;
+}
+
+.preset-list li:hover .preset-del {
+  visibility: visible;
+}
+
+.preset-del:hover {
+  opacity: 1;
+  color: #ff5a3c;
+}
+
 .preset-list li.current {
   color: #fff;
   background: var(--pl-select-bg);
