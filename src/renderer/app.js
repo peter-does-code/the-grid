@@ -182,6 +182,16 @@
     const last = state.settings.visualizer.lastPreset;
     if (!(last && viz.load(last, 0))) viz.next({ random: true, blendSeconds: 0 });
     viz.start();
+    // Blink-vagten: blinker et preset konstant (fx i en hurtig del), skiftes der videre. Ikke mens brugeren selv har
+    // valgt med pilene, uden automatiske skift, eller i review-tilstanden, hvor blinkerne skal ses.
+    flashGuard = new window.VisampFlashGuard.FlashGuard();
+    viz.onLuma = (luma) => {
+      if (REVIEW || autoHold || sleeping || !state.settings.visualizer.autoCycle) return;
+      if (flashGuard.feed(nowSeconds(), luma)) {
+        console.info('Flash guard: switching away from', viz.current);
+        nextPreset();
+      }
+    };
     // Tron-laget ("tron" i Flynns terminal) ligger over visualiseringen og lytter til musikmotoren.
     tronOverlay = new window.Visamp.TronOverlay($('tron-overlay'));
     tronOverlay.setTheme(currentTheme());
@@ -191,15 +201,45 @@
   }
 
   let tronOverlay = null;
+  let flashGuard = null;
   let tronOn = false;
   function setTronOverlay(on) {
     tronOn = on;
     if (tronOverlay) tronOverlay.setEnabled(on);
   }
 
+  // Review-tilstand (node scripts/start.js --review): kun de frasorterede presets, med navn; K beholder, D bandlyser.
+  const REVIEW = new URLSearchParams(window.location.search).get('review') === '1';
+  const reviewVotes = new Map();
+
   function onPresetChange(name) {
     saveSettingsSoon({ visualizer: { lastPreset: name } });
     markCurrentPreset();
+    if (flashGuard) flashGuard.notifyChange(nowSeconds());
+    if (REVIEW) {
+      const vote = reviewVotes.get(name);
+      showPresetName(`${viz.names.indexOf(name) + 1}/${viz.names.length}  ${name}${vote ? ` [${vote.toUpperCase()}]` : ''}`);
+    }
+  }
+
+  function loadScript(src) {
+    return new Promise((resolve, reject) => {
+      const el = document.createElement('script');
+      el.src = src;
+      el.onload = resolve;
+      el.onerror = () => reject(new Error(`Could not load ${src}`));
+      document.head.appendChild(el);
+    });
+  }
+
+  async function reviewVote(verdict) {
+    if (!REVIEW || !viz || !viz.current) return;
+    const name = viz.current;
+    if (!reviewVotes.has(name)) await call(bridge.review.vote(name, verdict));
+    reviewVotes.set(name, verdict);
+    toast(t(verdict === 'keep' ? 'review.keep' : 'review.ban', { name }), 'info', 2500);
+    // Videre i rækkefølge, så alle bliver set.
+    viz.load(viz.sequentialName(1), 0);
   }
 
   let presetNameTimer = null;
@@ -213,11 +253,33 @@
     presetNameTimer = setTimeout(() => el.classList.remove('show'), 3500);
   }
 
+  /** Pilene (taster og knapper): vælg selv, og sæt de automatiske skift på pause, til mellemrum trykkes. */
+  let autoHold = false;
+  function manualPreset(step) {
+    if (step > 0) nextPreset({ showName: true });
+    else prevPreset({ showName: true });
+    if (!autoHold && state.settings.visualizer.autoCycle) {
+      autoHold = true;
+      toast(t('viz.autoPaused'), 'info', 4500);
+    }
+  }
+
+  /** Mellemrum: næste preset, og de automatiske skift kører igen. */
+  function spacePreset() {
+    nextPreset();
+    if (autoHold) {
+      autoHold = false;
+      director.schedule(nowSeconds(), directorConfig());
+      toast(t('viz.autoResumed'), 'info', 3000);
+    }
+  }
+
   function directorConfig() {
     const v = state.settings.visualizer;
     const m = state.settings.music;
     return {
-      autoCycle: v.autoCycle,
+      // Har brugeren selv valgt med pilene, holder de automatiske skift pause, til der trykkes mellemrum.
+      autoCycle: v.autoCycle && !autoHold,
       cycleSeconds: v.cycleSeconds,
       blendSeconds: v.blendSeconds,
       beatSync: m.beatSync,
@@ -1657,8 +1719,8 @@
     $('btn-help').addEventListener('click', () => $('help-dialog').showModal());
 
     // Pilene er det eneste sted, presettets navn vises.
-    $('viz-prev').addEventListener('click', () => prevPreset({ showName: true }));
-    $('viz-next').addEventListener('click', () => nextPreset({ showName: true }));
+    $('viz-prev').addEventListener('click', () => manualPreset(-1));
+    $('viz-next').addEventListener('click', () => manualPreset(1));
     $('viz-random').addEventListener('click', () => setVisualizerSetting({ random: !state.settings.visualizer.random }));
     $('viz-auto').addEventListener('click', () => setVisualizerSetting({ autoCycle: !state.settings.visualizer.autoCycle }));
     $('viz-list').addEventListener('click', openPresets);
@@ -1820,13 +1882,15 @@
       v: () => transport('stop'),
       b: () => transport('next'),
       // Mellemrum og de andre genveje skifter uden at vise navnet; det gør kun pilene.
-      ' ': () => nextPreset(),
+      ' ': () => spacePreset(),
       n: () => nextPreset(),
+      k: () => reviewVote('keep'),
+      d: () => reviewVote('ban'),
       h: () => nextPreset({ hardCut: true }),
       backspace: () => prevPreset(),
       p: () => prevPreset(),
-      arrowright: () => nextPreset({ showName: true }),
-      arrowleft: () => prevPreset({ showName: true }),
+      arrowright: () => manualPreset(1),
+      arrowleft: () => manualPreset(-1),
       r: () => setVisualizerSetting({ random: !state.settings.visualizer.random }),
       a: () => setVisualizerSetting({ autoCycle: !state.settings.visualizer.autoCycle }),
       l: openPresets,
@@ -2138,11 +2202,16 @@
 
   async function init() {
     [state.info, state.settings] = await Promise.all([call(bridge.getAppInfo()), call(bridge.getSettings())]);
+    if (REVIEW) {
+      await loadScript('presets/review-pack.js');
+      // I rækkefølge og uden automatiske skift: Peter bladrer selv.
+      state.settings.visualizer = { ...state.settings.visualizer, autoCycle: false, random: false, lastPreset: null };
+    }
     eggs = new window.Visamp.Eggs();
     applyTheme(state.settings.theme || 'grid');
 
     // Introen starter med det samme, så resten af opstarten sker bag den.
-    const showIntro = !state.info.selftest && state.settings.showIntro !== false;
+    const showIntro = !state.info.selftest && !REVIEW && state.settings.showIntro !== false;
     const introDone = showIntro ? playIntro() : Promise.resolve();
     if (!showIntro) $('intro').hidden = true;
 
@@ -2199,7 +2268,8 @@
 
     // Første gang: guiden efter introen.
     await introDone;
-    if (!state.info.selftest && !state.settings.onboardingDone) openGuide();
+    if (!state.info.selftest && !REVIEW && !state.settings.onboardingDone) openGuide();
+    if (REVIEW) toast(t('review.start', { count: viz.names.length }), 'info', 9000);
     setupUpdates();
   }
 

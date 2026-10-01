@@ -1,2 +1,4 @@
 # Presets, Peter vil beholde, selv om de blinker (K i review-tilstanden, node scripts/start.js --review).
 # Ét navn pr. linje; mellemrum og store/små bogstaver tæller ikke. Gælder kun blink-grænsen i scripts/build-preset-pack.js.
+suksma - gasfunk lipidmalarial causticidiary flounderdouse
+amandio c - iterative - orbits 2 i am ingrate

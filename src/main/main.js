@@ -43,8 +43,11 @@ const IS_SELFTEST = IS_SELFTEST_FULL || process.argv.includes('--selftest');
 const IS_DIAGNOSE = process.argv.includes('--diagnose');
 const IS_MUSICTEST = process.argv.includes('--musictest');
 const IS_PRESETTEST = process.argv.includes('--presettest');
-if (!IS_SELFTEST && !IS_MUSICTEST && !IS_PRESETTEST) migrateFromVisamp();
-if (IS_MUSICTEST || IS_PRESETTEST) {
+// Review-tilstand (node scripts/start.js --review): kun presets til gennemsyn (src/renderer/presets/review-pack.js),
+// i et eget vindue ved siden af en åben The Grid. K beholder, D derezzer (ban).
+const IS_REVIEW = process.argv.includes('--review');
+if (!IS_SELFTEST && !IS_MUSICTEST && !IS_PRESETTEST && !IS_REVIEW) migrateFromVisamp();
+if (IS_MUSICTEST || IS_PRESETTEST || IS_REVIEW) {
   // Egen datamappe, så testen kan køre ved siden af en åben The Grid.
   app.setPath('userData', require('node:fs').mkdtempSync(path.join(os.tmpdir(), 'the-grid-musictest-')));
 }
@@ -176,6 +179,17 @@ function handle(channel, fn) {
 let UPDATED_FROM = null;
 
 function registerIpc() {
+  if (IS_REVIEW) {
+    // K: behold (scripts/preset-keeps.txt), D: ban (scripts/preset-bans.txt). Kun fra kildekoden.
+    handle('review:vote', (_event, name, verdict) => {
+      const fs = require('node:fs');
+      const file = path.join(app.getAppPath(), 'scripts', verdict === 'keep' ? 'preset-keeps.txt' : 'preset-bans.txt');
+      const line = String(name).replace(/[\r\n]+/g, ' ').trim();
+      if (!line) return false;
+      fs.appendFileSync(file, line + '\n');
+      return true;
+    });
+  }
   handle('app:info', () => ({
     version: app.getVersion(),
     updatedFrom: UPDATED_FROM,
@@ -359,7 +373,7 @@ function createWindow() {
     }
   });
 
-  win.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
+  win.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'), IS_REVIEW ? { query: { review: '1' } } : undefined);
   return win;
 }
 
@@ -587,7 +601,7 @@ async function main() {
 
 app.on('window-all-closed', () => app.quit());
 
-if (IS_SELFTEST || IS_DIAGNOSE || IS_MUSICTEST || app.requestSingleInstanceLock()) {
+if (IS_SELFTEST || IS_DIAGNOSE || IS_MUSICTEST || IS_REVIEW || app.requestSingleInstanceLock()) {
   main().catch((err) => {
     console.error(err);
     app.exit(1);

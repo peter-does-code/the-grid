@@ -78,6 +78,15 @@ for (const file of flickerArg ? flickerArg.slice('--flicker='.length).split(',')
 }
 const MAX_FLICKER = 0.5;
 
+// Presets, Peter vil beholde trods blink (K i review-tilstanden, scripts/preset-keeps.txt).
+const keeps = new Set(
+  fs
+    .readFileSync(path.join(__dirname, 'preset-keeps.txt'), 'utf8')
+    .split('\n')
+    .map((l) => banKey(l))
+    .filter((l) => l && !l.startsWith('#'))
+);
+
 const rejected = {};
 const reject = (why) => {
   rejected[why] = (rejected[why] || 0) + 1;
@@ -95,7 +104,7 @@ const ok = results.filter((r) => {
   if (r.detail < LIMITS.minDetail) return reject('fladt');
   if (r.motion < LIMITS.minMotion) return reject('står stille');
   if (r.msPerFrame > LIMITS.maxMsPerFrame) return reject('for tungt');
-  if ((flicker.get(r.file) || 0) >= MAX_FLICKER) return reject('blinker');
+  if ((flicker.get(r.file) || 0) >= MAX_FLICKER && !keeps.has(banKey(m.name))) return reject('blinker');
   if (flickerArg && !flicker.has(r.file)) return reject('blink ikke målt');
   return true;
 });

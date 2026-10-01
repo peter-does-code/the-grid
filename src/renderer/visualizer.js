@@ -27,6 +27,8 @@
   }
 
   function collectPresets() {
+    // Review-tilstand (--review): kun presets til gennemsyn.
+    if (window.gridReviewPresets) return { ...window.gridReviewPresets };
     const all = {};
     for (const name of PRESET_PACKS) {
       const pack = unwrap(window[name]);
@@ -119,12 +121,29 @@
         try {
           this.viz.render();
           this.frames += 1;
+          // Billedets lysstyrke til blink-vagten (src/shared/flash-guard.js), hvert andet billede.
+          if (this.onLuma && this.frames % 2 === 0) this.onLuma(this.measureLuma());
         } catch (err) {
           console.error('Render error:', err);
         }
         this.raf = requestAnimationFrame(loop);
       };
       this.raf = requestAnimationFrame(loop);
+    }
+
+    /** Gennemsnitlig lysstyrke (0-1) af det netop tegnede billede, målt på et lille udsnit (8x6). */
+    measureLuma() {
+      if (!this.lumaCanvas) {
+        this.lumaCanvas = document.createElement('canvas');
+        this.lumaCanvas.width = 8;
+        this.lumaCanvas.height = 6;
+        this.lumaCtx = this.lumaCanvas.getContext('2d', { willReadFrequently: true });
+      }
+      this.lumaCtx.drawImage(this.canvas, 0, 0, 8, 6);
+      const d = this.lumaCtx.getImageData(0, 0, 8, 6).data;
+      let sum = 0;
+      for (let i = 0; i < d.length; i += 4) sum += 0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2];
+      return sum / (48 * 255);
     }
 
     stop() {
