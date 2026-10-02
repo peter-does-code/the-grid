@@ -1773,9 +1773,62 @@
     filterPresets('');
     markCurrentPreset();
     $('presets-dialog').showModal();
+    dockPresets();
     $('preset-filter').focus();
     const current = listEl.querySelector('li.current');
     if (current) current.scrollIntoView({ block: 'center' });
+  }
+
+  // Preset-listen i visualizerens højre side; bredden huskes på pc'en.
+  const PRESET_WIDTH_KEY = 'presetListWidth';
+  const PRESET_MIN_WIDTH = 260;
+  function presetWidth() {
+    try {
+      return Number(localStorage.getItem(PRESET_WIDTH_KEY)) || 420;
+    } catch {
+      return 420;
+    }
+  }
+
+  function dockPresets(width = presetWidth()) {
+    const el = $('presets-dialog');
+    if (!el.open) return;
+    const r = $('viz-wrap').getBoundingClientRect();
+    const w = Math.round(Math.max(PRESET_MIN_WIDTH, Math.min(width, r.width - 120)));
+    el.style.top = `${r.top}px`;
+    el.style.height = `${r.height}px`;
+    el.style.right = `${Math.max(0, window.innerWidth - r.right)}px`;
+    el.style.width = `${w}px`;
+    return w;
+  }
+
+  function wirePresetResize() {
+    const handle = $('preset-resize');
+    handle.addEventListener('pointerdown', (event) => {
+      event.preventDefault();
+      handle.setPointerCapture(event.pointerId);
+      handle.classList.add('dragging');
+      const right = $('presets-dialog').getBoundingClientRect().right;
+      let w = presetWidth();
+      const move = (e) => {
+        w = dockPresets(right - e.clientX);
+      };
+      const up = () => {
+        handle.classList.remove('dragging');
+        handle.removeEventListener('pointermove', move);
+        handle.removeEventListener('pointerup', up);
+        handle.removeEventListener('pointercancel', up);
+        try {
+          localStorage.setItem(PRESET_WIDTH_KEY, String(w));
+        } catch {
+          // uden lager huskes bredden bare ikke
+        }
+      };
+      handle.addEventListener('pointermove', move);
+      handle.addEventListener('pointerup', up);
+      handle.addEventListener('pointercancel', up);
+    });
+    window.addEventListener('resize', () => dockPresets());
   }
 
   function loadPresetByName(name) {
@@ -1975,6 +2028,7 @@
     $('term-output').addEventListener('click', () => $('term-input').focus());
 
     // Presets
+    wirePresetResize();
     $('preset-filter').addEventListener('input', (e) => filterPresets(e.target.value));
     $('preset-filter').addEventListener('keydown', (event) => {
       if (event.key !== 'Enter') return;

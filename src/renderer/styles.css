@@ -1568,6 +1568,48 @@ body.fullscreen.cursor-hidden * {
   width: min(680px, calc(100vw - 40px));
 }
 
+/* Preset-listen (L) ligger i visualizerens højre side, så man kan se presettet. Bredden trækkes i venstre kant;
+ * top, højde og bredde sættes af dockPresets() i app.js. */
+.dialog.docked {
+  position: fixed;
+  inset: auto 0 auto auto;
+  margin: 0;
+  max-width: none;
+  max-height: none;
+  min-width: 260px;
+}
+
+.dialog.docked::backdrop {
+  background: transparent;
+}
+
+.dialog.docked .dialog-inner {
+  height: 100%;
+  max-height: none;
+  box-sizing: border-box;
+}
+
+.dialog.docked .preset-list {
+  flex: 1;
+  max-height: none;
+  min-height: 0;
+}
+
+.dock-resize {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -3px;
+  width: 7px;
+  cursor: ew-resize;
+  z-index: 1;
+}
+
+.dock-resize:hover,
+.dock-resize.dragging {
+  background: var(--bevel-hi);
+}
+
 .dialog::backdrop {
   background: rgba(0, 0, 0, 0.6);
 }
