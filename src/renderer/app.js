@@ -1228,7 +1228,8 @@
         paused: audio.paused,
         currentTime: Math.round(audio.currentTime * 100) / 100,
         readyState: audio.readyState,
-        volume: Math.round(audio.volume * 100) / 100,
+        // Fire decimaler: med --quiet er lydstyrken 0,0036, som to decimaler viste som 0 (selvtesten slog fejl, 02-10-2026).
+        volume: Math.round(audio.volume * 10000) / 10000,
         error: audio.error ? audio.error.code : null,
         src: audio.currentSrc,
       }),

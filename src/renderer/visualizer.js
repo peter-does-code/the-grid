@@ -122,6 +122,10 @@
       gl.blitFramebuffer(0, 0, width, height, 0, 0, LUMA_W, LUMA_H, gl.COLOR_BUFFER_BIT, gl.LINEAR);
       gl.bindFramebuffer(gl.READ_FRAMEBUFFER, this.framebuffer);
       gl.bindBuffer(gl.PIXEL_PACK_BUFFER, slot.buffer);
+      // Nyt lager hver gang (orphaning): ANGLE laver en skyggekopi af en READ-buffer ved hegnet, og skrives bufferen
+      // igen, mens den kopi findes, smides den væk med en advarsel pr. måling (selvtesten 02-10-2026). Bufferen er
+      // 5 KB, så genallokeringen koster intet.
+      gl.bufferData(gl.PIXEL_PACK_BUFFER, this.pixels.byteLength, gl.STREAM_READ);
       gl.readPixels(0, 0, LUMA_W, LUMA_H, gl.RGBA, gl.UNSIGNED_BYTE, 0);
       gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
       gl.bindFramebuffer(gl.READ_FRAMEBUFFER, read);
