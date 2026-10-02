@@ -25,6 +25,7 @@ Hvert billede (60 pr. sekund) analyseres et spektrum med 2048 punkter.
 | Spektral flux (hvor meget nyt der kom til) plus stigning i kick-båndet 40-130 Hz | Slag og tempo |
 | Bas 20-320 Hz, mellemtone 320-2800 Hz, diskant 2800-11025 Hz (samme bånd som MilkDrop) | Sangens klang og dens dele |
 | Lydstyrke (RMS) | Dele, drops og stilhed |
+| Kick-båndets effekt og diskantens stigning (`kick`, `trebFlux`), plus motorens kick-onset (`lastKickOnset`) | Kun Tron-laget (`src/shared/band-drive.js`); motoren selv bruger dem ikke |
 
 ## Tempo og slag
 

@@ -305,6 +305,16 @@ test('FeatureExtractor måler bånd, flux og kick-stigning', () => {
   const again = fx.extract(loudBass, 0.3);
   assert.equal(again.flux, 0, 'intet nyt, ingen flux');
   assert.equal(again.kickFlux, 0);
+  // Til Tron-laget (band-drive.js): kick-båndets effekt og diskantens stigning (hi-hats).
+  assert.ok(f.kick > 0 && f.kick <= f.bass);
+  assert.equal(f.trebFlux, 0);
+  const hat = new Float32Array(1024).fill(-100);
+  for (let i = 200; i <= 300; i++) hat[i] = -20; // ca. 4,7-7 kHz
+  const h = fx.extract(hat, 0.3);
+  assert.ok(h.trebFlux > 0 && h.kickFlux === 0);
+  assert.equal(fx.extract(hat, 0.3).trebFlux, 0);
+  fx.extract(quiet, 0.0001);
+  assert.equal(fx.extract(hat, 0.0001).trebFlux, 0, 'under -60 dB: ingen hi-hats');
 });
 
 // ---------------------------------------------------------------------------

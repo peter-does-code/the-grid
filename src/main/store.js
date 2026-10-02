@@ -38,6 +38,7 @@ const DEFAULT_SETTINGS = {
     hardCuts: true,
     smartSelection: true,
     agc: true,
+    punch: true, // mere kontrast i Butterchurns lydniveauer (src/shared/punch.js)
     latencyMs: 0,
   },
   clockMode: 'elapsed', // 'elapsed' | 'remaining'
