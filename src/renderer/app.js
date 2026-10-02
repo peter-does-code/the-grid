@@ -531,9 +531,10 @@
   function musicLoop() {
     const now = nowSeconds();
     let events = state.capture.ok ? music.frame(now) : music.engine.update(now, SILENT_FRAME);
-    // Tydelig lyd, mens Spotify sidst meldte pause: måske er der trykket afspil i Spotify selv.
-    // Spørg med det samme i stedet for at vente op til 3 sekunder på næste opdatering.
-    if (music.engine.playbackHint === false && music.lastRms > 0.01 && now - lastQuickPoll > 2) {
+    // Lyd over ca. -48 dB, mens Spotify sidst meldte pause: måske er der trykket afspil i Spotify selv.
+    // Spørg med det samme i stedet for at vente op til 3 sekunder på næste opdatering, højst hvert 2. sekund.
+    // Peters baggrundsstøj (-55 til -63 dB) ligger under grænsen.
+    if (music.engine.playbackHint === false && music.lastRms > 0.004 && now - lastQuickPoll > 2) {
       lastQuickPoll = now;
       pollPlayback();
     }
@@ -935,8 +936,9 @@
   function applyPlayback(pb) {
     state.playback = pb;
     state.playbackReceivedAt = performance.now();
-    // Spotify afgør, om der er musik: spiller den her, vises alt; ellers vækker kun tydelig lyd billedet.
-    music.engine.setPlaybackHint(Boolean(pb && pb.isPlaying && pb.device && pb.device.isThisComputer));
+    // Spotify afgør, om der er musik: spiller den her, vises alt; ved pause eller en anden enhed vækker kun
+    // tydelig lyd billedet. Et tomt svar er ukendt, ikke pause (se playbackHint).
+    music.engine.setPlaybackHint(window.VisampMusic.playbackHint(pb));
     const item = pb && pb.item;
     if (item && item.id !== state.lastTrackId) {
       const firstSeen = state.lastTrackId === null;

@@ -11,7 +11,7 @@ Dokumentation i `docs/` (indeks: `docs/README.md`). Drews vejledning: `docs/en/g
 | Kommando | Hvad |
 |---|---|
 | `npm start` eller dobbeltklik på `The Grid.cmd` | Start appen fra kildekoden. `The Grid.cmd` henter selv pakkerne (`npm install` og Electron), hvis de mangler, og forklarer, hvis Node.js mangler |
-| `npm test` | 131 unit-tests (Node test runner, ingen Electron) |
+| `npm test` | 146 unit-tests (Node test runner, ingen Electron) |
 | `npm run selftest` | Hurtig selvtest (ca. 20 s): starter appen, afspiller en 3 sekunders testlyd, tjekker lydfangst og rendering, tager skærmbilleder af dialogerne, introens start, fuld skærm og Clu-temaet, og tjekker at Init kan høres (afspiller den i 4 s). **Laver lyd på pc'en.** |
 | `npm run selftest:quiet` | Som `npm run selftest`, men med næsten uhørlig testlyd og Init (`--quiet`, virker også med `--selftest-full`). **Brug den som standard**: Peter bad om, at testene ikke spiller højt (01-10-2026). Billeder i sekundet er lavere (ca. 34) fra kildekoden end i den pakkede app (60); mål ydelse på `dist/win-unpacked` |
 | `npm run selftest:full` | Fuld selvtest (ca. 90 s): også introens faser, den anden intro, Game Grid-vinderen og alle påskeæg, i realtid. Før en ny installationsfil, og efter ændringer i intro eller påskeæg. |
@@ -73,10 +73,11 @@ Detaljer: `docs/architecture.md`.
 - **Spotify-appen tømmer afspilleren ved en løs `uris`-kommando.** `PUT /me/player/play` med `{"uris": [...]}` svarer 204, men appen (Windows, 1.301.234.0) ender uden nummer. Kontekst + offset virker, og det samme gør pause og fortsæt. Brug altid `buildPlayRequest` i `src/main/playback.js`, som spiller et enkelt nummer i sit albums kontekst. Efter afspil verificerer The Grid, at musikken starter, og åbner ellers nummeret med et `spotify:track:`-link. Verificeret 29-09-2026; tjek igen med `npm run diagnose -- --experiment`.
 - **Søgning uden `market=from_token`.** `GET /search` med `market=from_token` svarer 403 "Insufficient client scope", fordi appen ikke beder om `user-read-private` (opdaget 30-09-2026, da påskeægget "drew" ikke spillede). `searchTrack` sender derfor ingen market. Test mod den rigtige Spotify med `node scripts/start.js --diagnose "--search=<tekst>"` (kun læsning).
 - **Ingen musik, intet billede.** Visualizeren og mini-spektrummet slukker, når musikmotoren melder stilhed. Tærsklen afhænger af Spotify:
-  - Spiller Spotify på denne pc: -70 dB, altså kun digital stilhed.
-  - Pause eller afspilning et andet sted: -42 dB.
-  - Ukendt: -48 dB.
+  - Spiller Spotify på denne pc: -70 dB, altså kun digital stilhed. "Denne pc" betyder, at Spotifys enhedsnavn passer på `os.hostname()` eller `COMPUTERNAME` (store og små bogstaver er ligegyldige), eller at det ene navn er det andet uden domæne ("DESKTOP-ABC" og "desktop-abc.lan"; en bindestreg er ikke et skel). Se `src/main/this-computer.js`; `npm run diagnose` viser begge navne ved hver enhed.
+  - Pause eller afspilning på en anden enhed: -42 dB.
+  - Ukendt: -48 dB. Også et tomt svar fra Spotify (ingen aktiv afspiller), se `playbackHint` i `music-engine.js`.
   - Peters pc har svag baggrundslyd fra andre programmer på -55 til -63 dB. Den må ikke vække billedet.
+  - Tempoet overlever korte pauser: stilhed under 10 s og billedhuller under 2 s beholder tempo og slag, så takt-synkrone skift er der fra første billede. Længere pauser glemmer tempoet som før.
 - **Presettets navn vises kun ved pilene** (knapper og piletaster). Automatiske skift, mellemrum og de øvrige genveje skifter lydløst. Det er et ønske fra Peter.
 - **Fuld skærm viser kun billedet.** Hele siden går i fuld skærm (`document.documentElement`), og `body.fullscreen` skjuler alt andet end visualizeren og alle knapper. Musen skjules efter 2 sekunder uden bevægelse. Teksten uden musik bliver stående.
 - **Kalibrering af musikmotoren.** Ret aldrig tærskler i `music-engine.js` uden at køre `npm run musictest` og `node scripts/bench-music.js` før og efter. `onsetLatency` (27 ms) er kalibreret mod dens facit.

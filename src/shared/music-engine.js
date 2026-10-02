@@ -157,6 +157,11 @@
     sleepAfterPausedSec: 0.5, // når Spotify melder pause, slukkes hurtigt
     wakeAfterSec: 0.15,
     newSongAfterSilenceSec: 3, // så lang stilhed før en opvågning tæller som en ny sang
+    // Tempoet overlever korte huller, så takt-synkrone skift er der med det samme, når musikken kommer igen.
+    tempoKeepSilenceSec: 10, // stilhed kortere end dette (fra lyden forsvandt, til den kom igen) beholder tempoet
+    frameGapSec: 0.75, // et hul mellem to billeder længere end dette er ikke bare et langsomt billede
+    tempoKeepGapSec: 2, // billedhuller (fx minimeret vindue) kortere end dette beholder tempoet
+    phaseRelockSec: 1.5, // så meget ny musik efter en pause, før fasen må springe på én måling
     stickyTempo: 0.8, // behold tempoet, så længe det scorer mindst 80 % af den bedste kandidat
     stickyTempoThreeTwo: 0.55, // ... og 55 %, hvis kandidaten ligger i forholdet 3:2 eller 2:3
     octaveDownAboveBpm: 150, // over dette tempo foretrækkes det halve, hvis det er næsten lige så stærkt
@@ -205,6 +210,18 @@
     songLoudFadeDbPerSec: 0.05, // så hurtigt glemmes sangens kraftigste niveau (3 dB i minuttet)
   };
 
+  /**
+   * Spotifys afspillerstatus (`spotify:playbackState`) som hint til stilhedsvagten (setPlaybackHint).
+   * false kun når Spotify udtrykkeligt melder pause eller afspilning på en anden enhed; et tomt svar (ingen
+   * aktiv afspiller) eller en afspilning uden enhed er ukendt (null), så stille musik ikke slukker billedet.
+   */
+  function playbackHint(pb) {
+    if (!pb) return null;
+    if (!pb.isPlaying) return false;
+    if (!pb.device) return null;
+    return pb.device.isThisComputer === true;
+  }
+
   class MusicEngine {
     constructor(options = {}) {
       this.o = { ...ENGINE_DEFAULTS, ...options };
@@ -216,6 +233,7 @@
       this.quietSince = null;
       this.loudSince = null;
       this.silentStartedAt = 0;
+      this.keepTempoUntil = null; // under søvn: tempoet glemmes, hvis stilheden varer hertil
       this.resetTempo();
       this.resetSong(0);
     }
@@ -235,6 +253,7 @@
       this.lastTempoUpdate = -Infinity;
       this.resetBar();
       this.phaseMiss = 0;
+      this.phaseRelockAt = null; // se correctPhase
     }
 
     /** Glemmer, hvor taktens første slag ligger (ny taktart, nyt tempo eller ny fase). */
@@ -325,7 +344,7 @@
      */
     update(t, f) {
       const events = [];
-      if (this.lastT !== null && t - this.lastT > 0.75) this.resetTempo(); // fx minimeret vindue
+      if (this.lastT !== null && t - this.lastT > this.o.frameGapSec) this.bridgeGap(t, t - this.lastT); // fx minimeret vindue
       const dt = this.lastT === null ? 1 / 60 : clamp(t - this.lastT, 1e-3, 0.25);
       this.lastT = t;
 
@@ -355,6 +374,44 @@
       return events;
     }
 
+    /**
+     * Et hul uden billeder. Et kort hul beholder tempoet: hullet tæller som pladser uden onsets, og slag,
+     * der faldt i hullet, springes over i stedet for at blive meldt på én gang. Et langt hul glemmer tempoet.
+     */
+    bridgeGap(t, gap) {
+      if (gap >= this.o.tempoKeepGapSec) {
+        this.resetTempo();
+        return;
+      }
+      this.prevGridValue = 0;
+      this.prevKickValue = 0;
+      this.skipMissedBeats(t);
+    }
+
+    /**
+     * Glemmer tempoet under en lang stilhed, så tilstanden bliver den samme, som hvis det var glemt, da billedet
+     * faldt i søvn: pladserne siden `since` er stilhed (nuller). Så finder motoren tempoet lige så hurtigt som før.
+     */
+    forgetTempo(t, since) {
+      this.resetTempo();
+      const R = this.o.gridRate;
+      const slot = Math.floor(t * R);
+      this.gridSlot = slot;
+      this.gridFilled = clamp(slot - Math.floor(since * R) + 1, 1, this.grid.length);
+    }
+
+    /** Flytter næste slag frem forbi t uden at melde de slag, der blev sprunget over (efter søvn eller et hul). */
+    skipMissedBeats(t) {
+      if (!this.tempo.valid || this.nextBeat === null) return;
+      const period = 60 / this.tempo.bpm;
+      const due = this.nextBeat - this.o.beatLead;
+      if (t < due) return;
+      const missed = Math.floor((t - due) / period) + 1;
+      this.nextBeat += missed * period;
+      this.lastBeat = this.nextBeat - period;
+      this.beatIndex += missed;
+    }
+
     updateSilence(t, f, events) {
       const quiet = f.rmsDb < this.silenceThreshold();
       if (quiet) {
@@ -364,18 +421,30 @@
         if (!this.silent && t - this.quietSince >= sleepAfter) {
           this.silent = true;
           this.silentStartedAt = t;
-          this.resetTempo();
+          // Tempoet beholdes gennem en kort pause (pause og afspil i Spotify, et stille stykke i sangen),
+          // så takt-synkrone skift er der med det samme, når musikken kommer igen.
+          this.keepTempoUntil = this.quietSince + this.o.tempoKeepSilenceSec;
           this.cachedState = null;
           events.push({ type: 'sleep', t });
+        }
+        if (this.silent && this.keepTempoUntil !== null && t >= this.keepTempoUntil) {
+          this.keepTempoUntil = null;
+          this.forgetTempo(t, this.silentStartedAt);
         }
       } else {
         this.quietSince = null;
         if (this.loudSince === null) this.loudSince = t;
         if (this.silent && t - this.loudSince >= this.o.wakeAfterSec) {
           this.silent = false;
-          // Efter en længere pause er det typisk en ny sang (app.js måler så også lydniveauet forfra).
+          this.keepTempoUntil = null;
+          // Efter en længere pause er det typisk en ny sang (tempoet beholdes dog, se resetSong; app.js måler
+          // også lydniveauet forfra).
           const newSong = t - this.silentStartedAt >= this.o.newSongAfterSilenceSec;
           if (newSong) this.resetSong(t);
+          this.skipMissedBeats(t);
+          // Efter pause og afspil ligger slagene et andet sted end før: den første fasemåling med lidt ny musik
+          // må flytte fasen med det samme (se correctPhase).
+          if (this.tempo.valid) this.phaseRelockAt = this.loudSince + this.o.phaseRelockSec;
           this.cachedState = null;
           events.push({ type: 'wake', t, newSong });
         }
@@ -683,7 +752,7 @@
           }
         }
       }
-      this.correctPhase(raw);
+      this.correctPhase(raw, t);
     }
 
     /** Den højeste score inden for ±4 % af en given periode (i pladser). */
@@ -743,14 +812,25 @@
       this.phaseMiss = 0;
     }
 
-    /** Faselåst sløjfe: små fejl rettes blidt, en vedvarende stor fejl giver et spring. */
-    correctPhase(raw) {
+    /**
+     * Faselåst sløjfe: små fejl rettes blidt, en vedvarende stor fejl giver et spring. Lige efter en pause
+     * (phaseRelockAt) giver den første store fejl et spring med det samme: målingen ser mest den nye musik,
+     * fordi stilheden i onset-kurven tæller ens for alle faser.
+     */
+    correctPhase(raw, t) {
       if (this.nextBeat === null) return;
       const period = 60 / this.tempo.bpm;
       const measured = this.measurePhase(raw);
       const diff = (((measured - this.nextBeat) % period) + 1.5 * period) % period - period / 2;
+      const relock = this.phaseRelockAt !== null && t >= this.phaseRelockAt;
+      if (relock) this.phaseRelockAt = null;
       if (Math.abs(diff) < 0.12 * period) {
         this.nextBeat += 0.3 * diff;
+        this.phaseMiss = 0;
+        return;
+      }
+      if (relock) {
+        this.nextBeat += diff;
         this.phaseMiss = 0;
         return;
       }
@@ -1344,6 +1424,7 @@
   return {
     FeatureExtractor,
     MusicEngine,
+    playbackHint,
     PresetDirector,
     profilePreset,
     scorePreset,
