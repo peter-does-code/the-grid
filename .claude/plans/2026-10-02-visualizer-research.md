@@ -205,6 +205,19 @@ har ingen sprites, så laget er vores.
 4. **fps**: loft 60 (standard) / "classic 30"-indstilling / uændret.
 5. **Kontrast-wrapper på alle presets** (k 1,3-1,6): ja som indstilling / nej, kun overlay.
 
+## Status 03-10-2026: spor 1-4 bygget
+
+Alle fire spor er bygget og merget lokalt på main (ikke pushet, se push-adgang). Valgte standarder:
+langsom per-nummer-trim (`src/shared/agc.js`), Tron-laget starter stadig slukket, billedtakt højst 60
+(76 for 75 Hz-skærme), "Punch" k = 1,3 som indstilling, til som standard. Comp-shader-bloom og
+preset-profilering efter bånd er ikke lavet. `npm test`: 178. Hurtig selvtest grøn: 60 fps ved 60 Hz,
+GPU-aflæsning af lysstyrken uden advarsler, præcise skærmpixels, mesh 64×48, FXAA, Init hørbar.
+Fuld selvtest: alt grønt undtagen Init-målingen i "drew-audio", som også fejler på commit 4c67e74
+før sporene (målingen bliver null efter 1,5 s, når "drew" og "drew-pound" er kørt lige før), altså
+en eksisterende skrøbelighed i selvtesten, ikke i appen. Spor 0's målinger på Peters pc mangler
+stadig: `npm run diagnose` viser nu hostname og COMPUTERNAME ved hver Spotify-enhed, og selvtestens
+rapport har billedtider, GPU og lydsporets indstillinger.
+
 ## Ikke verificeret
 
 - Alle *model*-tal. Limiterens makeup-gain (+0,8-1 dB) er regnet fra Web Audio-specen.
