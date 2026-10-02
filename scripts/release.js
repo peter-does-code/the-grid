@@ -121,7 +121,7 @@ if (fs.existsSync(path.join(root, '.git'))) {
   git(['add', 'package.json']); // kun versionen; alt andet er committet før udgivelsen
   git(['commit', '-m', `Release v${version}`]);
   git(['tag', `v${version}`]);
-  git(['push', '--follow-tags']);
+  git(['push', 'origin', 'HEAD', `v${version}`]); // --follow-tags tager kun annoterede tags med
 }
 // Ryd op i dist: kun den nye installationsfil bliver liggende (de gamle ligger på GitHub; før fyldte de 1,6 GB).
 for (const name of fs.readdirSync(path.join(root, 'dist'))) {
