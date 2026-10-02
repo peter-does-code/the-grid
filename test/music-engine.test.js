@@ -2,7 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { MusicEngine, PresetDirector, FeatureExtractor, profilePreset, scorePreset } = require('../src/shared/music-engine.js');
+const { MusicEngine, PresetDirector, FeatureExtractor, profilePreset, scorePreset, playbackHint } = require('../src/shared/music-engine.js');
 
 function seeded(seed = 1) {
   let s = seed >>> 0;
@@ -15,8 +15,10 @@ function seeded(seed = 1) {
 /**
  * Simulerer lydtræk ved 60 billeder/s. `parts` beskriver sangens dele: lydstyrke (dBFS), fordeling
  * mellem bas/mellemtone/diskant, og om der er slag. Slag ligger på firstBeat + k * 60/bpm.
+ * `gaps` er huller uden billeder ([fra, til] i sekunder, fx et minimeret vindue); `onFrame(t, engine)`
+ * kaldes efter hvert billede.
  */
-function simulate({ seconds, bpm = 128, firstBeat = 0.25, parts, accentEvery = 0, fps = 60, seed = 7, options = {} }) {
+function simulate({ seconds, bpm = 128, firstBeat = 0.25, parts, accentEvery = 0, fps = 60, seed = 7, options = {}, gaps = [], onFrame }) {
   const engine = new MusicEngine({ onsetLatency: 0, ...options });
   const rnd = seeded(seed);
   const period = 60 / bpm;
@@ -24,6 +26,7 @@ function simulate({ seconds, bpm = 128, firstBeat = 0.25, parts, accentEvery = 0
   const partsList = parts || [{ from: 0, to: seconds, loud: -20, shares: [0.6, 0.3, 0.1], beats: true }];
   for (let k = 0; k / fps < seconds; k++) {
     const t = k / fps;
+    if (gaps.some(([from, to]) => t >= from && t < to)) continue;
     const part = partsList.find((p) => t >= p.from && t < p.to) || partsList[partsList.length - 1];
     // Opbygning: lydstyrken glider fra loud til loudTo, og slagene deles op (subdivTo: 2 = ottendedele,
     // 4 = sekstendedele) i løbet af delen, som en trommehvirvel før et drop.
@@ -52,6 +55,7 @@ function simulate({ seconds, bpm = 128, firstBeat = 0.25, parts, accentEvery = 0
       kickFlux: silent ? 0 : onBeat ? 2 * accent : 0.05 * rnd(),
     };
     for (const e of engine.update(t, f)) events.push({ ...e, emittedAt: t });
+    if (onFrame) onFrame(t, engine);
   }
   const trueBeats = (from, to) => {
     const out = [];
@@ -290,6 +294,101 @@ test('svag baggrundslyd vækker ikke visualizeren, og Spotifys pause har forrang
   assert.equal(run(true, faint).engine.state.silent, false, 'Spotify spiller her: selv svag lyd er musik');
   const paused = run(false, { ...music, rms: 0.005, rmsDb: -46 });
   assert.equal(paused.engine.state.silent, true, 'Spotify på pause: -46 dB tæller ikke');
+});
+
+test('Spotifys afspillerstatus: kun pause eller en anden enhed tæller som "spiller ikke her"', () => {
+  const here = { name: 'DESKTOP-ABC', isThisComputer: true };
+  const other = { name: 'Telefon', isThisComputer: false };
+  assert.equal(playbackHint(null), null, 'tomt svar (ingen aktiv afspiller) er ukendt');
+  assert.equal(playbackHint({ isPlaying: true, device: null }), null, 'afspilning uden enhed er ukendt');
+  assert.equal(playbackHint({ isPlaying: true, device: here }), true);
+  assert.equal(playbackHint({ isPlaying: true, device: other }), false, 'spiller på en anden enhed');
+  assert.equal(playbackHint({ isPlaying: false, device: here }), false, 'pause');
+});
+
+const MUSIC = { loud: -20, shares: [0.6, 0.3, 0.1], beats: true };
+const oneBeatPerFrame = (events, from) => {
+  const beats = events.filter((e) => e.type === 'beat' && e.emittedAt >= from);
+  return new Set(beats.map((e) => e.emittedAt)).size === beats.length;
+};
+
+test('tempoet overlever 5 s stilhed, og slagene kommer med det samme, når musikken vender tilbage', () => {
+  let atWake = null;
+  const result = simulate({
+    seconds: 26,
+    parts: [
+      { from: 0, to: 12, ...MUSIC },
+      { from: 12, to: 17, silent: true },
+      { from: 17, to: 26, ...MUSIC },
+    ],
+    onFrame: (t, engine) => {
+      if (atWake === null && t >= 17.2) atWake = engine.state;
+    },
+  });
+  const kinds = result.events.filter((e) => e.type === 'sleep' || e.type === 'wake').map((e) => e.type);
+  assert.deepEqual(kinds, ['wake', 'sleep', 'wake']);
+  assert.ok(atWake.tempoValid && Math.abs(atWake.bpm - 128) < 1.5, `tempo lige efter opvågning: ${atWake.bpm}`);
+  const errors = beatErrors(result, 17.15, 19);
+  assert.ok(errors.length >= 3, `${errors.length} slag de første 2 s`);
+  assert.ok(errors.every((e) => Math.abs(e) <= 0.04), `fejl ${errors.map((e) => Math.round(e * 1000))} ms`);
+  assert.ok(oneBeatPerFrame(result.events, 17), 'slagene i pausen meldes ikke på én gang bagefter');
+});
+
+test('efter 15 s stilhed er tempoet glemt og findes forfra', () => {
+  let atWake = null;
+  const result = simulate({
+    seconds: 40,
+    parts: [
+      { from: 0, to: 12, ...MUSIC },
+      { from: 12, to: 27, silent: true },
+      { from: 27, to: 40, ...MUSIC },
+    ],
+    onFrame: (t, engine) => {
+      if (atWake === null && t >= 27.2) atWake = engine.state;
+    },
+  });
+  assert.equal(atWake.silent, false);
+  assert.equal(atWake.tempoValid, false, 'tempoet fra før pausen er glemt');
+  assert.deepEqual(result.events.filter((e) => e.type === 'beat' && e.t >= 27 && e.t < 28.5), []);
+  const end = result.engine.state;
+  assert.ok(end.tempoValid && Math.abs(end.bpm - 128) < 3, `tempoet fundet igen: ${end.bpm}`);
+});
+
+test('efter pause og afspil, hvor slagene er flyttet, rammer slagene igen inden for 2,5 s', () => {
+  const result = simulate({
+    seconds: 26,
+    parts: [
+      { from: 0, to: 12, ...MUSIC },
+      { from: 12, to: 17, silent: true },
+      { from: 17, to: 26, ...MUSIC, bpm: 128 }, // slagene starter forfra ved 17 s, ude af fase med før
+    ],
+  });
+  const period = 60 / 128;
+  const errors = result.events
+    .filter((e) => e.type === 'beat' && e.t >= 19.5)
+    .map((e) => e.t - (17 + Math.round((e.t - 17) / period) * period));
+  assert.ok(errors.length >= 12, `${errors.length} slag`);
+  assert.ok(errors.every((e) => Math.abs(e) <= 0.04), `fejl ${errors.map((e) => Math.round(e * 1000))} ms`);
+});
+
+test('et billedhul på 1,5 s beholder tempoet uden en byge af slag; 3 s glemmer det', () => {
+  const run = (gap) => {
+    let after = null;
+    const result = simulate({
+      seconds: 24,
+      gaps: [[12, 12 + gap]],
+      onFrame: (t, engine) => {
+        if (after === null && t >= 12 + gap) after = engine.state;
+      },
+    });
+    return { result, after };
+  };
+  const short = run(1.5);
+  assert.ok(short.after.tempoValid, 'tempoet overlever 1,5 s');
+  assert.ok(oneBeatPerFrame(short.result.events, 13.5), 'slagene i hullet meldes ikke på én gang bagefter');
+  const errors = beatErrors(short.result, 13.5, 16);
+  assert.ok(errors.length >= 4 && errors.every((e) => Math.abs(e) <= 0.04), `fejl ${errors.map((e) => Math.round(e * 1000))} ms`);
+  assert.equal(run(3).after.tempoValid, false, 'tempoet glemmes efter 3 s');
 });
 
 test('FeatureExtractor måler bånd, flux og kick-stigning', () => {

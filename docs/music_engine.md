@@ -59,6 +59,13 @@ Hvert kvarte sekund gemmes et øjebliksbillede af lydstyrke, fordeling mellem b�
 
 På Peters pc giver andre programmer svag baggrundslyd på -55 til -63 dB. Den må ikke vække billedet.
 
+"Spiller på denne pc" kræver, at Spotifys enhedsnavn passer på pc'ens navn (`src/main/this-computer.js`): `os.hostname()` eller Windows' `COMPUTERNAME`, uden forskel på store og små bogstaver, eller det ene navn er starten af det andet op til et punktum eller en bindestreg ("DESKTOP-ABC" og "desktop-abc.lan"). Før blev kun hostname sammenlignet, og præcist. Et navn, der ikke passede, gav -42 dB og 0,5 s, så stille musik blev sort. `npm run diagnose` viser begge navne og resultatet ved hver enhed.
+
+"Ukendt" er også et tomt svar fra Spotify (ingen aktiv afspiller) og en afspilning uden enhed (`playbackHint`). Kun en udtrykkelig pause eller afspilning på en anden enhed giver -42 dB. Mens Spotify melder pause, spørges Spotify med det samme (højst hvert 2. sekund), når den rå lyd kommer over RMS 0,004 (ca. -48 dB), i stedet for at vente op til 3 s på næste opdatering.
+
+- **Tempoet overlever korte pauser.** Stilhed under 10 s (fra lyden forsvandt, til den kom igen) og billedhuller under 2 s (fx et minimeret vindue) beholder tempoet (`tempoKeepSilenceSec`, `tempoKeepGapSec`). Slagene fortsætter fra første billede efter opvågning. Slag, der faldt i pausen, springes over i stedet for at blive meldt på én gang, og et billedhul tæller som pladser uden onsets. Efter pause og afspil ligger slagene et andet sted, så den første fasemåling med 1,5 s ny musik må springe med det samme (`phaseRelockSec`; ellers kræves tre enige målinger). Stilheden i onset-kurven tæller ens for alle faser, så målingen ser mest den nye musik. Ved længere stilhed glemmes tempoet, og tilstanden bliver præcis som før ændringen: tempoet findes forfra efter cirka 4 s. Før nulstillede hver søvn og hvert billedhul over 0,75 s tempoet, så takt-synkrone skift manglede i 4-5 s efter hver opvågning.
+- Målt på den syntetiske sang (128 BPM, 02-10-2026): efter 5 s stilhed er tempoet der fra første billede, og alle slag rammer inden for 40 ms. Med flyttet fase rammer slagene igen efter 1,9 s (2,8 s uden springet). Efter 15 s stilhed er alt som før. Musiktesten og benchmarken (Init og den syntetiske sang) gav samme resultat før og efter.
+
 ## Instruktøren: hvornår der skiftes
 
 | Årsag | Hvordan | Krav |

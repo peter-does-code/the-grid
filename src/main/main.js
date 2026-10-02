@@ -16,6 +16,7 @@ const { iconPng } = require('./icon');
 const { DefaultDeviceWatcher } = require('./audio-devices');
 const { startUpdater, readToken } = require('./updater');
 const { VoteQueue, normalizeVote } = require('./votes');
+const { isThisComputer } = require('./this-computer');
 const i18n = require('../shared/i18n');
 
 /**
@@ -353,7 +354,7 @@ function registerIpc() {
     const playback = await api.getPlaybackState();
     // Spotify-appen navngiver pc'en efter computernavnet; så ved vi, om lyden kommer herfra.
     if (playback && playback.device) {
-      playback.device.isThisComputer = String(playback.device.name || '').toLowerCase() === os.hostname().toLowerCase();
+      playback.device.isThisComputer = isThisComputer(playback.device.name);
     }
     return playback;
   });

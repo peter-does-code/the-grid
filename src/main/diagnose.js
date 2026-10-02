@@ -1,8 +1,8 @@
 'use strict';
 
-const os = require('node:os');
 const { parseSpotifyInput } = require('./spotify-parse');
 const { PlaybackController } = require('./playback');
+const { isThisComputer, localComputerNames } = require('./this-computer');
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -28,6 +28,7 @@ function summarizeState(state) {
   return {
     isPlaying: state.isPlaying,
     device: state.device && `${state.device.name} (${state.device.type})`,
+    deviceIsThisComputer: state.device ? isThisComputer(state.device.name) : null,
     track: state.item && `${state.item.artists.join(', ')} - ${state.item.name}`,
     contextUri: state.contextUri,
   };
@@ -85,9 +86,14 @@ async function runDiagnose({ auth, store, makeApi, tryPlay = false, experiment =
     return { id: me.id, displayName: me.display_name, product: me.product || '(no longer provided by Spotify)' };
   });
 
+  // Pc'ens to navne står ved hver enhed, så et navn, der ikke passer, kan ses (stilhedstærsklen afhænger af det).
+  const names = localComputerNames();
   await step('devices', async () =>
     (await api.getDevices()).map((d) => ({
       name: d.name,
+      hostname: names.hostname,
+      COMPUTERNAME: names.computerName,
+      isThisComputer: isThisComputer(d.name, names),
       type: d.type,
       isActive: d.is_active,
       isRestricted: d.is_restricted,
@@ -151,8 +157,7 @@ async function runDiagnose({ auth, store, makeApi, tryPlay = false, experiment =
   if (experiment && collection) {
     // Prøver afspilningsstrategier én ad gangen og stopper ved den første, der faktisk starter musikken.
     const devices = await api.getDevices();
-    const hostname = os.hostname().toLowerCase();
-    const device = devices.find((d) => d.name && d.name.toLowerCase() === hostname) || devices.find((d) => !d.is_restricted);
+    const device = devices.find((d) => isThisComputer(d.name)) || devices.find((d) => !d.is_restricted);
     const target = playTargetFor(collection);
     const playArgs = target && target.contextUri ? { contextUri: target.contextUri, position: target.position } : target && { uris: [target.trackUri] };
     report.experiments = [];
@@ -177,7 +182,7 @@ async function runDiagnose({ auth, store, makeApi, tryPlay = false, experiment =
     if (!device || !playArgs) {
       report.experiments.push({ name: 'no device or nothing to play' });
     } else {
-      report.experimentDevice = `${device.name} (${device.type}), lokal pc: ${device.name.toLowerCase() === hostname}`;
+      report.experimentDevice = `${device.name} (${device.type}), this computer: ${isThisComputer(device.name)}`;
       const which = (process.argv.find((a) => a.startsWith('--experiment=')) || '').split('=')[1] || 'cold';
       let strategies = [
         ['play with device_id', () => api.play({ ...playArgs, deviceId: device.id })],

@@ -47,6 +47,7 @@ Rendereren har ingen Node-adgang og laver ingen netværkskald. Alt Spotify-arbej
 | `pkce.js` | Kodeverifikator og challenge (RFC 7636) |
 | `spotify-api.js` | Web API-kald, sideskift, fejl med koder og detaljer (oversættes i rendereren), normalisering af numre |
 | `spotify-parse.js` | Forstår Spotify-links og URI'er |
+| `this-computer.js` | Afgør, om en Spotify-enhed er denne pc (`os.hostname()` eller `COMPUTERNAME`). Svaret vælger stilhedstærsklen (se docs/music_engine.md). |
 | `playback.js` | Afspil og styr med fallback. Uden login eller Premium åbnes appen, og knapperne bliver medietaster. |
 | `mediakeys.js` | Windows-medietaster via `keybd_event` i `ps/mediakey.ps1` |
 | `store.js` | Indstillinger og krypterede tokens i `%APPDATA%\The Grid`, og det indbyggede Client ID. `main.js` flytter data fra `%APPDATA%\Visamp` ved første start. |
@@ -123,11 +124,12 @@ Alle svar har formen `{ ok: true, data }` eller `{ ok: false, error: { code, mes
 
 - `npm run musictest` sender en syntetisk sang med kendt facit gennem den rigtige Web Audio-analyse i en OfflineAudioContext, uden lyd. Den tjekker tempo, slag, dele, drop og at skift lander på taktstart. Med `--file=` analyseres en rigtig lydfil.
 - `npm run diagnose -- --audio=30` lytter med på det, der spiller, og viser hvad musikmotoren hører.
-- `npm test` kører 131 unit-tests med Nodes indbyggede testrunner. De dækker:
+- `npm test` kører 139 unit-tests med Nodes indbyggede testrunner. De dækker:
   - linktolkning, PKCE (RFC 7636-vektoren) og hele login-flowet mod en rigtig loopback-server;
   - token-fornyelse, API-fejlkoder og 2026-formatet for playlister;
   - afspil-forespørgsler med kontekst, verifikation af afspilning og afspilningens fallbacks;
-  - musikmotorens tempo, slag, dele, drops, stilhed, instruktør og profiler af presets (19 tests);
+  - musikmotorens tempo, slag, dele, drops, stilhed, tempo gennem pauser, instruktør og profiler af presets (32 tests);
+  - genkendelsen af denne pc i Spotifys enhedsliste (hostname og `COMPUTERNAME`);
   - overvågningen af Windows' standard-lydenhed, PowerShell-scripts som filer og stien i den pakkede app;
   - den lange kamp: mange derez spredt over mindst 7 sekunder, alle bogstaver skrevet før finalen, vinderen skriver det sidste ord, under 22 sekunder, og at Game Grid altid kårer en vinder;
   - den anden introstils koreografi med seedet tilfældighed: mange derez, taberen rammer væggen efter afskæringen, GRID skrives til sidst, kun rette vinkler, varighed under 15 s, og påskeæggenes varianter;
