@@ -24,6 +24,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 const { writeLatestYml } = require('./lib/update-info');
+const { writePeterPicks } = require('./lib/peter-picks');
 
 const root = path.join(__dirname, '..');
 const pkgFile = path.join(root, 'package.json');
@@ -77,6 +78,9 @@ const version = nextVersion(pkg.version, bump);
 pkg.version = version;
 fs.writeFileSync(pkgFile, JSON.stringify(pkg, null, 2) + '\n');
 console.log(`\nReleasing The Grid v${version} to ${owner}/${repo}\n`);
+// Peters seneste favoritter og derez med i bygget ("Use Peter's picks"); committes sammen med versionen.
+const picks = writePeterPicks();
+console.log(`Peter's picks: ${picks.favorites} favourites, ${picks.derez} derez.`);
 
 fs.mkdirSync(path.dirname(tokenTarget), { recursive: true });
 fs.copyFileSync(tokenSource, tokenTarget);
@@ -118,7 +122,8 @@ run(
 if (fs.existsSync(path.join(root, '.git'))) {
   // Uden shell: git er et almindeligt program, og commit-beskeden har mellemrum (v0.1.2 fejlede her, 01-10-2026).
   const git = (args) => run('git', args, { shell: false });
-  git(['add', 'package.json']); // kun versionen; alt andet er committet før udgivelsen
+  // Kun versionen og Peters valg; alt andet er committet før udgivelsen.
+  git(['add', 'package.json', path.relative(root, picks.file)]);
   git(['commit', '-m', `Release v${version}`]);
   git(['tag', `v${version}`]);
   git(['push', 'origin', 'HEAD', `v${version}`]); // --follow-tags tager kun annoterede tags med

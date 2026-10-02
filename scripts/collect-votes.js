@@ -123,3 +123,7 @@ if (showAll) {
     console.log(`${(p.peter || '-').padEnd(7)} ${String(p.keep).padStart(4)} / ${String(p.derez).padEnd(12)} ${name}`);
   }
 }
+
+// Peters egne valg til "Use Peter's picks" (kommer med i næste udgivelse).
+const picks = require('./lib/peter-picks').writePeterPicks();
+console.log(`\nPeter's picks: ${picks.favorites} favourites, ${picks.derez} derez${picks.changed ? ' (updated; commit it or release)' : ''}.`);

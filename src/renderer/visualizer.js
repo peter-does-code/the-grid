@@ -224,6 +224,12 @@
       this.names = this.allNames.filter((n) => n === name || this.names.includes(n));
     }
 
+    /** Udvalget er alle presets undtagen `hidden` (erstatter tidligere hide/unhide). */
+    setHidden(hidden) {
+      const gone = new Set(hidden || []);
+      this.names = this.allNames.filter((n) => !gone.has(n));
+    }
+
     /** Fjerner presets fra udvalget (brugerens D, "derez"). Det viste preset bliver stående, til der skiftes. */
     hide(...names) {
       const gone = new Set(names);
@@ -404,6 +410,25 @@
     }
   }
 
+  /**
+   * Brugerens egne lister plus Peters (indstillingen "Use Peter's picks", src/renderer/presets/peter-picks.js).
+   * Brugerens egne K og D vinder altid, og Peters valg, brugeren har fortrudt (exceptions), tæller ikke.
+   * Returnerer de favoritter og skjulte, der gælder, og hvilke af dem der kun kommer fra Peter.
+   */
+  function presetLists({ favorites = [], hidden = [], exceptions = [], peter = null } = {}) {
+    const own = { fav: new Set(favorites), hidden: new Set(hidden) };
+    const skip = new Set(exceptions);
+    const peterFav = new Set(((peter && peter.favorites) || []).filter((n) => !skip.has(n) && !own.hidden.has(n) && !own.fav.has(n)));
+    const peterHidden = new Set(((peter && peter.derez) || []).filter((n) => !skip.has(n) && !own.fav.has(n) && !own.hidden.has(n)));
+    return {
+      favorites: new Set([...own.fav, ...peterFav]),
+      hidden: new Set([...own.hidden, ...peterHidden]),
+      peterFav,
+      peterHidden,
+    };
+  }
+
   window.Visamp = window.Visamp || {};
   window.Visamp.Visualizer = Visualizer;
+  window.Visamp.presetLists = presetLists;
 })();

@@ -46,6 +46,7 @@ The Grid har to slags MilkDrop-presets:
    - **D**, eller × i preset-listen (L): derez (`hiddenPresets`). Presettet skjules for brugeren selv.
    - **Preset-listen** (L) har på hver række ☆/★ (favorit, som K) og × (derez, som D); derezzede står overstreget med ↺ for at få dem tilbage. Mens listen er åben, skiftes der ikke automatisk.
    - Begge lister er personlige og ligger i brugerens egne indstillinger.
+   - **"Use Peter's picks"** (Settings, `peterPicks`, slået fra som standard): Peters favoritter og derez lægges oven i brugerens egne (`presetLists` i `visualizer.js`). Brugerens egne K og D vinder altid. Fjerner brugeren en af Peters favoritter (★) eller henter et af hans derez tilbage (↺), huskes det i `peterPickExceptions`. Listen `src/renderer/presets/peter-picks.js` laves af `scripts/lib/peter-picks.js` ud fra ban- og behold-listerne og Peters stemmer i `data/preset-votes.jsonl`; `npm run release` laver den før hvert byg og committer den med versionen.
    - Første gang spørger appen, om stemmerne må sendes til Peter (`shareVotes`; kan ændres under Settings).
    - Ja: `src/main/votes.js` sender dem i portioner som issues i `the-grid-releases`. Der sendes presetnavn, stemme, version og et tilfældigt id.
    - At fortryde (☆ igen eller ↺) sendes som `clear`.

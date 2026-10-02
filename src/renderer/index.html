@@ -200,6 +200,7 @@
           <input type="range" id="set-init-volume" min="0" max="200" step="10">
         </label>
         <label class="check"><input type="checkbox" id="set-share-votes"> <span data-i18n="settings.shareVotes">Share my preset votes (K / D) with Peter</span></label>
+        <label class="check"><input type="checkbox" id="set-peter-picks"> <span data-i18n="settings.peterPicks">Use Peter's favourites and derez list too (your own K / D always win)</span></label>
         <label class="field"><span data-i18n="settings.introStyle">Intro</span>
           <select id="set-intro-style" class="lcd-select">
             <option value="war" data-i18n="introStyle.war">The long battle</option>
@@ -352,6 +353,7 @@
   <script src="../../node_modules/butterchurn-presets/lib/butterchurnPresetsNonMinimal.min.js"></script>
   <script src="presets/cream-of-the-crop.js"></script>
   <script src="presets/preset-stats.js"></script>
+  <script src="presets/peter-picks.js"></script>
   <script src="../shared/i18n.js"></script>
   <script src="../shared/format.js"></script>
   <script src="../shared/music-engine.js"></script>

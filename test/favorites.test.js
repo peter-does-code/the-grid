@@ -106,3 +106,16 @@ test('en del af de musikstyrede skift er helt tilfældige', () => {
   }
   assert.ok(outside / rounds > 0.12 && outside / rounds < 0.28, `udenfor de bedste: ${outside / rounds}`);
 });
+
+test("Peters valg: lægges oven i brugerens egne, men brugerens K og D og fortrydelser vinder", () => {
+  const { presetLists } = global.window.Visamp;
+  const peter = { favorites: ['a', 'b', 'c'], derez: ['x', 'y', 'z'] };
+  const l = presetLists({ favorites: ['own', 'x'], hidden: ['b', 'mine'], exceptions: ['c', 'z'], peter });
+  assert.deepEqual([...l.favorites].sort(), ['a', 'own', 'x']);
+  assert.deepEqual([...l.hidden].sort(), ['b', 'mine', 'y']);
+  assert.deepEqual([...l.peterFav], ['a']);
+  assert.deepEqual([...l.peterHidden], ['y']);
+  const off = presetLists({ favorites: ['own'], hidden: ['mine'], peter: null });
+  assert.deepEqual([...off.favorites], ['own']);
+  assert.deepEqual([...off.hidden], ['mine']);
+});

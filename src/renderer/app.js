@@ -196,10 +196,8 @@
     const last = state.settings.visualizer.lastPreset;
     if (!(last && viz.load(last, 0))) viz.next({ random: true, blendSeconds: 0 });
     viz.start();
-    // Presets, brugeren har derezzet med D, vises ikke igen.
-    if (!REVIEW && state.settings.hiddenPresets && state.settings.hiddenPresets.length) viz.hide(...state.settings.hiddenPresets);
-    // Favoritter (K) vises oftere.
-    if (!REVIEW) viz.setFavorites(state.settings.favoritePresets || []);
+    // Derezzede presets (D) vises ikke igen, favoritter (K) vises oftere; med "Use Peter's picks" også Peters.
+    if (!REVIEW) applyPresetLists();
     // Blink-vagten: blinker et preset konstant (fx i en hurtig del), skiftes der videre. Ikke mens brugeren selv har
     // valgt med pilene, uden automatiske skift, eller i review-tilstanden, hvor blinkerne skal ses.
     flashGuard = new window.VisampFlashGuard.FlashGuard();
@@ -268,14 +266,48 @@
     await votePreset(name, verdict);
   }
 
+  // De lister, der gælder nu: brugerens egne plus Peters, hvis det er slået til (presetLists i visualizer.js).
+  let lists = { favorites: new Set(), hidden: new Set(), peterFav: new Set(), peterHidden: new Set() };
+
+  function applyPresetLists() {
+    const s = state.settings;
+    lists = window.Visamp.presetLists({
+      favorites: s.favoritePresets || [],
+      hidden: s.hiddenPresets || [],
+      exceptions: s.peterPickExceptions || [],
+      peter: s.peterPicks ? window.gridPeterPicks : null,
+    });
+    viz.setHidden(lists.hidden);
+    viz.setFavorites(lists.favorites);
+  }
+
+  /** Står presettet på Peters liste (`favorites` eller `derez`), og bruges den? */
+  function onPeterList(name, which) {
+    const peter = state.settings.peterPicks && window.gridPeterPicks;
+    return Boolean(peter && (peter[which] || []).includes(name));
+  }
+
+  /** Brugeren fortryder et af Peters valg for sig selv: huskes, så det ikke kommer igen med Peters liste. */
+  function skipPeterPick(name) {
+    const set = new Set(state.settings.peterPickExceptions || []);
+    set.add(name);
+    state.settings.peterPickExceptions = [...set];
+    saveSettingsSoon({ peterPickExceptions: state.settings.peterPickExceptions });
+  }
+
+  function replaceRow(name) {
+    const li = $('preset-list').querySelector(`li[data-name="${CSS.escape(name)}"]`);
+    if (li) li.replaceWith(presetRow(name, lists.hidden.has(name)));
+  }
+
   /** ↺ i preset-listen: et derezzet preset kommer tilbage. */
   function restorePreset(name) {
+    if (!lists.peterHidden.has(name)) call(bridge.votes.add(name, 'clear')); // brugerens eget derez fortrudt
+    if (onPeterList(name, 'derez')) skipPeterPick(name); // ellers ville Peters liste skjule det igen
     state.settings.hiddenPresets = (state.settings.hiddenPresets || []).filter((n) => n !== name);
     saveSettingsSoon({ hiddenPresets: state.settings.hiddenPresets });
-    viz.unhide(name);
-    call(bridge.votes.add(name, 'clear')); // derez fortrudt
-    const li = $('preset-list').querySelector(`li[data-name="${CSS.escape(name)}"]`);
-    if (li) li.replaceWith(presetRow(name, false));
+    applyPresetLists();
+    replaceRow(name);
     updatePresetCount();
     toast(t('presets.restored', { name }), 'info', 2500);
   }
@@ -292,19 +324,25 @@
       // K gør presettet til favorit (personlig liste, vises oftere). Kun ☆/★ i preset-listen (toggle) kan fjerne
       // den igen (Peter 02-10-2026); så trækkes stemmen tilbage (clear).
       const favs = new Set(state.settings.favoritePresets || []);
-      if (favs.has(name) && !toggle) {
+      if (lists.favorites.has(name) && !toggle) {
         toast(t('votes.alreadyLiked', { name }), 'info', 2500);
         return;
       }
-      const on = !favs.has(name);
-      if (on) favs.add(name);
-      else favs.delete(name);
+      const on = !lists.favorites.has(name);
+      if (on) {
+        favs.add(name);
+        await call(bridge.votes.add(name, verdict));
+      } else {
+        // Brugerens egen favorit trækkes tilbage; står den også hos Peter, springes hans over for brugeren.
+        if (!lists.peterFav.has(name)) await call(bridge.votes.add(name, 'clear'));
+        favs.delete(name);
+        if (onPeterList(name, 'favorites')) skipPeterPick(name);
+      }
       state.settings.favoritePresets = [...favs];
       saveSettingsSoon({ favoritePresets: state.settings.favoritePresets });
-      viz.setFavorites(favs);
-      const li = $('preset-list').querySelector(`li[data-name="${CSS.escape(name)}"]`);
-      if (li) li.classList.toggle('fav', on);
-      await call(bridge.votes.add(name, on ? verdict : 'clear'));
+      applyPresetLists();
+      replaceRow(name);
+      updatePresetCount();
       toast(t(on ? 'votes.liked' : 'votes.unliked', { name }), 'info', 2500);
       return;
     }
@@ -312,14 +350,12 @@
     if ((state.settings.favoritePresets || []).includes(name)) {
       state.settings.favoritePresets = state.settings.favoritePresets.filter((n) => n !== name);
       saveSettingsSoon({ favoritePresets: state.settings.favoritePresets });
-      viz.setFavorites(state.settings.favoritePresets);
     }
     const hidden = [...(state.settings.hiddenPresets || []), name];
     state.settings.hiddenPresets = hidden;
     saveSettingsSoon({ hiddenPresets: hidden });
-    viz.hide(name);
-    const li = $('preset-list').querySelector(`li[data-name="${CSS.escape(name)}"]`);
-    if (li) li.replaceWith(presetRow(name, true));
+    applyPresetLists();
+    replaceRow(name);
     updatePresetCount();
     toast(t('votes.derezzed', { name }), 'info', 3000);
     // Hårdt klip: under en overgang er det nye preset allerede "det viste", så et D mere ville ramme et preset,
@@ -1708,6 +1744,7 @@
     $('set-intro-music').checked = state.settings.introMusic !== false;
     $('set-init-volume').value = String(Math.round(100 * (Number.isFinite(state.settings.initVolume) ? state.settings.initVolume : 1)));
     $('set-share-votes').checked = state.settings.shareVotes === true;
+    $('set-peter-picks').checked = state.settings.peterPicks === true;
     renderSpotifyStatus();
     renderVizToggles();
     renderCaptureStatus();
@@ -1734,7 +1771,7 @@
   function presetRow(name, hidden) {
     const li = document.createElement('li');
     li.dataset.name = name;
-    li.title = name;
+    li.title = lists.peterFav.has(name) || lists.peterHidden.has(name) ? t('presets.peterPick', { name }) : name;
     if (viz.isFavorite(name)) li.classList.add('fav');
     if (hidden) li.classList.add('derezzed');
     const label = document.createElement('span');
@@ -1760,8 +1797,8 @@
   }
 
   function updatePresetCount() {
-    const hidden = (state.settings.hiddenPresets || []).length;
-    const favs = (state.settings.favoritePresets || []).length;
+    const hidden = viz.allNames.length - viz.names.length; // kun presets, der findes (Peters liste har også fjernede)
+    const favs = viz.allNames.filter((n) => lists.favorites.has(n)).length;
     $('preset-count').textContent = t('presets.count', { count: viz.names.length, favs, hidden });
   }
 
@@ -1769,7 +1806,7 @@
     if (!viz) return;
     const listEl = $('preset-list');
     // Bygges hver gang, så favoritter og derezzede altid passer.
-    const hiddenSet = new Set(state.settings.hiddenPresets || []);
+    const hiddenSet = lists.hidden;
     const fragment = document.createDocumentFragment();
     for (const name of viz.allNames) fragment.append(presetRow(name, hiddenSet.has(name)));
     listEl.replaceChildren(fragment);
@@ -1981,6 +2018,11 @@
       state.settings.shareVotes = e.target.checked;
       saveSettingsSoon({ shareVotes: e.target.checked });
     });
+    $('set-peter-picks').addEventListener('change', (e) => {
+      state.settings.peterPicks = e.target.checked;
+      saveSettingsSoon({ peterPicks: e.target.checked });
+      if (viz && !REVIEW) applyPresetLists();
+    });
     $('set-intro').addEventListener('change', (e) => {
       state.settings.showIntro = e.target.checked;
       saveSettingsSoon({ showIntro: e.target.checked });
@@ -2061,7 +2103,7 @@
       }
       if (event.target.closest('.preset-fav')) {
         event.stopPropagation();
-        votePreset(li.dataset.name, 'keep', { toggle: true }).then(() => li.replaceWith(presetRow(li.dataset.name, false)));
+        votePreset(li.dataset.name, 'keep', { toggle: true });
         return;
       }
       if (event.target.closest('.preset-restore')) {

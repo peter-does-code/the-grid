@@ -21,6 +21,8 @@ const DEFAULT_SETTINGS = {
   shareVotes: null, // null = ikke spurgt endnu; true/false = brugerens svar (stemmer til Peter, src/main/votes.js)
   hiddenPresets: [], // presets brugeren har derezzet med D
   favoritePresets: [], // brugerens favoritter (K): vises oftere
+  peterPicks: false, // brug også Peters favoritter og derez (src/renderer/presets/peter-picks.js)
+  peterPickExceptions: [], // Peters valg, brugeren har fortrudt for sig selv (☆ eller ↺ i preset-listen)
   lastInput: '',
   visualizer: {
     autoCycle: true,
