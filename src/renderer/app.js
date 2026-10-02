@@ -273,6 +273,7 @@
     state.settings.hiddenPresets = (state.settings.hiddenPresets || []).filter((n) => n !== name);
     saveSettingsSoon({ hiddenPresets: state.settings.hiddenPresets });
     viz.unhide(name);
+    call(bridge.votes.add(name, 'clear')); // derez fortrudt
     const li = $('preset-list').querySelector(`li[data-name="${CSS.escape(name)}"]`);
     if (li) li.replaceWith(presetRow(name, false));
     updatePresetCount();
@@ -288,7 +289,7 @@
       saveSettingsSoon({ shareVotes: yes });
     }
     if (verdict === 'keep') {
-      // K slår favorit til og fra (personlig liste, vises oftere). Kun når den slås til, tæller den som stemme.
+      // K slår favorit til og fra (personlig liste, vises oftere). Slås den fra, trækkes stemmen tilbage (clear).
       const favs = new Set(state.settings.favoritePresets || []);
       const on = !favs.has(name);
       if (on) favs.add(name);
@@ -298,7 +299,7 @@
       viz.setFavorites(favs);
       const li = $('preset-list').querySelector(`li[data-name="${CSS.escape(name)}"]`);
       if (li) li.classList.toggle('fav', on);
-      if (on) await call(bridge.votes.add(name, verdict));
+      await call(bridge.votes.add(name, on ? verdict : 'clear'));
       toast(t(on ? 'votes.liked' : 'votes.unliked', { name }), 'info', 2500);
       return;
     }

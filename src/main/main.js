@@ -15,7 +15,7 @@ const { SpotifyError } = require('./errors');
 const { iconPng } = require('./icon');
 const { DefaultDeviceWatcher } = require('./audio-devices');
 const { startUpdater, readToken } = require('./updater');
-const { VoteQueue } = require('./votes');
+const { VoteQueue, normalizeVote } = require('./votes');
 const i18n = require('../shared/i18n');
 
 /**
@@ -195,20 +195,26 @@ function votesId() {
 }
 
 function registerIpc() {
-  // K = behold, D = derez. Fra kildekoden (Peter selv, også review-tilstanden) skrives de direkte i
-  // scripts/preset-keeps.txt og scripts/preset-bans.txt. I den installerede app går de til Peter, hvis
-  // brugeren har sagt ja (shareVotes); ellers bliver de kun på pc'en.
+  // K = behold, D = derez, clear = fortrudt (☆ igen eller ↺). Fra kildekoden (Peter selv, også review-tilstanden)
+  // gemmes hver stemme i data/preset-votes.jsonl, og K/D skrives også i scripts/preset-keeps.txt og
+  // scripts/preset-bans.txt. I den installerede app går de til Peter, hvis brugeren har sagt ja (shareVotes);
+  // ellers bliver de kun på pc'en.
   handle('votes:add', (_event, name, verdict) => {
     const line = String(name || '').replace(/[\r\n]+/g, ' ').trim();
     if (!line) return { recorded: false };
+    const vote = normalizeVote(verdict);
     if (IS_REVIEW || !app.isPackaged) {
       const fs = require('node:fs');
-      const file = path.join(app.getAppPath(), 'scripts', verdict === 'keep' ? 'preset-keeps.txt' : 'preset-bans.txt');
-      fs.appendFileSync(file, line + '\n');
+      const record = { preset: line, vote, at: new Date().toISOString(), voter: 'peter', version: app.getVersion(), source: IS_REVIEW ? 'review' : 'dev' };
+      fs.appendFileSync(path.join(app.getAppPath(), 'data', 'preset-votes.jsonl'), JSON.stringify(record) + '\n');
+      if (vote !== 'clear') {
+        const file = path.join(app.getAppPath(), 'scripts', vote === 'keep' ? 'preset-keeps.txt' : 'preset-bans.txt');
+        fs.appendFileSync(file, line + '\n');
+      }
       return { recorded: true, where: 'lists' };
     }
     if (store.getSettings().shareVotes === true && voteQueue) {
-      voteQueue.add({ preset: line, vote: verdict });
+      voteQueue.add({ preset: line, vote });
       return { recorded: true, where: 'peter' };
     }
     return { recorded: false };

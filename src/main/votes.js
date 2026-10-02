@@ -1,7 +1,7 @@
 'use strict';
 
 /*
- * Stemmer på presets fra brugerne (K = kan lide, D = derez), sendt til Peter som issues i det private
+ * Stemmer på presets fra brugerne (K = kan lide, D = derez, clear = fortrudt), sendt til Peter som issues i det private
  * releases-repo, kun når brugeren har sagt ja (\`shareVotes\` i indstillingerne). Peter samler dem med
  * scripts/collect-votes.js.
  *
@@ -17,6 +17,11 @@ const path = require('node:path');
 
 const SEND_AFTER_MS = 20 * 1000;
 const MAX_PER_ISSUE = 200;
+
+/** K = keep, D = derez, og at fortryde en af dem = clear. */
+function normalizeVote(vote) {
+  return vote === 'keep' || vote === 'clear' ? vote : 'derez';
+}
 
 class VoteQueue {
   constructor({ dir, token, owner, repo, version, getId, log = console, fetchImpl = globalThis.fetch }) {
@@ -46,9 +51,9 @@ class VoteQueue {
     }
   }
 
-  /** @param {{preset: string, vote: 'keep'|'derez'}} v */
+  /** @param {{preset: string, vote: 'keep'|'derez'|'clear'}} v  clear = stemmen trukket tilbage (☆ igen eller ↺) */
   add(v) {
-    this.pending.push({ preset: String(v.preset).slice(0, 300), vote: v.vote === 'keep' ? 'keep' : 'derez', at: new Date().toISOString() });
+    this.pending.push({ preset: String(v.preset).slice(0, 300), vote: normalizeVote(v.vote), at: new Date().toISOString() });
     this.save();
     clearTimeout(this.timer);
     this.timer = setTimeout(() => this.flush(), SEND_AFTER_MS);
@@ -90,4 +95,4 @@ class VoteQueue {
   }
 }
 
-module.exports = { VoteQueue };
+module.exports = { VoteQueue, normalizeVote };

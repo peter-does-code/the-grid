@@ -48,8 +48,11 @@ The Grid har to slags MilkDrop-presets:
    - Begge lister er personlige og ligger i brugerens egne indstillinger.
    - Første gang spørger appen, om stemmerne må sendes til Peter (`shareVotes`; kan ændres under Settings).
    - Ja: `src/main/votes.js` sender dem i portioner som issues i `the-grid-releases`. Der sendes presetnavn, stemme, version og et tilfældigt id.
-   - `node scripts/collect-votes.js` viser dem. Med `--apply` kommer flest derez på ban-listen og flest kan-lide på behold-listen (Peters egne valg går forud), og issues lukkes.
-   - Fra kildekoden (Peter selv) skriver K/D direkte i listerne.
+   - At fortryde (☆ igen eller ↺) sendes som `clear`.
+   - **Indtil videre er stemmerne kun data** (Peter 02-10-2026). Derez skjuler presettet for brugeren selv, men ingen andres stemmer kommer automatisk på ban- eller behold-listen. Når der er data nok, analyseres det, hvilke presets der er gode og dårlige.
+   - `node scripts/collect-votes.js` henter stemmerne ind i `data/preset-votes.jsonl` (én pr. linje: preset, stemme, tidspunkt, bruger-id, version), lukker de læste issues og viser et overblik pr. person. `--all` viser hvert preset med Peters stemme og de andres. Commit `data/` bagefter.
+   - `data/voters.json` giver kendte id'er et navn. Peters installerede app (`fd38a78a`) og hans stemmer fra kildekoden (`peter`) hedder "Peter".
+   - Fra kildekoden (Peter selv) skriver K/D direkte i listerne og gemmes også i `data/preset-votes.jsonl`. Peters lister tælles med som hans stemmer.
 9. **Fjernet af Peter:** navnene i `scripts/preset-bans.txt` kommer aldrig med. Listen ligger også i pakken, så `visualizer.js` fjerner de samme navne blandt de indbyggede presets.
 
 ## Til hverdag
@@ -64,7 +67,7 @@ Arbejdsdataene ligger i `presets-work/` (ignoreres af git, ca. 40 MB):
 |---|---|
 | `npm run presets:pack` | Bygger pakken (`src/renderer/presets/`) ud fra målingerne og Peters lister. Kør efter nye stemmer eller ændringer i ban- og behold-listerne, og udgiv bagefter. |
 | `npm run presets:review` | 50 nye kandidater efter Peters smag (`scripts/build-review-pack.js`) og åbner review-vinduet. `-- --flashers` viser i stedet de frasorterede blinkere. |
-| `node scripts/collect-votes.js [--apply]` | Brugernes stemmer fra GitHub ind i listerne. |
+| `node scripts/collect-votes.js [--all]` | Brugernes stemmer fra GitHub ind i `data/preset-votes.jsonl` og et overblik. Ændrer ingen lister. |
 
 ## Fra bunden
 

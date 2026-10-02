@@ -55,3 +55,15 @@ test('uden token sendes intet', async () => {
   assert.equal(await q.flush(), 0);
   assert.equal(calls.length, 0);
 });
+
+test('at fortryde en stemme (☆ igen eller ↺) sendes som clear; ukendte stemmer er derez', async () => {
+  const { calls, make } = setup();
+  const q = make();
+  q.add({ preset: 'A', vote: 'keep' });
+  q.add({ preset: 'A', vote: 'clear' });
+  q.add({ preset: 'B', vote: 'whatever' });
+  clearTimeout(q.timer);
+  assert.equal(await q.flush(), 3);
+  const data = JSON.parse(JSON.parse(calls[0].opts.body).body.split('```json')[1].split('```')[0]);
+  assert.deepEqual(data.votes.map((v) => v.vote), ['keep', 'clear', 'derez']);
+});
