@@ -156,6 +156,7 @@
     sleepAfterSec: 2.0, // pauser i selve musikken må ikke slukke billedet
     sleepAfterPausedSec: 0.5, // når Spotify melder pause, slukkes hurtigt
     wakeAfterSec: 0.15,
+    newSongAfterSilenceSec: 3, // så lang stilhed før en opvågning tæller som en ny sang
     stickyTempo: 0.8, // behold tempoet, så længe det scorer mindst 80 % af den bedste kandidat
     stickyTempoThreeTwo: 0.55, // ... og 55 %, hvis kandidaten ligger i forholdet 3:2 eller 2:3
     octaveDownAboveBpm: 150, // over dette tempo foretrækkes det halve, hvis det er næsten lige så stærkt
@@ -319,7 +320,8 @@
      *   accent  {t, strengthZ}      kraftigt slag (til MilkDrops hårde klip)
      *   section {t, index, reason}  ny del af sangen
      *   drop    {t, index, rise}    pludselig kraftig stigning efter en roligere del
-     *   sleep / wake                musikken stoppede / startede
+     *   sleep {t}                   musikken stoppede
+     *   wake  {t, newSong}          musikken startede; newSong efter mindst newSongAfterSilenceSec stilhed
      */
     update(t, f) {
       const events = [];
@@ -371,10 +373,11 @@
         if (this.loudSince === null) this.loudSince = t;
         if (this.silent && t - this.loudSince >= this.o.wakeAfterSec) {
           this.silent = false;
-          // Efter en længere pause er det typisk en ny sang.
-          if (t - this.silentStartedAt >= 3) this.resetSong(t);
+          // Efter en længere pause er det typisk en ny sang (app.js måler så også lydniveauet forfra).
+          const newSong = t - this.silentStartedAt >= this.o.newSongAfterSilenceSec;
+          if (newSong) this.resetSong(t);
           this.cachedState = null;
-          events.push({ type: 'wake', t });
+          events.push({ type: 'wake', t, newSong });
         }
       }
     }

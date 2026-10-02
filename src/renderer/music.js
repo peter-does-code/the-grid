@@ -5,17 +5,18 @@
  *                        └→ automatisk lydniveau → begrænser → output (Butterchurn og mini-spektrum)
  *
  * Forsinkelsen lader brugeren synkronisere billedet med lyden (fx Bluetooth-hovedtelefoner).
- * Det automatiske lydniveau sørger for, at Butterchurn altid får et kraftigt signal, uanset hvor
- * højt Spotify spiller. Musikmotoren ser den rå lyd, så sangens dynamik ikke udjævnes.
+ * Det automatiske lydniveau (src/shared/agc.js) er en langsom trim pr. nummer: det udligner Spotifys
+ * lydstyrkeskyder og forskellen mellem numre, men lader høje og stille passager i et nummer være høje og
+ * stille, så Butterchurn kan reagere på dem. Kun overstyring rettes hurtigt, og begrænseren er et
+ * sikkerhedsnet. Ved nummerskift, efter mindst 3 s stilhed og når Init stopper, kalder app.js reseed(),
+ * så niveauet måles forfra og forstærkningen sættes direkte. Slået fra under Settings er forstærkningen 1.
+ * Musikmotoren ser den rå lyd, så sangens dynamik ikke udjævnes.
  */
 (function () {
   'use strict';
 
   const M = window.VisampMusic;
-  const AGC_TARGET_RMS = 0.18;
-  const AGC_MIN_GAIN = 0.5;
-  const AGC_MAX_GAIN = 12;
-  const AGC_SILENCE_RMS = 0.0015;
+  const { Agc } = window.VisampAgc;
 
   class MusicListener {
     constructor(audioContext, { engineOptions } = {}) {
@@ -43,10 +44,9 @@
       this.features = new M.FeatureExtractor(audioContext.sampleRate, this.analyser.fftSize);
       this.engine = new M.MusicEngine(engineOptions);
 
-      this.agc = true;
-      this.agcGain = 1;
-      this.agcLevel = null;
-      this.lastT = null;
+      this.agc = true; // indstillingen "Automatic level"
+      this.trim = new Agc();
+      this.agcGain = 1; // forstærkningen, der sidst blev sat på lydkæden (diagnose og selvtest viser den)
       this.lastRms = 0;
       this.source = null;
     }
@@ -70,6 +70,7 @@
 
     setOptions({ agc, latencyMs } = {}) {
       if (typeof agc === 'boolean') {
+        if (agc && !this.agc) this.trim.reseed(); // tændt igen: det gamle niveau er forældet
         this.agc = agc;
         if (!agc) this.setGain(1);
       }
@@ -84,6 +85,11 @@
       this.gain.gain.setTargetAtTime(gain, this.ctx.currentTime, 0.08);
     }
 
+    /** Nyt nummer eller musik efter længere stilhed: niveauet måles forfra, og forstærkningen sættes direkte. */
+    reseed() {
+      this.trim.reseed();
+    }
+
     /** Analyserer det seneste stykke lyd. Kaldes én gang pr. billede med tiden i sekunder. */
     frame(t) {
       this.analyser.getFloatFrequencyData(this.freq);
@@ -93,21 +99,12 @@
       const rms = Math.sqrt(sum / this.time.length);
       this.lastRms = rms;
       const events = this.engine.update(t, this.features.extract(this.freq, rms));
-      this.updateAgc(t, rms);
+      if (this.agc) {
+        const gain = this.trim.update(t, rms, { silent: this.engine.silent });
+        // Trimmen glider langsomt; lydkæden opdateres først, når forstærkningen har flyttet sig 0,3 %.
+        if (Math.abs(gain - this.agcGain) > this.agcGain * 0.003) this.setGain(gain);
+      }
       return events;
-    }
-
-    updateAgc(t, rms) {
-      const dt = this.lastT === null ? 1 / 60 : Math.min(0.25, Math.max(0.001, t - this.lastT));
-      this.lastT = t;
-      // Uden musik holdes forstærkningen, så svag baggrundslyd ikke pustes op.
-      if (!this.agc || rms < AGC_SILENCE_RMS || this.engine.silent) return;
-      // Niveaufølger: op på 0,4 s, ned på 4 s, så enkelte slag ikke pumper niveauet.
-      const tau = this.agcLevel === null || rms > this.agcLevel ? 0.4 : 4;
-      this.agcLevel = this.agcLevel === null ? rms : this.agcLevel + (rms - this.agcLevel) * (1 - Math.exp(-dt / tau));
-      const target = Math.min(AGC_MAX_GAIN, Math.max(AGC_MIN_GAIN, AGC_TARGET_RMS / this.agcLevel));
-      const next = this.agcGain + (target - this.agcGain) * (1 - Math.exp(-dt / 1.5));
-      if (Math.abs(next - this.agcGain) > 0.002) this.setGain(next);
     }
   }
 

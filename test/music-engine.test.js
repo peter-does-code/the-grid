@@ -271,6 +271,22 @@ test('stilhed giver sleep og ingen slag, og musik giver wake', () => {
   const beatsInSilence = result.events.filter((e) => e.type === 'beat' && e.t > 12.1 && e.t < 14);
   assert.deepEqual(beatsInSilence, []);
   assert.equal(result.engine.state.silent, false);
+  // Kun ca. 2 s sovende: samme sang, og app.js beholder lydniveauet.
+  assert.equal(result.events.filter((e) => e.type === 'wake').pop().newSong, false);
+});
+
+test('wake efter mindst 3 s stilhed melder en ny sang (app.js måler lydniveauet forfra)', () => {
+  const result = simulate({
+    seconds: 24,
+    parts: [
+      { from: 0, to: 8, loud: -20, shares: [0.6, 0.3, 0.1], beats: true },
+      { from: 8, to: 14, silent: true },
+      { from: 14, to: 24, loud: -20, shares: [0.6, 0.3, 0.1], beats: true },
+    ],
+  });
+  const wakes = result.events.filter((e) => e.type === 'wake');
+  assert.equal(wakes.length, 2);
+  assert.equal(wakes[1].newSong, true);
 });
 
 test('svag baggrundslyd vækker ikke visualizeren, og Spotifys pause har forrang', () => {

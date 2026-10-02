@@ -556,6 +556,9 @@
         setSleeping(true);
       } else if (e.type === 'wake') {
         setSleeping(false);
+        // Musik efter mindst 3 s stilhed er typisk en ny sang: lydniveauet måles forfra, så den ikke
+        // kommer ind med forrige sangs forstærkning.
+        if (e.newSong) music.reseed();
       }
     }
     if (now >= beatOffAt) beatDot.classList.remove('on', 'down');
@@ -940,8 +943,10 @@
       state.lastTrackId = item.id;
       if (viz) viz.showTitle(F.trackLabel(item)); // som MilkDrop, når et nyt nummer starter
       if (!firstSeen) {
-        // Nyt nummer: musikmotoren glemmer den forrige sang, og instruktøren skifter på takten.
+        // Nyt nummer: musikmotoren glemmer den forrige sang, lydniveauet måles forfra, og instruktøren
+        // skifter på takten.
         music.engine.notifyTrackChange(nowSeconds());
+        music.reseed();
         pendingMusicEvents.push({ type: 'track', t: nowSeconds() });
       }
       const c = state.collection;
@@ -1197,6 +1202,12 @@
         if (audio.currentTime >= loop[1]) audio.currentTime = loop[0];
       });
     }
+    // Init spiller langt under Spotifys niveau (INIT_LOUDNESS_TRIM). Når den stopper, måles lydniveauet forfra,
+    // så det næste fra Spotify ikke kommer ind med Inits forstærkning (ca. 14 dB for varmt).
+    const reseedLevel = () => {
+      if (music) music.reseed();
+    };
+    audio.addEventListener('ended', reseedLevel);
     if (onEnded) audio.addEventListener('ended', onEnded);
     audio.play().catch((err) => console.warn('Init kunne ikke afspilles:', err));
     fadeAudio(audio, volume, 0.8);
@@ -1219,6 +1230,7 @@
           audio.pause();
           audio.removeAttribute('src');
           audio.load();
+          reseedLevel();
         });
       },
     };

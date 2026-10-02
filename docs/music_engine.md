@@ -12,8 +12,13 @@ Spotify-lyd (loopback) → forsinkelse ─┬→ rå analyse → musikmotoren
 ```
 
 - **Forsinkelse (0-500 ms):** synkroniserer billedet med lyden, fx med Bluetooth-hovedtelefoner. Den gælder også motorens analyse.
-- **Automatisk lydniveau:** giver Butterchurn samme signalstyrke, uanset hvor højt Spotify spiller. Forstærkningen ligger mellem 0,5 og 12 gange. Den justeres kun, mens der er musik, så svag baggrundslyd ikke pustes op.
-- **Begrænser:** forhindrer klipning.
+- **Automatisk lydniveau** (`src/shared/agc.js`): en langsom trim pr. nummer. Den udligner Spotifys lydstyrkeskyder og forskellen mellem numre, men ikke forskellen mellem høje og stille passager i et nummer. Butterchurn måler nemlig selv bas, mellemtone og diskant mod de sidste ca. 4 s, så en forstærkning på samme tidsskala får et højere omkvæd til at se roligere ud end verset (research 02-10-2026, `.claude/plans/2026-10-02-visualizer-research.md`). Indtil da fulgte niveauet med 0,4 s op og 4 s ned og mål-RMS 0,18.
+  - Niveauet følges med τ 25 s, og forstærkningen glider mod målet (RMS 0,09, ca. -21 dBFS) med τ 8 s. Et trin fra -24 til -14 dB ser i Butterchurn højere ud end gennemsnittet i 8,6 s og falder aldrig under 0,89 af det (modelleret i `test/agc.test.js`; før: under 1 efter 2,4 s, ned til 0,80).
+  - Forstærkningen ligger mellem 0,5 og 12 gange. Lidt forstærkning er nødvendig, fordi Butterchurn læser 8-bit-samples (ét trin er ca. -42 dBFS).
+  - Kun overstyring rettes hurtigt: ville RMS efter forstærkning komme over 0,5, tages forstærkningen ned til 0,45 med det samme, og trimmen fortsætter nedad derfra. Det sker typisk, når et stille intro har skruet op, før bandet kommer ind.
+  - **Måles forfra** ved nummerskift fra Spotify, når musikken vender tilbage efter mindst 3 s stilhed (motorens `wake` med `newSong`), og når Init stopper: de første 0,2 s med lyd måles, og forstærkningen sættes direkte uden at glide. Ellers kom en ny sang ind med den forriges forstærkning, fx ca. 14 dB for varmt efter introens Init.
+  - Den justeres kun, mens der er musik, så svag baggrundslyd ikke pustes op. Slået fra under Settings (Automatic level) er forstærkningen 1.
+- **Begrænser:** forhindrer klipning. Med det lave mål er den kun et sikkerhedsnet.
 - Motoren analyserer den **rå** lyd, så sangens dynamik bevares.
 
 ## Hvad motoren hører
@@ -58,6 +63,8 @@ Hvert kvarte sekund gemmes et øjebliksbillede af lydstyrke, fordeling mellem b�
 | Ukendt | -48 dB | 2 s |
 
 På Peters pc giver andre programmer svag baggrundslyd på -55 til -63 dB. Den må ikke vække billedet.
+
+Billedet vågner efter 0,15 s lyd. Har det sovet i mindst 3 s (`newSongAfterSilenceSec`), glemmer motoren sangen, og `wake`-hændelsen har `newSong: true`, så app.js også måler lydniveauet forfra.
 
 ## Instruktøren: hvornår der skiftes
 
