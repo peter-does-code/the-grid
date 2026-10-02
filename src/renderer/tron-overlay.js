@@ -16,6 +16,8 @@
   const NEAR = 1; // gulvets nærmeste dybde
   const FAR = 14; // gulvets fjerneste dybde
   const SIDE = 9; // gulvets halve bredde i gulv-enheder
+  // Højst 1,5 lærredspixel pr. CSS-pixel: laget er bløde, glødende linjer i 2D, og fulde 4K-pixels koster CPU uden at
+  // ses. Op til 150 % Windows-skalering tegnes 1:1 i skærmpixels.
   const MAX_PIXEL_RATIO = 1.5;
 
   const rgba = ([r, g, b], a) => `rgba(${r},${g},${b},${Math.max(0, Math.min(1, a)).toFixed(3)})`;
@@ -38,6 +40,23 @@
       this.lastT = null;
       this.raf = null;
       this.frame = (ms) => this.loop(ms);
+      this.devicePixels = null; // præcise skærmpixels fra ResizeObserver (som visualizer.js)
+      if (typeof ResizeObserver === 'function') this.observeSize();
+    }
+
+    observeSize() {
+      const observer = new ResizeObserver((entries) => {
+        const entry = entries[entries.length - 1];
+        const box = entry.devicePixelContentBoxSize && entry.devicePixelContentBoxSize[0];
+        const css = entry.contentBoxSize && entry.contentBoxSize[0];
+        this.devicePixels = box && css ? { width: box.inlineSize, height: box.blockSize, cssWidth: css.inlineSize, cssHeight: css.blockSize } : null;
+      });
+      try {
+        observer.observe(this.canvas, { box: 'device-pixel-content-box' });
+      } catch (err) {
+        console.warn('Tron overlay: ResizeObserver without device-pixel-content-box; sizing from CSS pixels:', err);
+        observer.observe(this.canvas);
+      }
     }
 
     setEnabled(on) {
@@ -114,11 +133,18 @@
       if (this.raf === null) this.raf = requestAnimationFrame(this.frame);
     }
 
+    /**
+     * Lærredets størrelse, målt hvert billede. ResizeObserverens skærmpixels bruges, når de hører til den nuværende
+     * CSS-størrelse (lige efter laget er vist, har observeren endnu ikke meldt); ellers CSS-pixels x devicePixelRatio.
+     */
     resize() {
       const rect = this.canvas.getBoundingClientRect();
-      const dpr = Math.min(window.devicePixelRatio || 1, MAX_PIXEL_RATIO);
-      const w = Math.max(2, Math.round(rect.width * dpr));
-      const h = Math.max(2, Math.round(rect.height * dpr));
+      const ratio = window.devicePixelRatio || 1;
+      const scale = Math.min(1, MAX_PIXEL_RATIO / ratio);
+      const dp = this.devicePixels;
+      const exact = dp && Math.abs(dp.cssWidth - rect.width) < 0.5 && Math.abs(dp.cssHeight - rect.height) < 0.5;
+      const w = Math.max(2, Math.round((exact ? dp.width : rect.width * ratio) * scale));
+      const h = Math.max(2, Math.round((exact ? dp.height : rect.height * ratio) * scale));
       if (this.canvas.width !== w || this.canvas.height !== h) {
         this.canvas.width = w;
         this.canvas.height = h;

@@ -2,13 +2,13 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { FlashGuard } = require('../src/shared/flash-guard.js');
+const { FlashGuard, SAMPLE_RATE } = require('../src/shared/flash-guard.js');
 
-/** Kører vagten i `seconds` med 30 målinger i sekundet; `luma(t)` giver lysstyrken. Returnerer tidspunkterne, den slog til. */
+/** Kører vagten i `seconds` med SAMPLE_RATE (30) målinger i sekundet; `luma(t)` giver lysstyrken. Returnerer tidspunkterne, den slog til. */
 function run(guard, seconds, luma, t0 = 0) {
   const trips = [];
-  for (let i = 0; i < seconds * 30; i++) {
-    const t = t0 + i / 30;
+  for (let i = 0; i < seconds * SAMPLE_RATE; i++) {
+    const t = t0 + i / SAMPLE_RATE;
     if (guard.feed(t, luma(t))) trips.push(t);
   }
   return trips;
@@ -35,6 +35,21 @@ test('blink på slaget (op til 180 BPM) og rolige billeder får lov at blive', (
   const guard = new FlashGuard();
   guard.notifyChange(0);
   assert.equal(run(guard, 60, calm).length, 0);
+});
+
+test('tærsklerne gælder for SAMPLE_RATE: færre målinger ville skifte blink på slaget væk', () => {
+  // Et længere blink på slaget (30 % af slaget) ved 180 BPM får lov at blive ved 30 målinger i sekundet ...
+  const longBlink = (t) => ((t * 180) / 60) % 1 < 0.3 ? 0.95 : 0.2;
+  const guard = new FlashGuard();
+  guard.notifyChange(0);
+  assert.equal(SAMPLE_RATE, 30);
+  assert.equal(run(guard, 60, longBlink).length, 0);
+  // ... men ved 10 målinger i sekundet ligner det et stroboskop. Derfor måler visualizeren efter tid, ikke billeder.
+  const sparse = new FlashGuard();
+  sparse.notifyChange(0);
+  let trips = 0;
+  for (let i = 0; i < 60 * 10; i++) if (sparse.feed(i / 10, longBlink(i / 10))) trips += 1;
+  assert.ok(trips > 0);
 });
 
 test('ikke under overgangen, og højst ét skift pr. 30 s', () => {

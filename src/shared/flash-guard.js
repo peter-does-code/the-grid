@@ -10,6 +10,10 @@
  *   - to vinduer i træk (8 s konstant blink);
  *   - mindst \`settleSec\` (6 s) efter et skift, så overgangen ikke tæller med;
  *   - mindst \`cooldownSec\` (30 s) mellem to skift fra vagten.
+ * Tallene gælder for SAMPLE_RATE (30) målinger i sekundet, som i preset-testen (hvert andet billede ved 60 fps).
+ * Andelen af spring afhænger af, hvor tit der måles: ved 10 målinger i sekundet kan et blink pr. slag ved 180 BPM
+ * give 0,6 spring pr. måling, over tærsklen, og presettet ville blive skiftet væk. Visualizeren måler derfor efter
+ * tid med SAMPLE_RATE (visualizer.js), uanset skærmens opdateringsrate.
  * Ren JavaScript (ingen DOM), testet i test/flash-guard.test.js.
  */
 (function (root, factory) {
@@ -19,6 +23,7 @@
   'use strict';
 
   const DEFAULTS = { windowSec: 4, threshold: 0.55, jump: 0.06, windows: 2, settleSec: 6, cooldownSec: 30 };
+  const SAMPLE_RATE = 30; // målinger i sekundet, som tærsklerne er stemt efter
 
   class FlashGuard {
     constructor(options = {}) {
@@ -64,5 +69,5 @@
     }
   }
 
-  return { FlashGuard, FLASH_GUARD_DEFAULTS: DEFAULTS };
+  return { FlashGuard, FLASH_GUARD_DEFAULTS: DEFAULTS, SAMPLE_RATE };
 });

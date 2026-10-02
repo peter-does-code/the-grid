@@ -33,6 +33,7 @@ flowchart LR
 | `src/shared/grid-font.js` | Lyscykel-skriften: bogstaver af vandrette og lodrette streger, som introens cykler kører. |
 | `src/shared/music-engine.js` | Musikmotoren: tempo, slag, dele af sangen, drops, stilhed, profiler af presets og instruktøren. Bruges af rendereren og af tests. |
 | `src/shared/agc.js` | Det automatiske lydniveau foran Butterchurn: langsom trim pr. nummer, hurtig kun mod overstyring, måles forfra ved nummerskift (se `music_engine.md`). Bruges af `music.js` og af tests. |
+| `src/shared/frame-pacer.js` | Billedtakten for visualizeren (højst ca. 60 fps, se Rendering) og billedtider til selvtesten. |
 
 Rendereren har ingen Node-adgang og laver ingen netværkskald. Alt Spotify-arbejde sker i hovedprocessen.
 
@@ -66,7 +67,7 @@ Rendereren har ingen Node-adgang og laver ingen netværkskald. Alt Spotify-arbej
 | `eggs.js` | Påskeæg: Tron-ord i link-feltet, Konami-koden og snydearket (`CHEAT_SHEET`), som Flynns terminal viser. Terminalen (`openTerminal`, `termRun` i `app.js`) åbnes med `whoami`. Se CLAUDE.md. |
 | `music.js` | Lydkæden foran visualizeren (forsinkelse, automatisk lydniveau, begrænser) og analysen til musikmotoren. Se `music_engine.md`. |
 | `musictest.js`, `probe.js` | `npm run musictest` (offline mod facit eller en lydfil) og lyddiagnosen `npm run diagnose -- --audio` |
-| `visualizer.js` | Butterchurn: 1.057 presets (395 fra butterchurn-presets og 662 fra Cream of the Crop, se docs/presets.md), historik, tilfældig eller fast rækkefølge, titelanimation |
+| `visualizer.js` | Butterchurn: 1.057 presets (395 fra butterchurn-presets og 662 fra Cream of the Crop, se docs/presets.md), historik, tilfældig eller fast rækkefølge, titelanimation, renderstørrelse, billedtakt og lysstyrke til blink-vagten (se Rendering) |
 | `spectrum.js` | Den lille Winamp-analysator på 76 x 16 pixels: spektrum, oscilloskop eller slukket, i temaets farver |
 | `playlist.js` | Playliste-listen: valg, afspilning, markering af det aktuelle nummer |
 | `index.html`, `styles.css` | Layout og tre temaer via `body[data-theme]`: `grid` (Tron, standard), `clu` (orange) og `classic` (Winamp). Faste tekster har `data-i18n`-attributter. |
@@ -84,6 +85,20 @@ Begrænsning: loopback fanger kun Windows' **standard**-afspilningsenhed, og en 
 - `audio-devices.js` læser standardenheden hvert sekund med en PowerShell-løkke (`ps/audio-watch.ps1`), der bruger Core Audio (`IMMDeviceEnumerator`), og sender `audio:device` til rendereren.
 - Ved et skift starter rendereren lydfangsten forfra. En ny fangst lytter altid på den nuværende standardenhed. Enhedens navn vises under Indstillinger.
 - Sikkerhedsnet: melder Spotify, at der spilles på denne pc, men fangsten er helt stille i 4 sekunder, startes den forfra én gang. Hjælper det ikke, forklarer en besked, at Spotify nok spiller på en anden enhed end Windows' standard.
+
+## Rendering
+
+Butterchurn tegner i `#viz` (`visualizer.js`), Tron-laget i sit eget 2D-canvas ovenpå (`tron-overlay.js`).
+
+- **Størrelse:** canvas og Butterchurns teksturer har præcis lige så mange pixels som elementet på skærmen (`pixelRatio` og `textureRatio` 1). `ResizeObserver` med `device-pixel-content-box` giver de præcise skærmpixels uden afrunding af CSS-størrelse × `devicePixelRatio` og melder også, når skaleringen skifter (Windows-skalering, vinduet flyttet til en anden skærm). Reserven er CSS-pixels × `devicePixelRatio` og `matchMedia` på `resolution`.
+- **Loft 3840 px bredde** (`MAX_RENDER_WIDTH`): en 4K-skærm i fuld skærm tegnes 1:1, bredere strækkes af browseren. Butterchurn tegner flere fulde pas pr. billede (warp, slør, comp, FXAA), så GPU-prisen vokser med pixelantallet. Supersampling (`textureRatio` over 1) bruges ikke: det koster 4 gange GPU og virker kun sammen med FXAA.
+- **Størrelsesskift samles:** det første skift sker med det samme, men under et træk (preset-listens kant, vinduets kant) først 100 ms efter det sidste (`RESIZE_DEBOUNCE_MS`). Hvert skift genopretter Butterchurns teksturer og oversætter udgangs-shaderen igen.
+- **Billedtakt højst ca. 60 fps** (`src/shared/frame-pacer.js`). Presets bevæger sig pr. billede: zoom, rotation, henfald og `bass_thresh` i preset-ligningerne er ikke korrigeret for billedraten, så uden loft løb de 2-2,4 gange for hurtigt på 120/144 Hz-skærme. Der tegnes på hver n-te skærmopdatering, hvor n er det mindste heltal, der giver højst 72 fps: 60 Hz hvert billede, 120 Hz hvert andet (60), 144 Hz hvert andet (72), 165 Hz hvert tredje (55), 75 Hz hvert andet (37,5). En fast deler giver en jævn takt. Opdateringsraten estimeres af `requestAnimationFrame`-tidsstemplerne efter første sekund og igen hvert 5. sekund. Musikmotoren og Tron-laget har egne løkker og kører med skærmens fulde rate.
+- **Mesh og kantudjævning:** warp-gitteret er 64×48 (Butterchurns standard er 48×36), og `outputFXAA` udjævner 1-px-linjer i et ekstra pas.
+- **GPU:** WebGL2-konteksten oprettes med Butterchurns egne attributter plus `powerPreference: 'high-performance'` (den hurtige GPU på bærbare med to grafikkort), før Butterchurn beder om den og får den samme. Grafikkortets navn står i konsollen (`WebGL renderer:`) og i selvtestens rapport.
+- **Lysstyrke til blink-vagten:** ca. 30 målinger i sekundet efter tid (`SAMPLE_RATE` i `flash-guard.js`), ikke pr. billede, fordi vagtens tærskler er stemt efter 30 målinger i sekundet; ved færre ligner blink på slaget et stroboskop. Billedet skaleres ned til 48×27 på GPU'en (`blitFramebuffer`) og læses asynkront gennem en pixel-buffer med et hegn (`fenceSync`), så CPU'en ikke venter på GPU'en; svaret kommer 1-2 billeder senere. Før kopierede `drawImage` hele billedet til CPU'en hvert andet billede. Giver første aflæsning en WebGL-fejl, bruges `drawImage` igen (advarsel i konsollen, `lumaMethod: "canvas-copy"` i selvtesten).
+- **Tron-laget** måler sin størrelse på samme måde, men med højst 1,5 lærredspixel pr. CSS-pixel: bløde, glødende 2D-linjer vinder ikke på fulde 4K-pixels.
+- **Selvtestens mål** (`report.json`, `report.render`): `size` (canvas), `screenPixels` (elementet før loftet), `cssSize`, `devicePixelRatio`, `devicePixelBox`, `capped`, `mesh`, `fxaa`, `gpu`, `refreshHz`, `divisor`, `targetFps`, `fps` (over hele vinduet), `renderFps` (mens visualizeren var vågen), `frameTimeMs` (tid mellem tegnede billeder: `p50`, `p95`, `max`, `over20`), `rafIntervalMs`, `renderCpuMs` (CPU-tid i `render()`), `lumaMethod` og `lumaSamples`. Under `report.capture` står lydsporets `trackSettings` og `sampleRate`. Et billede over 20 ms er et hak ved 60 fps; ved 37,5 fps (75 Hz) er alle over.
 
 ## Spotify-flows
 
@@ -125,7 +140,7 @@ Alle svar har formen `{ ok: true, data }` eller `{ ok: false, error: { code, mes
 
 - `npm run musictest` sender en syntetisk sang med kendt facit gennem den rigtige Web Audio-analyse i en OfflineAudioContext, uden lyd. Den tjekker tempo, slag, dele, drop og at skift lander på taktstart. Med `--file=` analyseres en rigtig lydfil.
 - `npm run diagnose -- --audio=30` lytter med på det, der spiller, og viser hvad musikmotoren hører.
-- `npm test` kører 146 unit-tests med Nodes indbyggede testrunner. De dækker:
+- `npm test` kører 158 unit-tests med Nodes indbyggede testrunner. De dækker:
   - linktolkning, PKCE (RFC 7636-vektoren) og hele login-flowet mod en rigtig loopback-server;
   - token-fornyelse, API-fejlkoder og 2026-formatet for playlister;
   - afspil-forespørgsler med kontekst, verifikation af afspilning og afspilningens fallbacks;
@@ -136,6 +151,7 @@ Alle svar har formen `{ ok: true, data }` eller `{ ok: false, error: { code, mes
   - den lange kamp: mange derez spredt over mindst 7 sekunder, alle bogstaver skrevet før finalen, vinderen skriver det sidste ord, under 22 sekunder, og at Game Grid altid kårer en vinder;
   - den anden introstils koreografi med seedet tilfældighed: mange derez, taberen rammer væggen efter afskæringen, GRID skrives til sidst, kun rette vinkler, varighed under 15 s, og påskeæggenes varianter;
   - at snydearket nævner alle påskeæg og Konami-koden;
+  - billedtakten (deleren for 60-240 Hz, estimat af opdateringsraten, tabte billeder, pauser), renderstørrelsen og loftet, samlingen af størrelsesskift, lysstyrke-aflæsningen mod et falsk WebGL2 (GL-tilstanden lægges tilbage) og at blink-vagtens tærskler kræver 30 målinger i sekundet;
   - at alle tekster er engelske og ikke tomme, at alle nøgler i `index.html`, `app.js` og hovedprocessens fejlkoder findes, og at lyscykel-skriften har alle bogstaver og kun rette vinkler.
 - `npm run diagnose -- --play` afspiller det sidst hentede link mod den rigtige Spotify-app med afspil-knappens kode og viser hver udveksling med Spotify.
 - `npm run selftest` starter appen i en separat datamappe og afspiller en 3 sekunders testlyd gennem Windows. Den måler, hvad visualizeren modtog, og tager skærmbilleder. Skærmbillederne omfatter dialogerne, guiden, introen (holdene rezzer ind, midt i kampen, duellen lige før sammenstødet, færdig tekst), fuld skærm og Clu-temaet. Resultatet skrives til `%TEMP%\the-grid-selftest` eller til `--selftest-out=<mappe>`, og exit-koden er 0, hvis lydfangst og rendering virker.

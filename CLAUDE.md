@@ -11,7 +11,7 @@ Dokumentation i `docs/` (indeks: `docs/README.md`). Drews vejledning: `docs/en/g
 | Kommando | Hvad |
 |---|---|
 | `npm start` eller dobbeltklik på `The Grid.cmd` | Start appen fra kildekoden. `The Grid.cmd` henter selv pakkerne (`npm install` og Electron), hvis de mangler, og forklarer, hvis Node.js mangler |
-| `npm test` | 146 unit-tests (Node test runner, ingen Electron) |
+| `npm test` | 158 unit-tests (Node test runner, ingen Electron) |
 | `npm run selftest` | Hurtig selvtest (ca. 20 s): starter appen, afspiller en 3 sekunders testlyd, tjekker lydfangst og rendering, tager skærmbilleder af dialogerne, introens start, fuld skærm og Clu-temaet, og tjekker at Init kan høres (afspiller den i 4 s). **Laver lyd på pc'en.** |
 | `npm run selftest:quiet` | Som `npm run selftest`, men med næsten uhørlig testlyd og Init (`--quiet`, virker også med `--selftest-full`). **Brug den som standard**: Peter bad om, at testene ikke spiller højt (01-10-2026). Billeder i sekundet er lavere (ca. 34) fra kildekoden end i den pakkede app (60); mål ydelse på `dist/win-unpacked` |
 | `npm run selftest:full` | Fuld selvtest (ca. 90 s): også introens faser, den anden intro, Game Grid-vinderen og alle påskeæg, i realtid. Før en ny installationsfil, og efter ændringer i intro eller påskeæg. |
@@ -41,7 +41,7 @@ Udviklerværktøjer i appen: `Ctrl+Shift+I` eller `F12`. I den installerede app:
 - `src/main/ps/` indeholder PowerShell-scripts (enhedsovervågning, medietaster, testlyd), som `powershell.js` kører med `-File`.
 - `src/preload/preload.js` er den eneste bro til rendereren (`window.visamp`).
 - `src/renderer/` er brugerfladen: `app.js` (limen), `intro.js` og `intro-war.js` (de to intro-stilarter; `GridIntroWar` arver kamera, vægge og effekter fra `GridIntro`; koreografien testes i `test/intro.test.js` med et falsk lærred), `eggs.js` (påskeæg), `visualizer.js` (Butterchurn), `spectrum.js` (mini-analysator), `playlist.js`, `index.html` og `styles.css`.
-- `src/shared/i18n.js` har alle tekster, brugeren ser (engelsk). `src/shared/grid-font.js` er lyscykel-skriften. `src/shared/format.js` er formateringer. `src/shared/music-engine.js` er musikmotoren: tempo og slag, dele af sangen, drops, stilhed, profiler af presets og "instruktøren", der bestemmer hvornår der skiftes. Alle er ren JavaScript, testet i Node.
+- `src/shared/i18n.js` har alle tekster, brugeren ser (engelsk). `src/shared/grid-font.js` er lyscykel-skriften. `src/shared/format.js` er formateringer. `src/shared/music-engine.js` er musikmotoren: tempo og slag, dele af sangen, drops, stilhed, profiler af presets og "instruktøren", der bestemmer hvornår der skiftes. `src/shared/frame-pacer.js` er visualizerens billedtakt (højst ca. 60 fps, fordi presets bevæger sig pr. billede; se Rendering i `docs/architecture.md`). Alle er ren JavaScript, testet i Node.
 - `src/renderer/music.js` er lydkæden foran visualizeren (forsinkelse, automatisk lydniveau, begrænser) og fodrer musikmotoren.
 - `scripts/start.js` starter Electron med et rent miljø (se faldgruber). `scripts/prepare-build.js` laver ikon og licensfil til installationen.
 - `test/` indeholder unit-tests. `helpers.js` har falsk fetch og token-store.
