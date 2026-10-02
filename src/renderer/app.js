@@ -191,7 +191,8 @@
   }
 
   function initVisualizer() {
-    viz = new window.Visamp.Visualizer($('viz'), { audioContext, onPresetChange });
+    // Lysstyrken måles med blink-vagtens takt (30 i sekundet), som dens tærskler er stemt efter.
+    viz = new window.Visamp.Visualizer($('viz'), { audioContext, onPresetChange, lumaRate: window.VisampFlashGuard.SAMPLE_RATE });
     viz.connect(music.output);
     const last = state.settings.visualizer.lastPreset;
     if (!(last && viz.load(last, 0))) viz.next({ random: true, blendSeconds: 0 });
@@ -1835,6 +1836,8 @@
   /**
    * Listen ved siden af visualizeren, ikke over den: visualizeren gøres smallere med listens bredde (margin), så
    * hele billedet stadig ses. Visualizeren er gitterets højre kolonne og går helt ud til vinduets kant.
+   * Under et træk ændres margenen ved hver musebevægelse; visualizeren samler selv størrelsesskiftene
+   * (RESIZE_DEBOUNCE_MS i visualizer.js), så Butterchurns teksturer først genoprettes, når trækket står stille.
    */
   function dockPresets(width = presetWidth()) {
     const el = $('presets-dialog');
@@ -2297,6 +2300,9 @@
     const levels = { phase: 'before', before: 0, during: 0, after: 0 };
     const startedAt = performance.now();
     const startFrames = viz ? viz.frames : 0;
+    // Billedtider og fps gælder selvtestens vindue; fps også kun for den tid, visualizeren var vågen (uden lyd sover den).
+    const startAwake = viz ? viz.awakeSeconds() : 0;
+    if (viz) viz.resetStats();
     setInterval(() => {
       levels[levels.phase] = Math.max(levels[levels.phase], mini.level());
     }, 25);
@@ -2315,6 +2321,7 @@
       const round = (n, digits = 4) => Math.round(n * 10 ** digits) / 10 ** digits;
       const { track, stream } = state.capture;
       const frames = viz ? viz.frames - startFrames : 0;
+      const awake = viz ? viz.awakeSeconds() - startAwake : 0;
       bridge.selftest.report({
         ok: Boolean(state.capture.ok && levels.during > 0.01 && frames > 30),
         capture: {
@@ -2325,6 +2332,8 @@
           videoTracks: stream ? stream.getVideoTracks().map((vt) => vt.readyState) : [],
           contextState: audioContext.state,
           sampleRate: audioContext.sampleRate,
+          // Lydsporets faktiske indstillinger: kanaler, samplerate, og om echoCancellation m.fl. er slået fra.
+          trackSettings: track ? track.getSettings() : null,
         },
         levels: {
           beforePeakRms: round(levels.before),
@@ -2332,7 +2341,14 @@
           afterPeakRms: round(levels.after),
         },
         render: viz
-          ? { frames, fps: round(frames / seconds, 1), webgl2: viz.isWebGL2, size: `${viz.canvas.width}x${viz.canvas.height}` }
+          ? {
+              frames,
+              fps: round(frames / seconds, 1), // over hele vinduet, også mens visualizeren sov
+              renderFps: awake > 0 ? round(frames / awake, 1) : null, // mens den tegnede
+              awakeSeconds: round(awake, 1),
+              webgl2: viz.isWebGL2,
+              ...viz.renderInfo(),
+            }
           : null,
         presets: viz ? { count: viz.names.length, current: viz.current, failed: Array.from(viz.failed), transitions: Boolean(viz.transitionsInstalled), measured: Object.keys(window.gridPresetStats || {}).length } : null,
         media,

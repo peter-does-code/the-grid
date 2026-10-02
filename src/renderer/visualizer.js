@@ -15,7 +15,25 @@
     // De bedste fra Cream of the Crop, udvalgt af preset-testen (scripts/build-preset-pack.js).
     'gridPresetsCreamOfTheCrop',
   ];
-  const MAX_RENDER_WIDTH = 2560; // over dette bliver GPU-belastningen høj uden synlig gevinst
+  // Højeste renderbredde i skærmpixels. 3840 er en 4K-skærm i fuld skærm, så den tegnes 1:1 (loftet var 2560 og blev
+  // strakt 1,5 gange på 4K). Bredere (5K, 8K, et vindue over flere skærme) koster mange gange så meget GPU uden synlig
+  // gevinst: Butterchurn tegner flere fulde pas pr. billede (warp, slør, comp, FXAA).
+  const MAX_RENDER_WIDTH = 3840;
+  // Butterchurns tekstur = canvas = skærmpixels (pixelRatio og textureRatio 1; over 1 er supersampling, som kun virker
+  // med FXAA og koster 4 gange GPU, se .claude/plans/2026-10-02-visualizer-research.md). Mesh 64x48 i stedet for
+  // standarden 48x36: finere warp-bevægelse (1,76 gange så mange punkter i preset-ligningerne, på CPU'en).
+  // outputFXAA udjævner kanterne på 1-px-linjer i et ekstra pas.
+  const RENDER_OPTIONS = { pixelRatio: 1, textureRatio: 1, meshWidth: 64, meshHeight: 48, outputFXAA: true };
+  // Butterchurns egne kontekst-attributter (butterchurn.js:6498) plus den hurtige GPU på bærbare med to grafikkort.
+  // Konteksten oprettes før createVisualizer, og Butterchurns getContext('webgl2') får den samme tilbage.
+  const GL_ATTRIBUTES = { alpha: false, antialias: false, depth: false, stencil: false, premultipliedAlpha: false, powerPreference: 'high-performance' };
+  // Størrelsesskift samles: preset-listens træk ændrer bredden på hvert musetræk, og hvert skift genopretter
+  // Butterchurns teksturer. Det første skift efter en pause sker med det samme, resten 100 ms efter det sidste.
+  const RESIZE_DEBOUNCE_MS = 100;
+  // Lysstyrken til blink-vagten måles på et lille billede som preset-testens (presettest.js: 48x27).
+  const LUMA_W = 48;
+  const LUMA_H = 27;
+  const LUMA_SLOTS = 3; // aflæsninger, der må være undervejs fra GPU'en
   // De sidst viste presets kommer ikke igen foreløbig. Med over 1.000 presets kan vinduet være stort; med 25
   // kom de samme ca. 60 favoritter igen og igen, når valget styres af målingerne (simuleret 01-10-2026).
   const RECENT_EXCLUDE = 150;
@@ -36,6 +54,126 @@
 
   function unwrap(mod) {
     return mod && mod.default ? mod.default : mod;
+  }
+
+  /** Gennemsnitlig lysstyrke (0-1) af RGBA-bytes. */
+  function lumaOf(d) {
+    let sum = 0;
+    for (let i = 0; i < d.length; i += 4) sum += 0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2];
+    return sum / ((d.length / 4) * 255);
+  }
+
+  /** Grafikkortets navn (til konsollen og selvtesten). */
+  function gpuName(gl) {
+    const info = gl.getExtension('WEBGL_debug_renderer_info');
+    return String(gl.getParameter(info ? info.UNMASKED_RENDERER_WEBGL : gl.RENDERER));
+  }
+
+  /**
+   * Lysstyrken af det netop tegnede billede uden at vente på GPU'en. Før: drawImage af hele WebGL-billedet ind i et
+   * 2D-canvas med willReadFrequently, dvs. en fuld kopi GPU → CPU (op til 33 MB ved 4K) hvert andet billede. Nu:
+   * billedet skaleres ned på GPU'en (blitFramebuffer til 48x27), pixels kopieres asynkront ind i en buffer
+   * (PIXEL_PACK_BUFFER), og et hegn (fenceSync) siger, hvornår de er klar. Svaret kommer 1-2 billeder senere og er
+   * 5 KB. Kaldes lige efter render() i samme rAF, før browseren viser og rydder billedet (preserveDrawingBuffer er
+   * false). Butterchurns GL-tilstand (framebuffere, pixel-buffer, scissor) lægges tilbage, som den var.
+   */
+  class LumaProbe {
+    constructor(gl) {
+      this.gl = gl;
+      this.failed = null; // grund, hvis aflæsningen ikke virker her; så bruger visualizeren drawImage
+      this.checked = false;
+      this.seq = 0;
+      this.pixels = new Uint8Array(LUMA_W * LUMA_H * 4);
+      const draw = gl.getParameter(gl.DRAW_FRAMEBUFFER_BINDING);
+      this.renderbuffer = gl.createRenderbuffer();
+      gl.bindRenderbuffer(gl.RENDERBUFFER, this.renderbuffer);
+      gl.renderbufferStorage(gl.RENDERBUFFER, gl.RGBA8, LUMA_W, LUMA_H);
+      gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+      this.framebuffer = gl.createFramebuffer();
+      gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, this.framebuffer);
+      gl.framebufferRenderbuffer(gl.DRAW_FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.RENDERBUFFER, this.renderbuffer);
+      gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, draw);
+      this.slots = Array.from({ length: LUMA_SLOTS }, () => {
+        const buffer = gl.createBuffer();
+        gl.bindBuffer(gl.PIXEL_PACK_BUFFER, buffer);
+        gl.bufferData(gl.PIXEL_PACK_BUFFER, this.pixels.byteLength, gl.STREAM_READ);
+        return { buffer, sync: null, seq: 0 };
+      });
+      gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
+    }
+
+    /** Beder om lysstyrken af canvas-billedet (width x height). false: alle pladser er optaget, målingen springes over. */
+    capture(width, height) {
+      const gl = this.gl;
+      const slot = this.slots.find((s) => !s.sync);
+      if (!slot) return false; // GPU'en er bagud; hellere en måling for lidt end at vente
+      if (!this.checked) {
+        // Første gang: ryd gamle fejl-flag, så en fejl bagefter er vores (getError venter på GPU-processen).
+        for (let e = gl.getError(), n = 0; e !== gl.NO_ERROR && n < 8; e = gl.getError(), n++) {
+          console.warn(`WebGL error before the luma check: 0x${e.toString(16)}`);
+        }
+      }
+      const draw = gl.getParameter(gl.DRAW_FRAMEBUFFER_BINDING);
+      const read = gl.getParameter(gl.READ_FRAMEBUFFER_BINDING);
+      const scissor = gl.isEnabled(gl.SCISSOR_TEST);
+      if (scissor) gl.disable(gl.SCISSOR_TEST);
+      gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null); // canvas-billedet
+      gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, this.framebuffer);
+      gl.blitFramebuffer(0, 0, width, height, 0, 0, LUMA_W, LUMA_H, gl.COLOR_BUFFER_BIT, gl.LINEAR);
+      gl.bindFramebuffer(gl.READ_FRAMEBUFFER, this.framebuffer);
+      gl.bindBuffer(gl.PIXEL_PACK_BUFFER, slot.buffer);
+      gl.readPixels(0, 0, LUMA_W, LUMA_H, gl.RGBA, gl.UNSIGNED_BYTE, 0);
+      gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
+      gl.bindFramebuffer(gl.READ_FRAMEBUFFER, read);
+      gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, draw);
+      if (scissor) gl.enable(gl.SCISSOR_TEST);
+      slot.sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
+      slot.seq = ++this.seq;
+      gl.flush(); // så hegnet når GPU'en med det samme
+      if (!this.checked) {
+        this.checked = true;
+        const error = gl.getError();
+        if (error !== gl.NO_ERROR) this.failed = `WebGL error 0x${error.toString(16)}`;
+      }
+      return true;
+    }
+
+    /** Leverer de færdige målinger (ældste først) til onLuma uden at vente. */
+    poll(onLuma) {
+      const gl = this.gl;
+      const pending = this.slots.filter((s) => s.sync).sort((a, b) => a.seq - b.seq);
+      for (const slot of pending) {
+        const status = gl.clientWaitSync(slot.sync, 0, 0);
+        if (status === gl.TIMEOUT_EXPIRED) return;
+        gl.deleteSync(slot.sync);
+        slot.sync = null;
+        if (status === gl.WAIT_FAILED) {
+          this.failed = 'clientWaitSync failed';
+          return;
+        }
+        gl.bindBuffer(gl.PIXEL_PACK_BUFFER, slot.buffer);
+        gl.getBufferSubData(gl.PIXEL_PACK_BUFFER, 0, this.pixels);
+        gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
+        onLuma(lumaOf(this.pixels));
+      }
+    }
+
+    /** Glemmer aflæsninger undervejs (visualizeren stopper). */
+    cancel() {
+      for (const slot of this.slots) {
+        if (!slot.sync) continue;
+        this.gl.deleteSync(slot.sync);
+        slot.sync = null;
+      }
+    }
+
+    dispose() {
+      const gl = this.gl;
+      this.cancel();
+      for (const slot of this.slots) gl.deleteBuffer(slot.buffer);
+      gl.deleteFramebuffer(this.framebuffer);
+      gl.deleteRenderbuffer(this.renderbuffer);
+    }
   }
 
   function collectPresets() {
@@ -59,11 +197,14 @@
   }
 
   class Visualizer {
-    constructor(canvas, { audioContext, onPresetChange } = {}) {
+    /** `lumaRate`: målinger af lysstyrken i sekundet til onLuma (blink-vagtens SAMPLE_RATE). */
+    constructor(canvas, { audioContext, onPresetChange, lumaRate = 30 } = {}) {
       const butterchurn = unwrap(window.butterchurn);
       if (!butterchurn || typeof butterchurn.createVisualizer !== 'function') {
         throw new Error('Butterchurn could not be loaded.');
       }
+      const pacing = window.VisampFramePacer;
+      if (!pacing) throw new Error('frame-pacer.js is not loaded.');
       this.canvas = canvas;
       this.onPresetChange = onPresetChange;
       this.audioContext = audioContext || new AudioContext({ latencyHint: 'interactive' });
@@ -76,12 +217,28 @@
       this.current = null;
       this.frames = 0;
       this.running = false;
+      // Billedtakten: højst ca. 60 billeder i sekundet (src/shared/frame-pacer.js), og målinger til selvtesten.
+      this.pacer = new pacing.FramePacer();
+      this.renderStats = new pacing.FrameStats(); // CPU-tid pr. tegnet billede
+      this.awakeMs = 0; // tid, visualizeren har tegnet (den sover uden musik)
+      this.startedAt = null;
+      this.lumaRate = lumaRate;
+      this.lastLumaAt = -Infinity;
+      this.lumaSamples = 0;
+      this.devicePixels = null; // præcise skærmpixels fra ResizeObserver, når Chromium giver dem
+      this.lastSizeChange = -Infinity;
 
       const { width, height } = this.measure();
       canvas.width = width;
       canvas.height = height;
-      this.viz = butterchurn.createVisualizer(this.audioContext, canvas, { width, height, pixelRatio: 1, textureRatio: 1 });
-      this.isWebGL2 = Boolean(canvas.getContext('webgl2'));
+      this.gl = canvas.getContext('webgl2', GL_ATTRIBUTES);
+      if (!this.gl) throw new Error('WebGL 2 is not available.');
+      this.isWebGL2 = true;
+      this.gpu = gpuName(this.gl);
+      console.info('WebGL renderer:', this.gpu);
+      this.viz = butterchurn.createVisualizer(this.audioContext, canvas, { width, height, ...RENDER_OPTIONS });
+      this.lumaProbe = new LumaProbe(this.gl);
+      this.lumaMethod = 'gpu-readback';
 
       this.installTransitions();
 
@@ -90,20 +247,72 @@
         this.viz.loadExtraImages(extraImages.getImages());
       }
 
-      this.resizeObserver = new ResizeObserver(() => this.resize());
-      this.resizeObserver.observe(canvas);
+      this.observeSize();
     }
 
+    /**
+     * Canvas-størrelsen følger elementets præcise skærmpixels: ResizeObserver med 'device-pixel-content-box' giver
+     * dem uden afrunding (CSS-størrelse x devicePixelRatio kan ramme 1 px ved siden af) og melder også et skift af
+     * devicePixelRatio (Windows-skalering, vinduet flyttet til en anden skærm). Uden den måles med CSS-pixels x
+     * devicePixelRatio, og et skift af devicePixelRatio fanges med matchMedia.
+     */
+    observeSize() {
+      this.resizeObserver = new ResizeObserver((entries) => {
+        const entry = entries[entries.length - 1];
+        const box = entry.devicePixelContentBoxSize && entry.devicePixelContentBoxSize[0];
+        this.devicePixels = box ? { width: box.inlineSize, height: box.blockSize } : null;
+        this.scheduleResize();
+      });
+      try {
+        this.resizeObserver.observe(this.canvas, { box: 'device-pixel-content-box' });
+      } catch (err) {
+        console.warn('ResizeObserver without device-pixel-content-box; sizing from CSS pixels x devicePixelRatio:', err);
+        this.resizeObserver.observe(this.canvas);
+      }
+      this.watchPixelRatio();
+    }
+
+    watchPixelRatio() {
+      const query = window.matchMedia(`(resolution: ${window.devicePixelRatio || 1}dppx)`);
+      query.addEventListener(
+        'change',
+        () => {
+          this.scheduleResize();
+          this.watchPixelRatio();
+        },
+        { once: true }
+      );
+    }
+
+    /** Renderstørrelsen i skærmpixels, højst MAX_RENDER_WIDTH bred (så strækkes billedet af browseren). */
     measure() {
-      const rect = this.canvas.getBoundingClientRect();
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      let width = Math.max(2, Math.round(rect.width * dpr));
-      let height = Math.max(2, Math.round(rect.height * dpr));
+      let width;
+      let height;
+      if (this.devicePixels) {
+        ({ width, height } = this.devicePixels);
+      } else {
+        const rect = this.canvas.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+        width = Math.round(rect.width * dpr);
+        height = Math.round(rect.height * dpr);
+      }
+      width = Math.max(2, width);
+      height = Math.max(2, height);
+      this.screenSize = { width, height };
       if (width > MAX_RENDER_WIDTH) {
-        height = Math.round((height * MAX_RENDER_WIDTH) / width);
+        height = Math.max(2, Math.round((height * MAX_RENDER_WIDTH) / width));
         width = MAX_RENDER_WIDTH;
       }
       return { width, height };
+    }
+
+    /** Se RESIZE_DEBOUNCE_MS: første skift med det samme, under et træk kun det sidste. */
+    scheduleResize(now = performance.now()) {
+      const quiet = now - this.lastSizeChange > RESIZE_DEBOUNCE_MS;
+      this.lastSizeChange = now;
+      clearTimeout(this.resizeTimer);
+      if (quiet) this.resize();
+      else this.resizeTimer = setTimeout(() => this.resize(), RESIZE_DEBOUNCE_MS);
     }
 
     resize() {
@@ -111,7 +320,7 @@
       if (width === this.canvas.width && height === this.canvas.height) return;
       this.canvas.width = width;
       this.canvas.height = height;
-      this.viz.setRendererSize(width, height);
+      this.viz.setRendererSize(width, height, RENDER_OPTIONS);
     }
 
     connect(audioNode) {
@@ -126,16 +335,21 @@
       }
     }
 
+    /**
+     * Render-løkken: requestAnimationFrame kommer med skærmens opdateringsrate, men Butterchurn tegner kun, når
+     * FramePacer siger til (højst ca. 60 gange i sekundet), fordi presets bevæger sig pr. billede. Musikmotoren og
+     * Tron-laget har deres egne løkker og påvirkes ikke.
+     */
     start() {
       if (this.running) return;
       this.running = true;
-      const loop = () => {
+      this.startedAt = performance.now();
+      this.pacer.resume();
+      const loop = (ts) => {
         if (!this.running) return;
         try {
-          this.viz.render();
-          this.frames += 1;
-          // Billedets lysstyrke til blink-vagten (src/shared/flash-guard.js), hvert andet billede.
-          if (this.onLuma && this.frames % 2 === 0) this.onLuma(this.measureLuma());
+          if (this.lumaProbe) this.pollLuma();
+          if (this.pacer.tick(ts)) this.renderFrame(ts);
         } catch (err) {
           console.error('Render error:', err);
         }
@@ -144,24 +358,102 @@
       this.raf = requestAnimationFrame(loop);
     }
 
-    /** Gennemsnitlig lysstyrke (0-1) af det netop tegnede billede, målt på et lille udsnit (8x6). */
+    renderFrame(ts) {
+      const t0 = performance.now();
+      this.viz.render();
+      this.frames += 1;
+      // Billedets lysstyrke til blink-vagten (src/shared/flash-guard.js) med ca. lumaRate målinger i sekundet, efter
+      // tid, så vagtens tærskler gælder ved enhver billedrate: ved 60 fps hvert andet billede (30/s), ved 72 fps 36/s,
+      // ved 55 fps 27,5/s. Grænsen er 3/4 af intervallet, så rAF-rystelser ikke springer et ekstra billede over.
+      if (this.onLuma && ts - this.lastLumaAt >= 750 / this.lumaRate) {
+        this.lastLumaAt = ts;
+        this.sampleLuma();
+      }
+      this.renderStats.add(performance.now() - t0);
+    }
+
+    sampleLuma() {
+      if (!this.lumaProbe) {
+        this.deliverLuma(this.measureLuma());
+        return;
+      }
+      // drawingBuffer-størrelsen, ikke canvas-størrelsen: browseren kan give en mindre tegnebuffer end bedt om.
+      this.lumaProbe.capture(this.gl.drawingBufferWidth, this.gl.drawingBufferHeight);
+      if (this.lumaProbe.failed) this.dropLumaProbe();
+    }
+
+    pollLuma() {
+      this.lumaProbe.poll((luma) => this.deliverLuma(luma));
+      if (this.lumaProbe.failed) this.dropLumaProbe();
+    }
+
+    deliverLuma(luma) {
+      this.lumaSamples += 1;
+      if (this.onLuma) this.onLuma(luma);
+    }
+
+    /** GPU-aflæsningen virker ikke på denne pc: tilbage til den langsommere kopi via et 2D-canvas (sagt i konsollen). */
+    dropLumaProbe() {
+      console.warn(`Luma readback failed (${this.lumaProbe.failed}); the flash guard uses a canvas copy instead.`);
+      this.lumaProbe.dispose();
+      this.lumaProbe = null;
+      this.lumaMethod = 'canvas-copy';
+    }
+
+    /** Reserve uden GPU-aflæsning: lysstyrken via drawImage til et lille 2D-canvas (en fuld kopi af billedet). */
     measureLuma() {
       if (!this.lumaCanvas) {
         this.lumaCanvas = document.createElement('canvas');
-        this.lumaCanvas.width = 8;
-        this.lumaCanvas.height = 6;
+        this.lumaCanvas.width = LUMA_W;
+        this.lumaCanvas.height = LUMA_H;
         this.lumaCtx = this.lumaCanvas.getContext('2d', { willReadFrequently: true });
       }
-      this.lumaCtx.drawImage(this.canvas, 0, 0, 8, 6);
-      const d = this.lumaCtx.getImageData(0, 0, 8, 6).data;
-      let sum = 0;
-      for (let i = 0; i < d.length; i += 4) sum += 0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2];
-      return sum / (48 * 255);
+      this.lumaCtx.drawImage(this.canvas, 0, 0, LUMA_W, LUMA_H);
+      return lumaOf(this.lumaCtx.getImageData(0, 0, LUMA_W, LUMA_H).data);
     }
 
     stop() {
+      if (this.running) this.awakeMs += performance.now() - this.startedAt;
       this.running = false;
       cancelAnimationFrame(this.raf);
+      if (this.lumaProbe) this.lumaProbe.cancel();
+    }
+
+    /** Sekunder, visualizeren har tegnet i alt. */
+    awakeSeconds() {
+      return (this.awakeMs + (this.running ? performance.now() - this.startedAt : 0)) / 1000;
+    }
+
+    /** Nulstiller billedtiderne (selvtesten måler sit eget vindue). */
+    resetStats() {
+      this.pacer.resetStats();
+      this.renderStats.reset();
+      this.lumaSamples = 0;
+    }
+
+    /** Opløsning, billedtakt og billedtider til selvtesten (engelske nøgler). */
+    renderInfo() {
+      const rect = this.canvas.getBoundingClientRect();
+      const r = (x, digits = 2) => (x === null ? null : Math.round(x * 10 ** digits) / 10 ** digits);
+      return {
+        size: `${this.canvas.width}x${this.canvas.height}`,
+        screenPixels: this.screenSize ? `${this.screenSize.width}x${this.screenSize.height}` : null,
+        cssSize: `${r(rect.width)}x${r(rect.height)}`,
+        devicePixelRatio: window.devicePixelRatio,
+        devicePixelBox: Boolean(this.devicePixels),
+        capped: Boolean(this.screenSize && this.screenSize.width > MAX_RENDER_WIDTH),
+        mesh: `${RENDER_OPTIONS.meshWidth}x${RENDER_OPTIONS.meshHeight}`,
+        fxaa: RENDER_OPTIONS.outputFXAA,
+        gpu: this.gpu,
+        refreshHz: r(this.pacer.refreshHz, 1),
+        divisor: this.pacer.divisor,
+        targetFps: r(this.pacer.targetFps, 1),
+        frameTimeMs: this.pacer.frameStats.summary(),
+        rafIntervalMs: this.pacer.rafStats.summary(),
+        renderCpuMs: this.renderStats.summary(),
+        lumaMethod: this.lumaMethod,
+        lumaSamples: this.lumaSamples,
+      };
     }
 
     /**
@@ -430,5 +722,6 @@
 
   window.Visamp = window.Visamp || {};
   window.Visamp.Visualizer = Visualizer;
+  window.Visamp.LumaProbe = LumaProbe; // til test/visualizer-render.test.js
   window.Visamp.presetLists = presetLists;
 })();
