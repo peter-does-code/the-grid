@@ -317,7 +317,9 @@
     if (li) li.replaceWith(presetRow(name, true));
     updatePresetCount();
     toast(t('votes.derezzed', { name }), 'info', 3000);
-    if (name === viz.current) nextPreset();
+    // Hårdt klip: under en overgang er det nye preset allerede "det viste", så et D mere ville ramme et preset,
+    // man knap har set (Peter 02-10-2026, tre D hurtigt efter hinanden).
+    if (name === viz.current) nextPreset({ hardCut: true });
   }
 
   let presetNameTimer = null;
