@@ -19,15 +19,20 @@
   // De sidst viste presets kommer ikke igen foreløbig. Med over 1.000 presets kan vinduet være stort; med 25
   // kom de samme ca. 60 favoritter igen og igen, når valget styres af målingerne (simuleret 01-10-2026).
   const RECENT_EXCLUDE = 150;
-  const PICK_TOP = 12; // valget trækkes blandt de bedste ...
-  const PICK_TEMPERATURE = 0.25; // ... vægtet efter score (lavere = mere grådigt)
+  const PICK_TOP = 20; // valget trækkes blandt de bedste ...
+  const PICK_TEMPERATURE = 0.35; // ... vægtet efter score (lavere = mere grådigt)
+  // Så stor en andel af de musikstyrede skift er helt tilfældige, så hele samlingen bliver set (Peter 02-10-2026).
+  const RANDOM_SHARE = 0.2;
   // Brugerens favoritter (K) vægtes først, når der er FAVORITE_FULL_AT af dem (Peter 02-10-2026): før det er de
   // helt almindelige presets. Derefter et tillæg i valget, og de må komme igen efter 40 skift i stedet for 150.
   const FAVORITE_BONUS = 0.8;
   const FAVORITE_EXCLUDE = 40;
   // Ved tilfældig rækkefølge: så stor en andel af skiftene går til en favorit (når de vægtes).
-  const FAVORITE_SHARE = 0.3;
+  const FAVORITE_SHARE = 0.2;
   const FAVORITE_FULL_AT = 20;
+  // Loft: højst FAVORITE_CAP favoritter blandt de seneste FAVORITE_WINDOW skift, ellers venter de alle.
+  const FAVORITE_CAP = 4;
+  const FAVORITE_WINDOW = 20;
 
   function unwrap(mod) {
     return mod && mod.default ? mod.default : mod;
@@ -272,11 +277,21 @@
       return this.favoritesWeighted() && this.isFavorite(name);
     }
 
-    /** Vist for nylig? Favoritter tæller kun de seneste FAVORITE_EXCLUDE skift med. */
+    /** Har de vægtede favoritter allerede fået deres andel af de seneste skift (FAVORITE_CAP)? */
+    favoritesCapped() {
+      if (!this.favoritesWeighted()) return false;
+      return this.history.slice(-FAVORITE_WINDOW).filter((n) => this.isFavorite(n)).length >= FAVORITE_CAP;
+    }
+
+    /**
+     * Vist for nylig? Favoritter tæller kun de seneste FAVORITE_EXCLUDE skift med, men venter alle, når loftet
+     * er nået.
+     */
     recentSets() {
       const all = new Set(this.history.slice(-Math.min(RECENT_EXCLUDE, Math.floor(this.names.length / 2))));
       const fav = new Set(this.history.slice(-FAVORITE_EXCLUDE));
-      return (name) => (this.weightedFavorite(name) ? fav.has(name) : all.has(name));
+      const capped = this.favoritesCapped();
+      return (name) => (this.weightedFavorite(name) ? capped || fav.has(name) : all.has(name));
     }
 
     randomName() {
@@ -333,12 +348,14 @@
 
     /**
      * Et preset blandt de ikke nyligt viste efter `score(profile)`: trukket blandt de PICK_TOP bedste, vægtet
-     * efter score, så valget følger musikken uden at de samme få presets vinder hver gang.
+     * efter score, så valget følger musikken uden at de samme få presets vinder hver gang. RANDOM_SHARE af
+     * gangene trækkes helt tilfældigt blandt dem, der ikke er vist for nylig.
      */
     pickSmart(score, random = Math.random) {
       const isRecent = this.recentSets();
       let pool = this.names.filter((n) => !isRecent(n) && !this.failed.has(n));
       if (pool.length === 0) pool = this.names.filter((n) => n !== this.current && !this.failed.has(n));
+      if (pool.length && random() < RANDOM_SHARE) return pool[Math.floor(random() * pool.length)];
       const top = pool
         .map((name) => [name, score(this.profile(name)) + (this.weightedFavorite(name) ? FAVORITE_BONUS : 0)])
         .sort((a, b) => b[1] - a[1])

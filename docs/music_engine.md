@@ -90,7 +90,20 @@ Ved et automatisk skift scores presets ud fra hvorfor der skiftes og hvad der vi
 - **Overgang:** et blødt skift går helst til en lignende lysstyrke (op til 0,6), så skiftet ikke blænder eller mørklægger. Et drop belønner kontrast i intensitet (op til 0,8).
 - **Tilfældighed:** 0,6.
 
-Valget trækkes blandt de 12 bedste, vægtet efter score, og de sidste 150 viste kommer ikke igen foreløbig. Med kun det bedste og 25 udelukkede kom de samme ca. 60 favoritter igen og igen: 57-81 forskellige pr. 200 skift, simuleret. Nu er det 169-179 forskellige, og intensiteten rammer stadig målet (0,32 roligt, 0,55 normalt, 0,77 højt). Presets uden målinger bruger den gamle score med reaktivitet.
+Valget trækkes blandt de 20 bedste, vægtet efter score (temperatur 0,35), og de sidste 150 viste kommer ikke igen foreløbig. Med kun det bedste og 25 udelukkede kom de samme ca. 60 presets igen og igen: 57-81 forskellige pr. 200 skift, simuleret. Presets uden målinger bruger den gamle score med reaktivitet.
+
+**Tilfældighed** (Peter 02-10-2026: hverken favoritterne eller forudsigelsen må tage over):
+- 20 % af skiftene er helt tilfældige blandt dem, der ikke er vist for nylig (`RANDOM_SHARE`).
+- Når favoritterne vægtes (fra 20, se `docs/presets.md`), er der et loft: højst 4 favoritter blandt de seneste 20 skift (`FAVORITE_CAP`, `FAVORITE_WINDOW`). Er loftet nået, venter alle favoritter.
+
+Simuleret 02-10-2026 med de 1.054 målte presets (`favoritter` = antal tilfældigt valgte favoritter):
+
+| | Forskellige pr. 1.000 skift (0 / 20 / 50 favoritter) | Favoritandel (20 / 50) | Intensitet roligt / normalt / højt (mål 0,25 / 0,55 / 0,8) |
+|---|---|---|---|
+| Før (top 12, 0,25, ingen loft) | 420-453 / 357-371 / 208-246 | 34 % / 71 % | 0,31 / 0,55 / 0,79 |
+| Nu | 494-549 / 511-542 / 526-554 | 18 % / 19 % | 0,35 / 0,54 / 0,73 |
+
+Pr. 200 skift er det 176-200 forskellige. Prisen er, at høje dele rammer lidt mindre intenst (0,73 mod 0,79), fordi hvert femte skift er tilfældigt.
 
 Det sker kun ved tilfældig rækkefølge med "Vælg presets, der reagerer på den del af musikken, der fylder mest" slået til.
 

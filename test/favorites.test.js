@@ -62,3 +62,47 @@ test('når de vægtes, må en favorit komme igen efter 40 skift, andre først ef
   v.setFavorites(['fav']); // under 20: som alle andre
   assert.equal(v.recentSets()('fav'), true);
 });
+
+/** Kører `rounds` skift, hvor hvert valg kommer i historikken, og tæller favoritterne. */
+function favoriteShare(v, score, rounds = 400) {
+  let favs = 0;
+  for (let i = 0; i < rounds; i++) {
+    const pick = v.pickSmart(score, rnd);
+    v.history.push(pick);
+    if (v.isFavorite(pick)) favs += 1;
+  }
+  return favs / rounds;
+}
+
+test('loft: selv med mange favoritter og stort tillæg får de højst ca. hvert 5. skift', () => {
+  const names = Array.from({ length: 800 }, (_, i) => `p${i}`);
+  const v = fake(names);
+  v.setFavorites(names.slice(0, 50));
+  const share = favoriteShare(v, () => 1);
+  assert.ok(share <= 0.21, `favoritandel ${share}`);
+  assert.ok(share >= 0.1, `favoritterne vægtes stadig: ${share}`);
+});
+
+test('loftet gælder ikke, før favoritterne vægtes', () => {
+  const names = Array.from({ length: 40 }, (_, i) => `p${i}`);
+  const v = fake(names, ['p1', 'p2', 'p3', 'p4', 'p5']);
+  v.setFavorites(['p1', 'p2', 'p3', 'p4', 'p5']);
+  assert.equal(v.favoritesCapped(), false);
+  v.setFavorites(names.slice(0, 20));
+  assert.equal(v.favoritesCapped(), true);
+  assert.equal(v.recentSets()('p10'), true, 'alle favoritter venter, når loftet er nået');
+});
+
+test('en del af de musikstyrede skift er helt tilfældige', () => {
+  const names = Array.from({ length: 400 }, (_, i) => `p${i}`);
+  const v = fake(names);
+  // Scoren foretrækker p0-p19 kraftigt, så resten kun kan komme med ved et tilfældigt skift.
+  const scores = new Map(names.map((n, i) => [v.profile(n), i < 20 ? 10 : 0]));
+  let outside = 0;
+  const rounds = 2000;
+  for (let i = 0; i < rounds; i++) {
+    const pick = v.pickSmart((p) => scores.get(p), rnd);
+    if (Number(pick.slice(1)) >= 20) outside += 1;
+  }
+  assert.ok(outside / rounds > 0.12 && outside / rounds < 0.28, `udenfor de bedste: ${outside / rounds}`);
+});
