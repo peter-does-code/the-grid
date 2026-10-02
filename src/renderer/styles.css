@@ -1589,6 +1589,11 @@ body.fullscreen.cursor-hidden * {
   box-sizing: border-box;
 }
 
+/* .lcd-input har flex: 1 til link-feltets række; i listens kolonne ville søgefeltet så vokse i højden. */
+.dialog.docked .lcd-input {
+  flex: none;
+}
+
 .dialog.docked .preset-list {
   flex: 1;
   max-height: none;
