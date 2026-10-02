@@ -1795,14 +1795,24 @@
     }
   }
 
+  /**
+   * Listen ved siden af visualizeren, ikke over den: visualizeren gøres smallere med listens bredde (margin), så
+   * hele billedet stadig ses. Visualizeren er gitterets højre kolonne og går helt ud til vinduets kant.
+   */
   function dockPresets(width = presetWidth()) {
     const el = $('presets-dialog');
-    if (!el.open) return;
-    const r = $('viz-wrap').getBoundingClientRect();
-    const w = Math.round(Math.max(PRESET_MIN_WIDTH, Math.min(width, r.width - 120)));
+    const wrap = $('viz-wrap');
+    if (!el.open) {
+      wrap.style.marginRight = '';
+      return;
+    }
+    const r = wrap.getBoundingClientRect();
+    const room = window.innerWidth - r.left; // visualizerens kolonne uden listen
+    const w = Math.round(Math.max(PRESET_MIN_WIDTH, Math.min(width, room - 160)));
+    wrap.style.marginRight = `${w}px`;
     el.style.top = `${r.top}px`;
     el.style.height = `${r.height}px`;
-    el.style.right = `${Math.max(0, window.innerWidth - r.right)}px`;
+    el.style.right = '0px';
     el.style.width = `${w}px`;
     return w;
   }
@@ -1834,6 +1844,7 @@
       handle.addEventListener('pointercancel', up);
     });
     window.addEventListener('resize', () => dockPresets());
+    $('presets-dialog').addEventListener('close', () => dockPresets()); // visualizeren får sin bredde igen
   }
 
   function loadPresetByName(name) {
