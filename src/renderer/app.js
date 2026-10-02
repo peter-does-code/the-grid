@@ -184,7 +184,7 @@
 
   // ---------- Visualizer og musikmotor ----------
 
-  const SILENT_FRAME = { rms: 0, rmsDb: -180, bass: 0, mid: 0, treb: 0, flux: 0, kickFlux: 0 };
+  const SILENT_FRAME = { rms: 0, rmsDb: -180, bass: 0, mid: 0, treb: 0, kick: 0, flux: 0, kickFlux: 0, trebFlux: 0 };
 
   function nowSeconds() {
     return performance.now() / 1000;
@@ -193,6 +193,7 @@
   function initVisualizer() {
     // Lysstyrken måles med blink-vagtens takt (30 i sekundet), som dens tærskler er stemt efter.
     viz = new window.Visamp.Visualizer($('viz'), { audioContext, onPresetChange, lumaRate: window.VisampFlashGuard.SAMPLE_RATE });
+    viz.setPunch(state.settings.music.punch);
     viz.connect(music.output);
     const last = state.settings.visualizer.lastPreset;
     if (!(last && viz.load(last, 0))) viz.next({ random: true, blendSeconds: 0 });
@@ -209,10 +210,10 @@
         nextPreset();
       }
     };
-    // Tron-laget ("tron" i Flynns terminal) ligger over visualiseringen og lytter til musikmotoren.
+    // Tron-laget ("trongrid" i link-feltet eller Flynns terminal) ligger over visualiseringen og lytter til musikmotoren.
     tronOverlay = new window.Visamp.TronOverlay($('tron-overlay'));
     tronOverlay.setTheme(currentTheme());
-    tronOverlay.setEnabled(false); // starter altid slukket; "tron" tænder det (huskes ikke, Peter 01-10-2026)
+    tronOverlay.setEnabled(false); // starter altid slukket; "trongrid" tænder det (huskes ikke, Peter 01-10-2026)
     // Ingen musik endnu: start i mørke, indtil musikmotoren hører lyd.
     setSleeping(true);
   }
@@ -491,6 +492,7 @@
     state.settings.music = { ...state.settings.music, ...patch };
     saveSettingsSoon({ music: patch });
     music.setOptions({ agc: state.settings.music.agc, latencyMs: state.settings.music.latencyMs });
+    if (viz) viz.setPunch(state.settings.music.punch);
     renderVizToggles();
   }
 
@@ -508,6 +510,7 @@
     $('set-hardcuts').checked = m.hardCuts;
     $('set-smart').checked = m.smartSelection;
     $('set-agc').checked = m.agc;
+    $('set-punch').checked = m.punch;
     $('set-latency').value = String(m.latencyMs);
   }
 
@@ -566,6 +569,8 @@
     if (now >= beatOffAt) beatDot.classList.remove('on', 'down');
 
     const engineState = music.engine.state;
+    // Tron-laget drives også løbende af båndene (kick, mellem, diskant) og sangens del (src/shared/band-drive.js).
+    if (tronOverlay) tronOverlay.drive(now, state.capture.ok ? music.lastFeatures : SILENT_FRAME, engineState, music.engine.lastKickOnset);
     const action = director.update(now, events, engineState, directorConfig());
     if (action) performAutoChange(action);
 
@@ -950,6 +955,7 @@
         // skifter på takten.
         music.engine.notifyTrackChange(nowSeconds());
         music.reseed();
+        if (tronOverlay) tronOverlay.resetDrive();
         pendingMusicEvents.push({ type: 'track', t: nowSeconds() });
       }
       const c = state.collection;
@@ -2066,6 +2072,7 @@
     $('set-hardcuts').addEventListener('change', (e) => setMusicSetting({ hardCuts: e.target.checked }));
     $('set-smart').addEventListener('change', (e) => setMusicSetting({ smartSelection: e.target.checked }));
     $('set-agc').addEventListener('change', (e) => setMusicSetting({ agc: e.target.checked }));
+    $('set-punch').addEventListener('change', (e) => setMusicSetting({ punch: e.target.checked }));
     $('set-latency').addEventListener('change', (e) => {
       const value = Math.round(Math.min(500, Math.max(0, Number(e.target.value) || 0)));
       setMusicSetting({ latencyMs: value });
@@ -2364,7 +2371,7 @@
               ...viz.renderInfo(),
             }
           : null,
-        presets: viz ? { count: viz.names.length, current: viz.current, failed: Array.from(viz.failed), transitions: Boolean(viz.transitionsInstalled), measured: Object.keys(window.gridPresetStats || {}).length } : null,
+        presets: viz ? { count: viz.names.length, current: viz.current, failed: Array.from(viz.failed), transitions: Boolean(viz.transitionsInstalled), punch: Boolean(viz.punchInstalled), measured: Object.keys(window.gridPresetStats || {}).length } : null,
         media,
         ui: {
           theme: currentTheme(),

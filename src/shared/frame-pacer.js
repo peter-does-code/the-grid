@@ -4,8 +4,8 @@
  * Presets bevæger sig pr. tegnet billede: zoom, rotation, henfald og bass_thresh-detektoren i preset-ligningerne er
  * ikke korrigeret for billedraten (Butterchurn tæller kun tiden op med 1/fps). Uden loft løb de 2-2,4 gange så
  * hurtigt på en 120/144 Hz-skærm som ved 60 fps (MilkDrop i Winamp: højst 30 i fuld skærm, MilkDrop3: 60). Derfor
- * tegnes der på hver n-te skærmopdatering, hvor n er det mindste heltal, der giver højst MAX_FPS (72):
- * 60 Hz: hvert billede, 75 Hz: hvert andet (37,5), 120 Hz: hvert andet (60), 144 Hz: hvert andet (72),
+ * tegnes der på hver n-te skærmopdatering, hvor n er det mindste heltal, der giver højst MAX_FPS (76):
+ * 60 og 75 Hz: hvert billede, 120 Hz: hvert andet (60), 144 Hz: hvert andet (72),
  * 165 Hz: hvert tredje (55), 240 Hz: hvert fjerde (60). En fast deler giver en jævn takt; en ren tidsgrænse ville
  * skifte mellem 2 og 3 opdateringer på 144 Hz og hakke.
  *
@@ -23,7 +23,7 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  const MAX_FPS = 72; // højeste billedrate (144 Hz / 2); målet er 60
+  const MAX_FPS = 76; // højeste billedrate; målet er 60, men 75 Hz-skærme tegnes 1:1 frem for at halveres til 37,5
   const TOLERANCE = 1.04; // tidsstemplerne ryster: 144,5 Hz / 2 skal stadig tælle som 72, men 75 Hz ikke
   const ESTIMATE_MS = 1000; // første estimat efter et sekund
   const REESTIMATE_MS = 5000; // derefter hvert 5. sekund

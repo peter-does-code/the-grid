@@ -156,6 +156,8 @@
     'settings.hardcuts': 'Hard cuts on drops and big hits',
     'settings.smart': 'Pick presets that react to the part of the music that stands out',
     'settings.agc': 'Automatic level, so the visuals react the same at high and low volume',
+    'settings.punch': 'Punch: stronger reaction to beats',
+    'settings.punch.hint': 'Presets react harder to hits and calm down more between them.',
     'settings.latency': 'Delay the picture (ms)',
     'settings.latency.hint': 'Use the delay if the picture arrives before the sound, e.g. with Bluetooth headphones.',
     'settings.audio': 'Audio',

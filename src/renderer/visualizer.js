@@ -241,6 +241,8 @@
       this.lumaMethod = 'gpu-readback';
 
       this.installTransitions();
+      this.punchK = 1; // slået til med setPunch (indstillingen "Punch")
+      this.installPunch();
 
       const extraImages = unwrap(window.butterchurnExtraImages);
       if (extraImages && typeof extraImages.getImages === 'function') {
@@ -497,6 +499,25 @@
         },
       });
       this.transitionsInstalled = true; // selvtesten tjekker, at krogene sidder i den rigtige Butterchurn
+    }
+
+    /**
+     * Punch (src/shared/punch.js): Butterchurns lydniveauer (bass, mid, treb og _att) får mere kontrast omkring 1,0,
+     * så presets reagerer tydeligere på slagene. Lægges om `renderer.audioLevels`, som render() og loadPreset() læser.
+     */
+    installPunch() {
+      const renderer = this.viz && this.viz.renderer;
+      if (!renderer || !renderer.audioLevels) {
+        console.warn('Punch: Butterchurn has no renderer.audioLevels; punch is not installed.');
+        return;
+      }
+      renderer.audioLevels = window.VisampPunch.wrapAudioLevels(renderer.audioLevels, () => this.punchK);
+      this.punchInstalled = true; // selvtesten melder, om krogen sidder
+    }
+
+    /** Punch til eller fra (fra = Butterchurns egne niveauer, k = 1). */
+    setPunch(on) {
+      this.punchK = on ? window.VisampPunch.PUNCH_K : 1;
     }
 
     /** Overgangens forløb (0-1) fra Butterchurns jævne forløb. Over 1 er overgangen slut og røres ikke. */

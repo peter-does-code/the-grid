@@ -34,6 +34,8 @@ flowchart LR
 | `src/shared/music-engine.js` | Musikmotoren: tempo, slag, dele af sangen, drops, stilhed, profiler af presets og instruktøren. Bruges af rendereren og af tests. |
 | `src/shared/agc.js` | Det automatiske lydniveau foran Butterchurn: langsom trim pr. nummer, hurtig kun mod overstyring, måles forfra ved nummerskift (se `music_engine.md`). Bruges af `music.js` og af tests. |
 | `src/shared/frame-pacer.js` | Billedtakten for visualizeren (højst ca. 60 fps, se Rendering) og billedtider til selvtesten. |
+| `src/shared/band-drive.js` | Bånd-drevet til Tron-laget: hvert bånd normaliseret mod sit eget gennemsnit over 15 s og glattet med egen attack og release, onsets med hysterese, og intensitet og mætning efter sangens del. |
+| `src/shared/punch.js` | Punch: kontrast i Butterchurns lydniveauer, `v' = max(0, 1 + k·(v − 1))`, og wrapperen om `renderer.audioLevels`. |
 
 Rendereren har ingen Node-adgang og laver ingen netværkskald. Alt Spotify-arbejde sker i hovedprocessen.
 
@@ -67,7 +69,8 @@ Rendereren har ingen Node-adgang og laver ingen netværkskald. Alt Spotify-arbej
 | `eggs.js` | Påskeæg: Tron-ord i link-feltet, Konami-koden og snydearket (`CHEAT_SHEET`), som Flynns terminal viser. Terminalen (`openTerminal`, `termRun` i `app.js`) åbnes med `whoami`. Se CLAUDE.md. |
 | `music.js` | Lydkæden foran visualizeren (forsinkelse, automatisk lydniveau, begrænser) og analysen til musikmotoren. Se `music_engine.md`. |
 | `musictest.js`, `probe.js` | `npm run musictest` (offline mod facit eller en lydfil) og lyddiagnosen `npm run diagnose -- --audio` |
-| `visualizer.js` | Butterchurn: 1.057 presets (395 fra butterchurn-presets og 662 fra Cream of the Crop, se docs/presets.md), historik, tilfældig eller fast rækkefølge, titelanimation, renderstørrelse, billedtakt og lysstyrke til blink-vagten (se Rendering) |
+| `visualizer.js` | Butterchurn: 1.057 presets (395 fra butterchurn-presets og 662 fra Cream of the Crop, se docs/presets.md), historik, tilfældig eller fast rækkefølge, titelanimation, overgange, punch (se "Butterchurns lydniveauer"), renderstørrelse, billedtakt og lysstyrke til blink-vagten (se Rendering) |
+| `tron-overlay.js` | Tron-laget ("trongrid"): eget 2D-lærred over Butterchurn, tegnet additivt. Hændelser fra musikmotoren og løbende bånd-drev (se "Tron-laget") |
 | `spectrum.js` | Den lille Winamp-analysator på 76 x 16 pixels: spektrum, oscilloskop eller slukket, i temaets farver |
 | `playlist.js` | Playliste-listen: valg, afspilning, markering af det aktuelle nummer |
 | `index.html`, `styles.css` | Layout og tre temaer via `body[data-theme]`: `grid` (Tron, standard), `clu` (orange) og `classic` (Winamp). Faste tekster har `data-i18n`-attributter. |
@@ -93,12 +96,31 @@ Butterchurn tegner i `#viz` (`visualizer.js`), Tron-laget i sit eget 2D-canvas o
 - **Størrelse:** canvas og Butterchurns teksturer har præcis lige så mange pixels som elementet på skærmen (`pixelRatio` og `textureRatio` 1). `ResizeObserver` med `device-pixel-content-box` giver de præcise skærmpixels uden afrunding af CSS-størrelse × `devicePixelRatio` og melder også, når skaleringen skifter (Windows-skalering, vinduet flyttet til en anden skærm). Reserven er CSS-pixels × `devicePixelRatio` og `matchMedia` på `resolution`.
 - **Loft 3840 px bredde** (`MAX_RENDER_WIDTH`): en 4K-skærm i fuld skærm tegnes 1:1, bredere strækkes af browseren. Butterchurn tegner flere fulde pas pr. billede (warp, slør, comp, FXAA), så GPU-prisen vokser med pixelantallet. Supersampling (`textureRatio` over 1) bruges ikke: det koster 4 gange GPU og virker kun sammen med FXAA.
 - **Størrelsesskift samles:** det første skift sker med det samme, men under et træk (preset-listens kant, vinduets kant) først 100 ms efter det sidste (`RESIZE_DEBOUNCE_MS`). Hvert skift genopretter Butterchurns teksturer og oversætter udgangs-shaderen igen.
-- **Billedtakt højst ca. 60 fps** (`src/shared/frame-pacer.js`). Presets bevæger sig pr. billede: zoom, rotation, henfald og `bass_thresh` i preset-ligningerne er ikke korrigeret for billedraten, så uden loft løb de 2-2,4 gange for hurtigt på 120/144 Hz-skærme. Der tegnes på hver n-te skærmopdatering, hvor n er det mindste heltal, der giver højst 72 fps: 60 Hz hvert billede, 120 Hz hvert andet (60), 144 Hz hvert andet (72), 165 Hz hvert tredje (55), 75 Hz hvert andet (37,5). En fast deler giver en jævn takt. Opdateringsraten estimeres af `requestAnimationFrame`-tidsstemplerne efter første sekund og igen hvert 5. sekund. Musikmotoren og Tron-laget har egne løkker og kører med skærmens fulde rate.
+- **Billedtakt højst ca. 60 fps** (`src/shared/frame-pacer.js`). Presets bevæger sig pr. billede: zoom, rotation, henfald og `bass_thresh` i preset-ligningerne er ikke korrigeret for billedraten, så uden loft løb de 2-2,4 gange for hurtigt på 120/144 Hz-skærme. Der tegnes på hver n-te skærmopdatering, hvor n er det mindste heltal, der giver højst 76 fps: 60 og 75 Hz hvert billede, 120 Hz hvert andet (60), 144 Hz hvert andet (72), 165 Hz hvert tredje (55). En fast deler giver en jævn takt. Opdateringsraten estimeres af `requestAnimationFrame`-tidsstemplerne efter første sekund og igen hvert 5. sekund. Musikmotoren og Tron-laget har egne løkker og kører med skærmens fulde rate.
 - **Mesh og kantudjævning:** warp-gitteret er 64×48 (Butterchurns standard er 48×36), og `outputFXAA` udjævner 1-px-linjer i et ekstra pas.
 - **GPU:** WebGL2-konteksten oprettes med Butterchurns egne attributter plus `powerPreference: 'high-performance'` (den hurtige GPU på bærbare med to grafikkort), før Butterchurn beder om den og får den samme. Grafikkortets navn står i konsollen (`WebGL renderer:`) og i selvtestens rapport.
 - **Lysstyrke til blink-vagten:** ca. 30 målinger i sekundet efter tid (`SAMPLE_RATE` i `flash-guard.js`), ikke pr. billede, fordi vagtens tærskler er stemt efter 30 målinger i sekundet; ved færre ligner blink på slaget et stroboskop. Billedet skaleres ned til 48×27 på GPU'en (`blitFramebuffer`) og læses asynkront gennem en pixel-buffer med et hegn (`fenceSync`), så CPU'en ikke venter på GPU'en; svaret kommer 1-2 billeder senere. Før kopierede `drawImage` hele billedet til CPU'en hvert andet billede. Giver første aflæsning en WebGL-fejl, bruges `drawImage` igen (advarsel i konsollen, `lumaMethod: "canvas-copy"` i selvtesten).
 - **Tron-laget** måler sin størrelse på samme måde, men med højst 1,5 lærredspixel pr. CSS-pixel: bløde, glødende 2D-linjer vinder ikke på fulde 4K-pixels.
-- **Selvtestens mål** (`report.json`, `report.render`): `size` (canvas), `screenPixels` (elementet før loftet), `cssSize`, `devicePixelRatio`, `devicePixelBox`, `capped`, `mesh`, `fxaa`, `gpu`, `refreshHz`, `divisor`, `targetFps`, `fps` (over hele vinduet), `renderFps` (mens visualizeren var vågen), `frameTimeMs` (tid mellem tegnede billeder: `p50`, `p95`, `max`, `over20`), `rafIntervalMs`, `renderCpuMs` (CPU-tid i `render()`), `lumaMethod` og `lumaSamples`. Under `report.capture` står lydsporets `trackSettings` og `sampleRate`. Et billede over 20 ms er et hak ved 60 fps; ved 37,5 fps (75 Hz) er alle over.
+- **Selvtestens mål** (`report.json`, `report.render`): `size` (canvas), `screenPixels` (elementet før loftet), `cssSize`, `devicePixelRatio`, `devicePixelBox`, `capped`, `mesh`, `fxaa`, `gpu`, `refreshHz`, `divisor`, `targetFps`, `fps` (over hele vinduet), `renderFps` (mens visualizeren var vågen), `frameTimeMs` (tid mellem tegnede billeder: `p50`, `p95`, `max`, `over20`), `rafIntervalMs`, `renderCpuMs` (CPU-tid i `render()`), `lumaMethod` og `lumaSamples`. Under `report.capture` står lydsporets `trackSettings` og `sampleRate`. Et billede over 20 ms er et hak ved 60 fps.
+## Butterchurns lydniveauer og punch
+
+Butterchurn 2.6.7 regner som MilkDrop 2 `bass`, `mid`, `treb` og de glattede `_att` som forhold mod de seneste ca. 4 sekunder: 1,0 er "som det plejer". `visualizer.js` lægger efter `createVisualizer` en wrapper (`wrapAudioLevels` i `src/shared/punch.js`) om `viz.renderer.audioLevels`. `render()` kalder `updateAudioLevels(fps, frameNum)`, som wrapperen sender videre til Butterchurns eget objekt, og læser derefter de seks værdier; `loadPreset()` læser de samme seks. Wrapperen giver dem med punch, `v' = max(0, 1 + k·(v − 1))`, k = 1,3: slag over gennemsnittet bliver kraftigere, pauserne imellem lavere, og gennemsnittet flytter sig ikke. Indstillingen "Punch" (`music.punch`, standard til) sætter k; fra er k = 1, altså Butterchurns egne tal. Det rammer alle presets; blink-vagten måler stadig billedet og skifter væk fra presets, der blinker konstant. `test/punch.test.js` tjekker i den låste Butterchurn, at objektet kun læses de syv steder. Preset-testens målinger (`presettest.js`) er lavet uden punch.
+
+## Tron-laget
+
+`tron-overlay.js` tegner et perspektivgulv, lyscykler og glimt på et 2D-lærred over Butterchurn med `lighter`, så MilkDrop stadig er hovedsagen. Laget starter altid slukket (Peters valg) og tændes med "trongrid". Det drives to veje fra `musicLoop` i `app.js`:
+
+- **Hændelser:** slag ruller gulvet og sender lyscykler ud på taktstarter, drops sender en flok cykler, en ny del en lysstreg, et hårdt klip et derez-glimt.
+- **Bånd** (`drive()`, hvert billede, via `src/shared/band-drive.js`): `MusicListener` gemmer musikmotorens lydtræk (`lastFeatures`), og motoren gemmer sit kick-onset (`lastKickOnset`). Ét bånd pr. element, hvert normaliseret mod sit eget gennemsnit over 15 s og glattet med egen attack og release:
+
+| Bånd | Element | Timing |
+|---|---|---|
+| Kick 40-130 Hz og rigtige kick-onsets | Gulvets glød og horisonten. Den forudsagte takt lyser kun gulvet op, når der ikke er hørt kicks de seneste 2 s | attack 20 ms, release 0,22 s |
+| Mellemtone 320-2800 Hz | Lyscyklernes spor (lysstyrke og bredde 0,7-1,3×) og fart (0,75-1,25×) | 0,1 s op, 0,25 s ned |
+| Diskant over 2,8 kHz og hi-hat-onsets (diskantens flux) | Glimt i gitterets knuder og et svagt skanlinje-flimmer på gulvet (højst 6 %) | release 65 ms |
+| Sangens del og opbygninger | Global intensitet (0,75 stille, 1 høj, op til 1,15 i toppen af en opbygning) og mætning (mod gråt i stille dele) | 1 s op, 1,5 s ned |
+
+Gennemsnittene står stille under stilhed og starter forfra ved et nyt nummer. Lysstyrken ændres glat; gulvet, den største flade, følger kun kicket, og `test/tron-overlay.test.js` fodrer blink-vagten med gulvets lys ved 180 BPM med sekstendedels-hi-hats og tjekker, at højst 40 % af målingerne er spring (vagten slår til ved 55 %). En fejl i bånd-drevet står i konsollen og slår kun bånd-drevet fra; hændelserne kører videre.
 
 ## Spotify-flows
 
@@ -140,13 +162,15 @@ Alle svar har formen `{ ok: true, data }` eller `{ ok: false, error: { code, mes
 
 - `npm run musictest` sender en syntetisk sang med kendt facit gennem den rigtige Web Audio-analyse i en OfflineAudioContext, uden lyd. Den tjekker tempo, slag, dele, drop og at skift lander på taktstart. Med `--file=` analyseres en rigtig lydfil.
 - `npm run diagnose -- --audio=30` lytter med på det, der spiller, og viser hvad musikmotoren hører.
-- `npm test` kører 158 unit-tests med Nodes indbyggede testrunner. De dækker:
+- `npm test` kører 178 unit-tests med Nodes indbyggede testrunner. De dækker:
   - linktolkning, PKCE (RFC 7636-vektoren) og hele login-flowet mod en rigtig loopback-server;
   - token-fornyelse, API-fejlkoder og 2026-formatet for playlister;
   - afspil-forespørgsler med kontekst, verifikation af afspilning og afspilningens fallbacks;
   - musikmotorens tempo, slag, dele, drops, stilhed, tempo gennem pauser, instruktør og profiler af presets (33 tests);
   - det automatiske lydniveau: et højere omkvæd forbliver højere i Butterchurns øjne, et stille intro giver ikke overstyring, når bandet kommer, måling forfra og frysning i stilhed;
   - genkendelsen af denne pc i Spotifys enhedsliste (hostname og `COMPUTERNAME`);
+  - Tron-lagets bånd-drev (normalisering, kuverternes tider, onsets, opbygning) og laget selv: rigtige kicks frem for den forudsagte takt, mellemtonen på lyscyklerne, glimt, og at blink-vagten ikke slår til på laget;
+  - punch-formlen, wrapperen om Butterchurns lydniveauer, og at den låste Butterchurn kun læser de seks niveauer;
   - overvågningen af Windows' standard-lydenhed, PowerShell-scripts som filer og stien i den pakkede app;
   - den lange kamp: mange derez spredt over mindst 7 sekunder, alle bogstaver skrevet før finalen, vinderen skriver det sidste ord, under 22 sekunder, og at Game Grid altid kårer en vinder;
   - den anden introstils koreografi med seedet tilfældighed: mange derez, taberen rammer væggen efter afskæringen, GRID skrives til sidst, kun rette vinkler, varighed under 15 s, og påskeæggenes varianter;

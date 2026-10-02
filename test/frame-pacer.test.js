@@ -26,7 +26,7 @@ function fpsAfterWarmup(rendered, t0 = 0) {
 }
 
 test('deleren giver højst 72 fps og så tæt på 60 som muligt', () => {
-  const cases = { 50: 1, 59.94: 1, 60: 1, 72: 1, 75: 2, 90: 2, 100: 2, 120: 2, 144: 2, 165: 3, 240: 4, 360: 5 };
+  const cases = { 50: 1, 59.94: 1, 60: 1, 72: 1, 75: 1, 90: 2, 100: 2, 120: 2, 144: 2, 165: 3, 240: 4, 360: 5 };
   for (const [hz, n] of Object.entries(cases)) assert.equal(divisorFor(Number(hz)), n, `${hz} Hz`);
   assert.equal(divisorFor(144.6), 2, 'rystende tidsstempler på 144 Hz');
   assert.equal(divisorFor(null), 1);

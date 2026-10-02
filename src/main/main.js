@@ -274,7 +274,7 @@ function registerIpc() {
     if (patch.music && typeof patch.music === 'object') {
       const m = patch.music;
       const out = {};
-      for (const key of ['beatSync', 'sectionChanges', 'hardCuts', 'smartSelection', 'agc']) {
+      for (const key of ['beatSync', 'sectionChanges', 'hardCuts', 'smartSelection', 'agc', 'punch']) {
         if (key in m) out[key] = Boolean(m[key]);
       }
       if ('latencyMs' in m) out.latencyMs = Math.round(clamp(m.latencyMs, 0, 500, 0));

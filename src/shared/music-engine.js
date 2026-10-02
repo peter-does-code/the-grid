@@ -77,6 +77,7 @@
       this.logMag = new Float64Array(bins);
       this.prevLogMag = null;
       this.prevLogKick = null;
+      this.prevLogTreb = null;
     }
 
     /**
@@ -97,14 +98,17 @@
         return s;
       };
       const rmsDb = 20 * Math.log10(rms + 1e-9);
+      const kickPower = band(this.ranges.kick);
       const out = {
         rms,
         rmsDb,
         bass: band(this.ranges.bass),
         mid: band(this.ranges.mid),
         treb: band(this.ranges.treb),
+        kick: kickPower, // kun til Tron-laget (src/shared/band-drive.js); motoren bruger kickFlux
         flux: 0,
         kickFlux: 0,
+        trebFlux: 0, // diskantens stigning (hi-hats), kun til Tron-laget
       };
 
       // Spektral flux: summen af stigninger i log-magnitude, dvs. hvor meget nyt der lige kom til.
@@ -121,14 +125,19 @@
       }
       this.prevLogMag.set(this.logMag);
 
-      const logKick = Math.log(band(this.ranges.kick) + EPS);
+      const logKick = Math.log(kickPower + EPS);
       if (this.prevLogKick !== null) out.kickFlux = Math.min(6, Math.max(0, logKick - this.prevLogKick));
       this.prevLogKick = logKick;
+
+      const logTreb = Math.log(out.treb + EPS);
+      if (this.prevLogTreb !== null) out.trebFlux = Math.min(6, Math.max(0, logTreb - this.prevLogTreb));
+      this.prevLogTreb = logTreb;
 
       // Støjgulvet i stille passager må ikke ligne slag.
       if (rmsDb < -60) {
         out.flux = 0;
         out.kickFlux = 0;
+        out.trebFlux = 0;
       }
       return out;
     }
@@ -228,6 +237,7 @@
       this.lastT = null;
       this.fluxMean = null;
       this.kickMean = null;
+      this.lastKickOnset = 0;
       this.silent = true; // indtil der kommer lyd
       this.playbackHint = null; // true/false når Spotify har meldt, om der spilles på denne pc
       this.quietSince = null;
@@ -358,6 +368,7 @@
       const onset = Math.min(20, (0.5 * flux) / (this.fluxMean + 1e-4) + (0.5 * kick) / (this.kickMean + 1e-4));
       const kickOnset = Math.min(20, kick / (this.kickMean + 1e-4));
       this.lastOnsetValue = onset;
+      this.lastKickOnset = kickOnset; // rigtige kick-onsets til Tron-laget (band-drive.js), ikke den forudsagte takt
       this.pushGrid(t, onset, kickOnset);
       this.detectOnset(t, onset, events);
 

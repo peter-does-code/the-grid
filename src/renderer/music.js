@@ -48,6 +48,7 @@
       this.trim = new Agc();
       this.agcGain = 1; // forstærkningen, der sidst blev sat på lydkæden (diagnose og selvtest viser den)
       this.lastRms = 0;
+      this.lastFeatures = null;
       this.source = null;
     }
 
@@ -98,7 +99,8 @@
       for (let i = 0; i < this.time.length; i++) sum += this.time[i] * this.time[i];
       const rms = Math.sqrt(sum / this.time.length);
       this.lastRms = rms;
-      const events = this.engine.update(t, this.features.extract(this.freq, rms));
+      this.lastFeatures = this.features.extract(this.freq, rms); // også til Tron-lagets bånd (band-drive.js)
+      const events = this.engine.update(t, this.lastFeatures);
       if (this.agc) {
         const gain = this.trim.update(t, rms, { silent: this.engine.silent });
         // Trimmen glider langsomt; lydkæden opdateres først, når forstærkningen har flyttet sig 0,3 %.
