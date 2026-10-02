@@ -24,6 +24,7 @@ Dokumentation i `docs/` (indeks: `docs/README.md`). Drews vejledning: `docs/en/g
 | `npm run diagnose` | Læser Spotify-tilstanden (login, rettigheder, afspillere, hvad der spiller). Ændrer intet. |
 | `node scripts/start.js --diagnose "--search=<tekst>"` | Søger som påskeægget "drew" og viser Spotifys svar. Ændrer intet. |
 | `npm run diagnose -- --play` | Afspiller det sidst hentede link med afspil-knappens kode og viser Spotifys svar. **Starter musik.** |
+| `node scripts/start.js --diagnose "--load=<link>"` | Henter det link i stedet for det sidst hentede (playliste, album eller nummer) og viser, hvad The Grid får ud af det. Med `--play` afspilles det. Brugt 02-10-2026 til at verificere, at nummer-links virker hele vejen. |
 | `npm run dist` | Bygger installationsfilen `dist/The-Grid-Setup-<version>.exe` (NSIS, x64, cirka 100 MB) |
 | `node scripts/start.js --review` | Gennemsyn af frasorterede presets i et eget vindue: ← → bladrer, K beholder, D bandlyser (se `docs/presets.md`) |
 | `npm run presets:pack` | Bygger preset-pakken ud fra målingerne i `presets-work/` og ban- og behold-listerne (se `docs/presets.md`) |

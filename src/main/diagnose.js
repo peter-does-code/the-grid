@@ -48,6 +48,7 @@ function playTargetFor(collection) {
  * `npm run diagnose`: læser Spotify-tilstanden uden at ændre noget.
  * `npm run diagnose -- --play`: prøver desuden at afspille det sidst hentede link med præcis samme kode
  * som afspil-knappen og viser Spotifys svar. Eksterne links og medietaster registreres kun, de udføres ikke.
+ * `--load=<link>`: henter det link i stedet for det sidst hentede, fx et nummer-link; --play afspiller det så.
  *
  * Eksperimenter, der sender rå kommandoer og kan afbryde musikken:
  *   --experiment        den løse "uris"-kommando med og uden forudgående overførsel. Den tømte afspilleren i
@@ -97,8 +98,12 @@ async function runDiagnose({ auth, store, makeApi, tryPlay = false, experiment =
 
   await step('playback', async () => summarizeState(await api.getPlaybackState()));
 
+  // --load=<link>: henter det link i stedet for det sidst hentede (kun læsning); --play bruger det så.
+  const loadArg = process.argv.find((a) => a.startsWith('--load='));
+  const input = loadArg ? loadArg.slice('--load='.length) : settings.lastInput || '';
   let collection = null;
-  const ref = parseSpotifyInput(settings.lastInput || '');
+  const ref = parseSpotifyInput(input);
+  if (loadArg) report.loadInput = { input, ref };
   if (ref) {
     await step('lastCollection', async () => {
       collection = await api.getCollection(ref);

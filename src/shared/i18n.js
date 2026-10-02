@@ -43,7 +43,7 @@
     // --- Playliste ---
     'playlist.title': 'PLAYLIST',
     'playlist.aria': 'Playlist',
-    'pl.placeholder': 'Paste a Spotify playlist or album link',
+    'pl.placeholder': 'Paste a Spotify playlist, album or song link',
     'pl.input.aria': 'Spotify link',
     'pl.load': 'Load',
     'pl.loading': 'Scanning the Grid …',
@@ -67,7 +67,7 @@
     'pl.empty.connect': 'Connect Spotify',
     'pl.empty.notLoggedIn': 'Log in with Spotify to load your playlists.',
     'pl.empty.login': 'Log in',
-    'pl.empty.ready': 'Paste a link to one of your own playlists or an album above. In Spotify: Share → Copy link.',
+    'pl.empty.ready': 'Paste a link to one of your own playlists, an album or a single song above. In Spotify: Share → Copy link.',
     'btn.settings': 'Settings',
     'btn.help': 'Help',
     'btn.help.title': 'Keyboard shortcuts (F1)',
