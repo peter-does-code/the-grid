@@ -15,6 +15,9 @@ selftest-output/
 visamp-selftest/
 the-grid-selftest/
 
+# Claude Codes midlertidige arbejdskopier (worktrees til parallelle agenter)
+.claude/worktrees/
+
 # Logs og editor/OS-støj
 *.log
 .vscode/
