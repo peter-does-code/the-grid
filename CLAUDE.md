@@ -10,7 +10,7 @@ Dokumentation i `docs/` (indeks: `docs/README.md`). Drews vejledning: `docs/en/g
 
 | Kommando | Hvad |
 |---|---|
-| `npm start` eller dobbeltklik på `The Grid.cmd` | Start appen fra kildekoden |
+| `npm start` eller dobbeltklik på `The Grid.cmd` | Start appen fra kildekoden. `The Grid.cmd` henter selv pakkerne (`npm install` og Electron), hvis de mangler, og forklarer, hvis Node.js mangler |
 | `npm test` | 131 unit-tests (Node test runner, ingen Electron) |
 | `npm run selftest` | Hurtig selvtest (ca. 20 s): starter appen, afspiller en 3 sekunders testlyd, tjekker lydfangst og rendering, tager skærmbilleder af dialogerne, introens start, fuld skærm og Clu-temaet, og tjekker at Init kan høres (afspiller den i 4 s). **Laver lyd på pc'en.** |
 | `npm run selftest:quiet` | Som `npm run selftest`, men med næsten uhørlig testlyd og Init (`--quiet`, virker også med `--selftest-full`). **Brug den som standard**: Peter bad om, at testene ikke spiller højt (01-10-2026). Billeder i sekundet er lavere (ca. 34) fra kildekoden end i den pakkede app (60); mål ydelse på `dist/win-unpacked` |

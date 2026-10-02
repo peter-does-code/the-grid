@@ -23,12 +23,12 @@ Spotify udleverer ikke rå lyd til andre programmer. Derfor analyserer The Grid 
 
 **Installationsfil:** kør `The-Grid-Setup-<version>.exe`. Vejledning på engelsk: [docs/en/getting_started.md](docs/en/getting_started.md).
 
-**Fra kildekoden** (kræver Node.js 22.12 eller nyere):
+**Fra kildekoden** (kræver Node.js 22.12 eller nyere): dobbeltklik på `The Grid.cmd`. Mangler pakkerne, henter den dem selv (`npm install` og Electron) og starter derefter appen; mangler Node.js, siger den det. Fra terminalen:
 
 ```bash
 npm install
 node node_modules/electron/install.js   # henter Electron med det samme
-npm start                               # eller dobbeltklik på "The Grid.cmd"
+npm start
 ```
 
 Spotify-delen kræver Spotify Premium. The Grid har Peters Spotify-udvikler-app bygget ind; hans app har højst 5 brugere, som han selv tilføjer. En egen udvikler-app kan sættes op under Indstillinger. Se [docs/spotify_setup.md](docs/spotify_setup.md). Uden login virker visualizeren stadig, og knapperne sender medietaster til Windows.
