@@ -281,7 +281,7 @@
   }
 
   /** En stemme på et vilkårligt preset (D/K på det viste, eller × i preset-listen). Derez skjuler det for brugeren. */
-  async function votePreset(name, verdict) {
+  async function votePreset(name, verdict, { toggle = false } = {}) {
     if (state.info.packaged && state.settings.shareVotes == null) {
       // Første stemme: spørg, om stemmerne må sendes til Peter. Svaret huskes og kan ændres under Settings.
       const yes = window.confirm(t('votes.ask'));
@@ -289,8 +289,13 @@
       saveSettingsSoon({ shareVotes: yes });
     }
     if (verdict === 'keep') {
-      // K slår favorit til og fra (personlig liste, vises oftere). Slås den fra, trækkes stemmen tilbage (clear).
+      // K gør presettet til favorit (personlig liste, vises oftere). Kun ☆/★ i preset-listen (toggle) kan fjerne
+      // den igen (Peter 02-10-2026); så trækkes stemmen tilbage (clear).
       const favs = new Set(state.settings.favoritePresets || []);
+      if (favs.has(name) && !toggle) {
+        toast(t('votes.alreadyLiked', { name }), 'info', 2500);
+        return;
+      }
       const on = !favs.has(name);
       if (on) favs.add(name);
       else favs.delete(name);
@@ -2045,7 +2050,7 @@
       }
       if (event.target.closest('.preset-fav')) {
         event.stopPropagation();
-        votePreset(li.dataset.name, 'keep').then(() => li.replaceWith(presetRow(li.dataset.name, false)));
+        votePreset(li.dataset.name, 'keep', { toggle: true }).then(() => li.replaceWith(presetRow(li.dataset.name, false)));
         return;
       }
       if (event.target.closest('.preset-restore')) {
