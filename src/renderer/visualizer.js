@@ -87,7 +87,7 @@
 
       this.installTransitions();
       this.installReactivity();
-      this.maxFps = 60;
+      this.maxFps = 30;
 
       const extraImages = unwrap(window.butterchurnExtraImages);
       if (extraImages && typeof extraImages.getImages === 'function') {

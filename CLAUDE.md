@@ -120,5 +120,6 @@ Derudover: ASCII-logo i udviklerkonsollen, "SECTOR n" og "IDLE" på LCD'et, "Der
 
 - Appen er altid på engelsk (regel 6). Docs og kodekommentarer er på dansk, bortset fra Drews vejledning i `docs/en/` og PowerShell-scripts (ASCII).
 - Kør `npm test` efter ændringer i `src/main/` eller `src/shared/`. Kør `npm run musictest` efter ændringer i musikmotoren. Kør `npm run selftest` efter ændringer i lydfangst, visualizer eller layout, og `npm run selftest:full` efter ændringer i intro eller påskeæg; se på skærmbillederne. Før en ny installationsfil: `npm run dist:dir` og selvtest af den pakkede app.
+- **Overskriv aldrig brugernes indstillinger ved en opdatering** (Peter 05-10-2026). `settings.json` gemmer kun det, brugeren har ændret (`rawSettings` i `store.js`); alt andet kommer fra `DEFAULT_SETTINGS`. En ny standard når derfor ud til alle, der ikke selv har valgt noget, uden en migrering. Skriv ikke nye migreringer, der ændrer en værdi, brugeren kan have valgt.
 - Versionsnummeret i `package.json` hæves for hver installationsfil, der sendes til Drew.
 - Commit-beskeder: én kort linje.

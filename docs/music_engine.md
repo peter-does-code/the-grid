@@ -120,7 +120,7 @@ Musikmotoren hører kun lyden, så The Grid virker uden Spotify (guiden: "Just v
 
 To indstillinger under Settings → Visualizer (Peter 05-10-2026: "for kaotisk/for hurtigt", meget af Winamps charme var væk):
 
-- **Speed** (`maxFps`, standard 60): højst så mange billeder i sekundet (`setMaxFps` i `visualizer.js`). Et MilkDrop-preset flytter billedet et fast stykke pr. billede (zoom, rotation, fade), og Butterchurn tegnede, så hurtigt skærmen kunne. På en 120-144 Hz-skærm eller et tv kørte alt derfor 2-2,5 gange for hurtigt. 30 er det gamle Winamp-udtryk; "Screen rate" er som før.
+- **Speed** (`maxFps`, standard 30 fra 05-10-2026, før 60): højst så mange billeder i sekundet (`setMaxFps` i `visualizer.js`). Et MilkDrop-preset flytter billedet et fast stykke pr. billede (zoom, rotation, fade), og Butterchurn tegnede, så hurtigt skærmen kunne. På en 120-144 Hz-skærm eller et tv kørte alt derfor 2-2,5 gange for hurtigt. 30 er det gamle Winamp-udtryk; "Screen rate" er som før.
 - **React to the music** (`reactivity`, standard 70 %): Butterchurn giver presets `bass`, `mid` og `treb` som forholdet til et langt gennemsnit (1 = normalt), som MilkDrop. Udsvinget omkring 1 ganges med indstillingen (`setReactivity`), så 50 % giver halvt så store hop. Den automatiske lydstyrke betyder derimod næsten intet for presets, netop fordi de måles mod deres eget gennemsnit. Review-tilstanden bruger altid 100 %.
 
 ## Overgange
