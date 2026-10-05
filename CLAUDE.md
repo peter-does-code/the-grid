@@ -83,6 +83,7 @@ Detaljer: `docs/architecture.md`.
 - **Kalibrering af musikmotoren.** Ret aldrig tærskler i `music-engine.js` uden at køre `npm run musictest` og `node scripts/bench-music.js` før og efter. `onsetLatency` (27 ms) er kalibreret mod dens facit.
 - **Diagnosen fornyer aldrig login.** Spotify roterer refresh-tokens, så en fornyelse i en anden proces ville logge den åbne app ud. Diagnosen kører på en kopi af datamappen, så den kan køre ved siden af en åben The Grid. Af samme grund må den gamle Visamp og The Grid ikke køre samtidig efter flytningen af data.
 - **Interne navne hedder stadig Visamp** (`window.Visamp`, `VisampFormat`, `VisampMusic`, C#-klassen `VisampAudio`, preload-broen `window.visamp`). Brugeren ser dem aldrig; lad dem være.
+- **Se `git status` igennem før et commit med `git add -A`.** Den 05-10-2026 kom Winamp-installationsfilen, som Peter havde lagt i projektmappen, med i et commit og blev pushet; historikken måtte omskrives med force-push. Nye store eller fremmede filer i projektmappen skal i `.gitignore` først.
 - Node.js 24 LTS er installeret portabelt i `%LOCALAPPDATA%\Programs\nodejs` og ligger i brugerens PATH.
 
 ## Påskeæg
