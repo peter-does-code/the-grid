@@ -157,7 +157,8 @@
 
   <div id="toast" class="toast" role="status" hidden></div>
 
-  <dialog id="settings-dialog" class="dialog" aria-labelledby="settings-title">
+  <dialog id="settings-dialog" class="dialog docked" aria-labelledby="settings-title">
+    <div class="dock-resize" role="separator" aria-orientation="vertical"></div>
     <div class="dialog-inner">
       <div class="dialog-title"><span id="settings-title" data-i18n="settings.title">SETTINGS</span><button class="dialog-close" type="button" data-close data-i18n-aria="dialog.close">×</button></div>
 
@@ -254,7 +255,8 @@
     </div>
   </dialog>
 
-  <dialog id="guide-dialog" class="dialog guide" aria-labelledby="guide-title">
+  <dialog id="guide-dialog" class="dialog guide docked" aria-labelledby="guide-title">
+    <div class="dock-resize" role="separator" aria-orientation="vertical"></div>
     <div class="dialog-inner">
       <div class="dialog-title"><span id="guide-title" data-i18n="guide.title">SETUP</span><span id="guide-step" class="dialog-title-extra"></span></div>
       <section class="guide-page" data-page="welcome">
@@ -297,7 +299,7 @@
   </dialog>
 
   <dialog id="presets-dialog" class="dialog wide docked" aria-labelledby="presets-title">
-    <div id="preset-resize" class="dock-resize" role="separator" aria-orientation="vertical"></div>
+    <div class="dock-resize" role="separator" aria-orientation="vertical"></div>
     <div class="dialog-inner">
       <div class="dialog-title"><span id="presets-title"><span data-i18n="presets.title">PRESETS</span> <span id="preset-count" class="dialog-title-extra"></span></span><button class="dialog-close" type="button" data-close data-i18n-aria="dialog.close">×</button></div>
       <input id="preset-filter" class="lcd-input" type="search" data-i18n-placeholder="presets.filter" spellcheck="false" data-i18n-aria="presets.filter">
@@ -305,7 +307,8 @@
     </div>
   </dialog>
 
-  <dialog id="help-dialog" class="dialog" aria-labelledby="help-title">
+  <dialog id="help-dialog" class="dialog docked" aria-labelledby="help-title">
+    <div class="dock-resize" role="separator" aria-orientation="vertical"></div>
     <div class="dialog-inner">
       <div class="dialog-title"><span id="help-title" data-i18n="help.title">KEYBOARD SHORTCUTS</span><button class="dialog-close" type="button" data-close data-i18n-aria="dialog.close">×</button></div>
       <table class="help-table">

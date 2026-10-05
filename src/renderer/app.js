@@ -1824,37 +1824,45 @@
     filterPresets('');
     markCurrentPreset();
     $('presets-dialog').showModal();
-    dockPresets();
     $('preset-filter').focus();
     const current = listEl.querySelector('li.current');
     if (current) current.scrollIntoView({ block: 'center' });
   }
 
-  // Preset-listen i visualizerens højre side; bredden huskes på pc'en.
-  const PRESET_WIDTH_KEY = 'presetListWidth';
-  const PRESET_MIN_WIDTH = 260;
-  function presetWidth() {
+  // Vinduerne (preset-listen, Settings, hjælpen og guiden) ligger i visualizerens højre side, ikke over den
+  // (Peter 05-10-2026; Flynns terminal undtaget). Bredden trækkes i venstre kant og huskes pr. vindue på pc'en.
+  const DOCKED = { 'presets-dialog': 420, 'settings-dialog': 480, 'help-dialog': 460, 'guide-dialog': 520 };
+  const DOCK_MIN_WIDTH = 260;
+  const dockKey = (id) => (id === 'presets-dialog' ? 'presetListWidth' : `dockWidth:${id}`);
+
+  function dockWidth(id) {
     try {
-      return Number(localStorage.getItem(PRESET_WIDTH_KEY)) || 420;
+      return Number(localStorage.getItem(dockKey(id))) || DOCKED[id];
     } catch {
-      return 420;
+      return DOCKED[id];
     }
   }
 
+  function openDocked() {
+    return Object.keys(DOCKED)
+      .map((id) => $(id))
+      .find((el) => el && el.open);
+  }
+
   /**
-   * Listen ved siden af visualizeren, ikke over den: visualizeren gøres smallere med listens bredde (margin), så
-   * hele billedet stadig ses. Visualizeren er gitterets højre kolonne og går helt ud til vinduets kant.
+   * Det åbne vindue ved siden af visualizeren: visualizeren gøres smallere med vinduets bredde (margin), så hele
+   * billedet stadig ses. Visualizeren er gitterets højre kolonne og går helt ud til vinduets kant.
    */
-  function dockPresets(width = presetWidth()) {
-    const el = $('presets-dialog');
+  function dockDialogs(width) {
+    const el = openDocked();
     const wrap = $('viz-wrap');
-    if (!el.open) {
+    if (!el) {
       wrap.style.marginRight = '';
-      return;
+      return undefined;
     }
     const r = wrap.getBoundingClientRect();
-    const room = window.innerWidth - r.left; // visualizerens kolonne uden listen
-    const w = Math.round(Math.max(PRESET_MIN_WIDTH, Math.min(width, room - 160)));
+    const room = window.innerWidth - r.left; // visualizerens kolonne uden vinduet
+    const w = Math.round(Math.max(DOCK_MIN_WIDTH, Math.min(width || dockWidth(el.id), room - 160)));
     wrap.style.marginRight = `${w}px`;
     el.style.top = `${r.top}px`;
     el.style.height = `${r.height}px`;
@@ -1863,34 +1871,38 @@
     return w;
   }
 
-  function wirePresetResize() {
-    const handle = $('preset-resize');
-    handle.addEventListener('pointerdown', (event) => {
-      event.preventDefault();
-      handle.setPointerCapture(event.pointerId);
-      handle.classList.add('dragging');
-      const right = $('presets-dialog').getBoundingClientRect().right;
-      let w = presetWidth();
-      const move = (e) => {
-        w = dockPresets(right - e.clientX);
-      };
-      const up = () => {
-        handle.classList.remove('dragging');
-        handle.removeEventListener('pointermove', move);
-        handle.removeEventListener('pointerup', up);
-        handle.removeEventListener('pointercancel', up);
-        try {
-          localStorage.setItem(PRESET_WIDTH_KEY, String(w));
-        } catch {
-          // uden lager huskes bredden bare ikke
-        }
-      };
-      handle.addEventListener('pointermove', move);
-      handle.addEventListener('pointerup', up);
-      handle.addEventListener('pointercancel', up);
-    });
-    window.addEventListener('resize', () => dockPresets());
-    $('presets-dialog').addEventListener('close', () => dockPresets()); // visualizeren får sin bredde igen
+  function wireDocking() {
+    for (const id of Object.keys(DOCKED)) {
+      const el = $(id);
+      const handle = el.querySelector('.dock-resize');
+      // Alle måder at åbne og lukke vinduet på (showModal mange steder) fanges her.
+      new MutationObserver(() => dockDialogs()).observe(el, { attributes: true, attributeFilter: ['open'] });
+      handle.addEventListener('pointerdown', (event) => {
+        event.preventDefault();
+        handle.setPointerCapture(event.pointerId);
+        handle.classList.add('dragging');
+        const right = el.getBoundingClientRect().right;
+        let w = dockWidth(id);
+        const move = (e) => {
+          w = dockDialogs(right - e.clientX);
+        };
+        const up = () => {
+          handle.classList.remove('dragging');
+          handle.removeEventListener('pointermove', move);
+          handle.removeEventListener('pointerup', up);
+          handle.removeEventListener('pointercancel', up);
+          try {
+            localStorage.setItem(dockKey(id), String(w));
+          } catch {
+            // uden lager huskes bredden bare ikke
+          }
+        };
+        handle.addEventListener('pointermove', move);
+        handle.addEventListener('pointerup', up);
+        handle.addEventListener('pointercancel', up);
+      });
+    }
+    window.addEventListener('resize', () => dockDialogs());
   }
 
   function loadPresetByName(name) {
@@ -2100,7 +2112,7 @@
     $('term-output').addEventListener('click', () => $('term-input').focus());
 
     // Presets
-    wirePresetResize();
+    wireDocking();
     $('preset-filter').addEventListener('input', (e) => filterPresets(e.target.value));
     $('preset-filter').addEventListener('keydown', (event) => {
       if (event.key !== 'Enter') return;
