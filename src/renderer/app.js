@@ -2219,7 +2219,12 @@
       return;
     }
     if (isTyping(event.target) || event.ctrlKey || event.altKey || event.metaKey) return;
-    if (document.querySelector('dialog[open]')) return;
+    // Vinduerne i kolonnen dækker ikke billedet, så genvejene virker, mens de er åbne (fx L med Settings åben).
+    // Kun Flynns terminal og guiden spærrer. Har en knap eller liste i et vindue fokus, hører mellemrum, Enter og
+    // pilene til den.
+    const blocking = [...document.querySelectorAll('dialog[open]')].some((d) => !DOCKED.includes(d.id) || d.id === 'guide-dialog');
+    if (blocking) return;
+    if (event.target.closest && event.target.closest('dialog') && /^( |Enter|Arrow\w+|Backspace)$/.test(event.key)) return;
 
     // Konami-koden: ↑↑↓↓←→←→BA åbner Game Grid (kun kamp, flere cykler).
     const konami = eggs.key(event.key);
