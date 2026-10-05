@@ -585,7 +585,32 @@
       $('lcd-bpm').textContent = engineState.bpm ? `${Math.round(engineState.bpm)} BPM` : '--- BPM';
       $('lcd-part').textContent = engineState.silent ? t('lcd.silent') : t('lcd.part', { n: engineState.sectionIndex });
     }
-    requestAnimationFrame(musicLoop);
+    scheduleMusicLoop();
+  }
+
+  // Musikmotoren (og sanghukommelsen) skal også køre, når vinduet er minimeret. Så stopper Chromium
+  // requestAnimationFrame helt, så den kører på en timer i stedet (ca. 30 gange i sekundet, uden at tegne).
+  let musicTimer = null;
+  let musicFrame = null;
+  function scheduleMusicLoop() {
+    if (document.hidden) musicTimer = setTimeout(runMusicLoop, 33);
+    else musicFrame = requestAnimationFrame(runMusicLoop);
+  }
+
+  function runMusicLoop() {
+    musicTimer = null;
+    musicFrame = null;
+    musicLoop();
+  }
+
+  /** Ved skift mellem synligt og skjult: afløs den ventende planlægning, så løkken ikke går i stå eller kører dobbelt. */
+  function rescheduleMusicLoop() {
+    if (musicTimer === null && musicFrame === null) return; // løkken kører ikke endnu
+    clearTimeout(musicTimer);
+    if (musicFrame !== null) cancelAnimationFrame(musicFrame);
+    musicTimer = null;
+    musicFrame = null;
+    scheduleMusicLoop();
   }
 
   // ---------- Fuld skærm ----------
@@ -941,7 +966,8 @@
   }
 
   async function pollPlayback() {
-    if (!state.spotify.loggedIn || document.hidden) return;
+    // Også når vinduet er minimeret: ellers opdages nye numre ikke, og sanghukommelsen mister dem (05-10-2026).
+    if (!state.spotify.loggedIn) return;
     try {
       applyPlayback(await call(bridge.spotify.playbackState()));
     } catch (err) {
@@ -2424,8 +2450,11 @@
 
     document.addEventListener('keydown', onKeyDown);
     document.addEventListener('visibilitychange', () => {
+      rescheduleMusicLoop();
       if (!document.hidden) pollPlayback();
     });
+    // Det nummer, der spiller, når appen lukkes, gemmes også i sanghukommelsen (ellers først ved næste nummer).
+    window.addEventListener('beforeunload', () => finishSong());
     document.addEventListener('fullscreenchange', onFullscreenChange);
     document.addEventListener('mousemove', wakeCursor);
     new ResizeObserver(measureMarquee).observe($('marquee'));
@@ -2860,7 +2889,7 @@
       state.outputDevice = null;
     }
     await startCapture();
-    requestAnimationFrame(musicLoop);
+    scheduleMusicLoop();
     setInterval(lcdTick, LCD_TICK_MS);
     setInterval(pollPlayback, POLL_MS);
     pollPlayback();

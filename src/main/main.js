@@ -189,7 +189,9 @@ function songStore() {
   if (!songStoreInstance) {
     const { SongStore } = require('./song-store');
     songStoreInstance = new SongStore({ dir: app.getPath('userData'), log: console });
+    // Det sidste nummer kommer fra vinduets beforeunload, altså efter before-quit; will-quit kommer efter det.
     app.on('before-quit', () => songStoreInstance.save());
+    app.on('will-quit', () => songStoreInstance.save());
   }
   return songStoreInstance;
 }

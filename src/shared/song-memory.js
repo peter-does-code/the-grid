@@ -150,14 +150,14 @@
     const tags = new Set((song.genres || []).map((g) => String(g).toLowerCase()));
     if (song.bpm) tags.add(song.bpm < 95 ? 'slow' : song.bpm > 135 ? 'fast' : 'mid-tempo');
     const levels = (song.energy || []).filter((x) => x !== null && x !== undefined);
-    if (levels.length >= 4) {
-      const mean = levels.reduce((a, b) => a + b, 0) / levels.length;
-      const spread = Math.max(...levels) - Math.min(...levels);
-      if (spread >= 15) tags.add('dynamic');
-      if (mean < -30) tags.add('quiet');
-    }
-    if (knownEvents(song, 'drop').length) tags.add('drops');
-    if (knownEvents(song, 'build').length) tags.add('build-ups');
+    // Lydstyrken er målt før det automatiske niveau og afhænger af pc'ens volumen, så kun forskellen i sangen
+    // tæller ("quiet" ud fra gennemsnittet blev fjernet 05-10-2026: alle Peters sange fik det).
+    if (levels.length >= 4 && Math.max(...levels) - Math.min(...levels) >= 15) tags.add('dynamic');
+    // Drops og opbygninger først som mærke, når det samme er hørt mindst to gange: motoren finder ind imellem et
+    // falsk drop (fx 6 i Radioheads "Exit Music", som ingen har).
+    const confirmed = (list) => (list || []).some((e) => e.count >= 2 && e.count / Math.max(1, e.seen || 1) >= 0.5);
+    if (confirmed(song.drops)) tags.add('drops');
+    if (confirmed(song.builds)) tags.add('build-ups');
     return [...tags];
   }
 

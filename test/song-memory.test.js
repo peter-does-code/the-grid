@@ -23,7 +23,10 @@ test('første afspilning: tempo, drops, dele og opbygninger huskes, og sangen f�
   assert.deepEqual(knownEvents(song, 'drop'), [64.2]);
   assert.deepEqual(knownEvents(song, 'section'), [32, 64, 128]);
   assert.deepEqual(knownEvents(song, 'build'), [56]);
-  for (const tag of ['techno', 'mid-tempo', 'drops', 'build-ups', 'dynamic']) assert.ok(song.tags.includes(tag), `${tag} i ${song.tags}`);
+  for (const tag of ['techno', 'mid-tempo', 'dynamic']) assert.ok(song.tags.includes(tag), `${tag} i ${song.tags}`);
+  assert.ok(!song.tags.includes('drops'), 'et drop hørt én gang er ikke et mærke endnu');
+  const again = mergeSong(song, play({ drops: [64.2], sections: [32, 64, 128], builds: [56] }));
+  assert.ok(again.tags.includes('drops') && again.tags.includes('build-ups'), `${again.tags}`);
 });
 
 test('flere afspilninger: et drop, der hørtes igen, flyttes lidt; et falsk drop, der kun kom én gang, glemmes', () => {
