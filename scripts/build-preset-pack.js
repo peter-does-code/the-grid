@@ -254,6 +254,9 @@ if (classicsArg) {
       if (r.linkFailed) return no('shader kan ikke oversættes');
       if (taken.has(m.name.toLowerCase())) return no('findes allerede');
       if (banned.has(banKey(m.name))) return no('fjernet af Peter');
+      // Peters "behold" går forud for målingerne: testen tager 3 s, og en klassiker kan starte mørkt eller
+      // bevæge sig langsomt (npm run presets:classics -- --missing).
+      if (keeps.has(banKey(m.name))) return true;
       if (r.luma < LIMITS.minLuma) return no('sort');
       if (r.luma > LIMITS.maxLuma) return no('hvidt');
       if (r.motion < LIMITS.minMotion) return no('står stille');

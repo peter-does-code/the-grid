@@ -557,6 +557,7 @@
       events = events.concat(pendingMusicEvents);
       pendingMusicEvents = [];
     }
+    events = songMemoryFrame(now, events);
     for (const e of events) {
       if (e.type === 'beat' && drewShow) drewShow.beat(e);
       if (tronOverlay) {
@@ -614,7 +615,10 @@
 
   function showCurrentTitle() {
     const track = (state.playback && state.playback.item) || displayTracks()[state.selectedIndex];
-    if (viz && track) viz.showTitle(F.trackLabel(track));
+    if (!viz || !track) return;
+    // Med sangens mærker fra sanghukommelsen (genrer fra Spotify, tempo, drops ...), når de kendes.
+    const tags = song && song.id === track.id ? (song.entry && song.entry.tags) || song.genres || [] : [];
+    viz.showTitle(tags.length ? `${F.trackLabel(track)} · ${tags.slice(0, 4).join(', ')}` : F.trackLabel(track));
   }
 
   // ---------- Lydfangst ----------
@@ -946,6 +950,101 @@
     }
   }
 
+  // ---------- Sanghukommelse (src/shared/song-memory.js) ----------
+  // Med Spotify kendes nummerets id og positionen i nummeret. Mens det spiller, noteres musikmotorens fund efter
+  // positionen; når det slutter, gemmes de og flettes med de tidligere gange. Spilles nummeret igen, kendes tempoet
+  // fra start, og kendte drops og nye dele fyres på det rigtige sekund i stedet for at vente på, at de høres
+  // (Peter 05-10-2026). Kun målinger, aldrig lyd.
+  const SM = window.VisampSongMemory;
+  let song = null; // { id, item, entry, recorder, known: {drop, section}, fired: Set, lastPos }
+
+  /** Positionen i det nummer, Spotify spiller (s), ud fra sidste afspillerstatus. */
+  function songPosition() {
+    const pb = state.playback;
+    if (!pb || !pb.item || !Number.isFinite(pb.progressMs)) return null;
+    const extra = pb.isPlaying ? performance.now() - state.playbackReceivedAt : 0;
+    return (pb.progressMs + extra) / 1000;
+  }
+
+  function finishSong() {
+    if (!song) return;
+    const done = song;
+    song = null;
+    const analysis = done.recorder.finish((done.item.durationMs || 0) / 1000);
+    if (!analysis) return;
+    const meta = { name: done.item.name, artists: done.item.artists, durationMs: done.item.durationMs, genres: done.genres };
+    const entry = SM.mergeSong(done.entry, analysis, meta);
+    call(bridge.songs.put(done.id, entry)).catch((err) => console.warn('Could not save the song memory:', err));
+  }
+
+  async function startSong(item) {
+    finishSong();
+    if (!SM || !item || !item.id || item.type === 'episode' || state.info.selftest) return;
+    const pos = songPosition() || 0;
+    const current = {
+      id: item.id,
+      item,
+      entry: null,
+      genres: null,
+      recorder: new SM.SongRecorder({ id: item.id, startPos: pos }),
+      known: { drop: [], section: [] },
+      fired: new Set(),
+      lastPos: pos,
+    };
+    song = current;
+    const [entry, genres] = await Promise.all([
+      call(bridge.songs.get(item.id)).catch(() => null),
+      call(bridge.songs.genres(item.artistIds || [])).catch(() => []),
+    ]);
+    if (song !== current) return; // nyt nummer imens
+    current.entry = entry;
+    current.genres = genres;
+    if (entry) {
+      current.known = { drop: SM.knownEvents(entry, 'drop'), section: SM.knownEvents(entry, 'section') };
+      if (entry.bpm) music.engine.setKnownTempo(entry.bpm);
+      // Det, der allerede er passeret, fyres ikke.
+      for (const kind of ['drop', 'section']) for (const p of current.known[kind]) if (p < pos - 0.5) current.fired.add(`${kind}:${p}`);
+    }
+  }
+
+  /** Hvert billede: optag motorens fund, fyr de kendte på deres sekund, og fjern dem, der nu kommer to gange. */
+  function songMemoryFrame(now, events) {
+    if (!song) return events;
+    const pos = songPosition();
+    if (pos === null) return events;
+    if (pos < song.lastPos - 2) {
+      // Spolet tilbage: de kendte efter den nye position må fyres igen.
+      for (const key of [...song.fired]) if (Number(key.split(':')[1]) > pos) song.fired.delete(key);
+    }
+    song.lastPos = pos;
+    const st = music.engine.state;
+    song.recorder.frame(pos, { bpm: st.bpm, tempoValid: st.tempoValid, rmsDb: 20 * Math.log10(Math.max(music.lastRms || 0, 1e-6)) });
+    // De hørte fund noteres (ikke de planlagte, så hukommelsen ikke bekræfter sig selv).
+    for (const e of events) {
+      if (e.planned) continue;
+      if (e.type === 'drop') song.recorder.event('drop', pos);
+      else if (e.type === 'section') song.recorder.event('section', pos);
+      else if (e.type === 'buildup') song.recorder.event('build', pos);
+    }
+    const near = (kind, p, before, after) => song.known[kind].some((k) => p >= k - before && p <= k + after);
+    // Hørte drops og dele tæt på et kendt fjernes: det kendte fyres på sit sekund i stedet.
+    const out = events.filter((e) => {
+      if (e.planned) return true;
+      if (e.type === 'drop') return !near('drop', pos, 2, 2);
+      if (e.type === 'section') return !near('section', pos, 6, 6);
+      return true;
+    });
+    for (const kind of ['drop', 'section']) {
+      for (const p of song.known[kind]) {
+        const key = `${kind}:${p}`;
+        if (song.fired.has(key) || pos < p || pos > p + 1) continue;
+        song.fired.add(key);
+        out.push({ type: kind, t: now, planned: true, songPos: p });
+      }
+    }
+    return out;
+  }
+
   // Playlister og albums, der ikke kunne hentes (fx Spotifys egne playlister, som 2026-reglerne spærrer): prøves
   // ikke igen ved hver afspillerstatus.
   const followFailed = new Set();
@@ -987,6 +1086,7 @@
     if (item && item.id !== state.lastTrackId) {
       const firstSeen = state.lastTrackId === null;
       state.lastTrackId = item.id;
+      startSong(item); // sanghukommelsen: gem det forrige, hent det, der vides om dette
       if (viz) viz.showTitle(F.trackLabel(item)); // som MilkDrop, når et nyt nummer starter
       if (!firstSeen) {
         // Nyt nummer: musikmotoren glemmer den forrige sang, og instruktøren skifter på takten.

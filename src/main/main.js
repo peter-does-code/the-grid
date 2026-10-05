@@ -184,6 +184,16 @@ let UPDATED_FROM = null;
 /** Stemmekøen til Peter (src/main/votes.js); kun i den installerede app. */
 let voteQueue = null;
 
+let songStoreInstance = null;
+function songStore() {
+  if (!songStoreInstance) {
+    const { SongStore } = require('./song-store');
+    songStoreInstance = new SongStore({ dir: app.getPath('userData'), log: console });
+    app.on('before-quit', () => songStoreInstance.save());
+  }
+  return songStoreInstance;
+}
+
 /** Brugerens anonyme stemme-id (oprettes første gang). */
 function votesId() {
   let id = store.getSettings().votesId;
@@ -308,6 +318,11 @@ function registerIpc() {
     }
     return publicSettings(store.updateSettings(clean));
   });
+
+  // Sanghukommelsen (src/main/song-store.js): hvad musikmotoren har lært om hver sang, og kunstnernes genrer.
+  handle('songs:get', (_event, id) => songStore().get(id));
+  handle('songs:put', (_event, id, entry) => songStore().put(id, entry));
+  handle('songs:genres', (_event, artistIds) => songStore().genres(artistIds, (id) => api.getArtist(id)));
 
   handle('spotify:status', () => spotifyStatus());
 

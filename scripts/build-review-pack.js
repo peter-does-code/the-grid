@@ -4,7 +4,7 @@
  * Bygger review-pakken (src/renderer/presets/review-pack.js) til review-tilstanden, så Peter kan stemme:
  *
  *   npm run presets:review                      50 nye kandidater efter Peters smag, og åbner review-vinduet
- *   node scripts/build-review-pack.js [--count=50] [--flashers] [--classics] [--no-open]
+ *   node scripts/build-review-pack.js [--count=50] [--flashers] [--classics [--missing]] [--no-open]
  *
  * Kandidaterne er presets fra presets-work (se docs/presets.md), der virker, men ikke er med i pakken, og som Peter
  * ikke har stemt om. De rangeres efter Peters smag fra hans review (02-10-2026): takt minus blink minus lysstyrke
@@ -54,15 +54,21 @@ const pool = [];
 // --classics: Winamp-klassikerne i pakken (src/renderer/presets/winamp-classics.js), som Peter ikke har stemt om.
 // K kommer på behold-listen (og dermed Peters favoritter), D på ban-listen og ud af pakken for alle.
 const CLASSICS = args.includes('--classics');
+// --classics --missing: i stedet de klassikere, preset-testen sorterede fra (sort, hvidt, stille, blink), men som
+// kan tegnes. Testen tager kun 3 s; Peter afgør med egne øjne (K tager dem med, D bandlyser).
+const MISSING = args.includes('--missing');
 const classicPresets = {};
 if (CLASSICS) {
   global.window = global.window || {};
   require(path.join(root, 'src', 'renderer', 'presets', 'winamp-classics.js'));
-  Object.assign(classicPresets, window.gridPresetsWinampClassics.getPresets());
-  const clByFile = new Map(JSON.parse(fs.readFileSync(path.join(work, 'classics', 'manifest.json'), 'utf8')).map((m) => [m.file, m]));
-  for (const r of readJsonl('classics-results.jsonl')) {
+  const inPackClassics = window.gridPresetsWinampClassics.getPresets();
+  const clDir = path.join(work, 'classics-winamp');
+  const clByFile = new Map(JSON.parse(fs.readFileSync(path.join(clDir, 'manifest.json'), 'utf8')).map((m) => [m.file, m]));
+  for (const r of readJsonl('classics-winamp-results.jsonl')) {
     const m = clByFile.get(r.file);
-    if (!m || !classicPresets[m.name] || voted.has(key(m.name))) continue;
+    if (!m || m.error || r.error || r.linkFailed || voted.has(key(m.name))) continue;
+    if (MISSING ? inPackClassics[m.name] || inPack.has(key(m.name)) || builtIn.has(key(m.name)) : !inPackClassics[m.name]) continue;
+    classicPresets[m.name] = inPackClassics[m.name] || JSON.parse(fs.readFileSync(path.join(clDir, m.file), 'utf8'));
     pool.push({ m: { ...m, style: 'classics' }, taste: r.beatSync - (r.flicker || 0) - r.luma });
   }
 }

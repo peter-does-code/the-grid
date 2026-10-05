@@ -276,10 +276,20 @@
       this.resetBar();
       this.songAccSec = 0;
       this.tempoFreeUntil = -Infinity; // se tempoFreeSec
+      this.knownBpm = null; // se setKnownTempo
+    }
+
+    /**
+     * Sangens tempo fra sanghukommelsen (src/shared/song-memory.js), når sangen er spillet før: bruges som sangens
+     * tempo fra første sekund, så oktav- og 3:2-fejl i starten undgås. Glemmes ved næste sang.
+     */
+    setKnownTempo(bpm) {
+      this.knownBpm = bpm > 30 && bpm < 300 ? bpm : null;
     }
 
     /** Sangens tempo som periode i pladser (null, indtil der er hørt nok). */
     songLag() {
+      if (this.knownBpm) return (60 * this.o.gridRate) / this.knownBpm;
       if (!this.songAcc || this.songAccSec < this.o.songTempoMinSec) return null;
       const acc = this.songAcc;
       let best = -1;
@@ -582,7 +592,9 @@
         const distance = (lagSlots) => Math.abs(Math.log2((60 * R) / lagSlots / typicalBpm));
         // Er sangens tempo næsten lige så stærkt som vinderen, er det sangens tempo (uanset forhold).
         const song = songLag && Math.abs(scores[best].L - songLag) / songLag >= 0.04 ? this.localPeak(scores, songLag) : null;
-        const songWins = song && song.score >= this.o.songTempoTieShare * scores[best].score;
+        // Kendes sangen fra sanghukommelsen, skal dens tempo kun have halvdelen af vinderens styrke.
+        const tieShare = this.knownBpm ? 0.5 : this.o.songTempoTieShare;
+        const songWins = song && song.score >= tieShare * scores[best].score;
         if (songWins) {
           const k = scores.findIndex((s) => Math.abs(s.L - song.lag) < 1);
           if (k >= 0) best = k;

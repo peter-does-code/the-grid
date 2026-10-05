@@ -32,10 +32,9 @@ Eo.S. - pointfield 04 arcs demon_phat edit_v3
 Eo.S. - pointfield 09 the gases beyond 85c
 Eo.S. - repeater 15 - kaleidoscope b
 Eo.S. - tumbler demon mix high fps Phat_edit
-Eo.S. + flexi - glowsticks v2 05 and proton lights (+Krash's beat code) _Phat_remix02b + illumination (Stahl's Mix)
+Eo.S. + flexi + Krash - glowsticks & proton lights _Phat_remix + illumination (Stahl's Mix)
 Eo.S. + Geiss - glowsticks v2 03 music shifter edit b (water mix)
 Eo.S. + Geiss - sarc c_Phats Zoom Mix Reflecto
-Eo.S. + Phat - CAT Scan (Nirvana flux)
 Eo.S. + Phat - chasers 11 sentinel C_poltergeist_mix response daemon
 Eo.S. + Phat - chasers 14 sentinel 616
 Eo.S. + Phat - chasers 18 hallway
@@ -62,8 +61,9 @@ fiShbRaiN - white scream firefly
 fiShbRaiN + Eo.S. + Phat - starburst totem pole
 Flexi - age of shading chaos
 Flexi - braggadocio
+Flexi - gold plated maelstrom of chaos
+Flexi - hue burst
 Flexi - intensive shader fractal [suksma comp shader mix]
-Flexi - jellyfish jam
 Flexi - lorenz attractor
 Flexi - Milkcore
 Flexi - Milkcore [Martin's ripple on water insertion]
@@ -73,13 +73,11 @@ Flexi - the early bird
 Flexi + Geiss - antagonizing beat detection codes
 Flexi + Geiss - pogo-cubes on tokamak matter [mind over matter remix]
 Forum collaboration thread - second try #4 [Goody(2), Stahlregen (2)]
-Forum collaboration thread - second try #6 [Goody(2), Stahlregen (3), fed (1)]
 Forum collaboration thread - second try #6c1.5 [Goody(2), Stahlregen (3.5), fed (1)]
 Fvese - Rebirth
 Fvese - Rebirth (Progression Rot Mix)
 Fvese - Snowflake Like 2
 Fvese - Zoom Effects (Remix 3)
-Geiss - Cauldron - painterly 5
 Geiss - Cosmic Dust 2
 Geiss - Cosmic Dust 2 - Tiny Reaction Diffusion Mix
 Geiss - Fog Tunnel
@@ -121,8 +119,10 @@ Mstress - Acoustic Nerve Impulses
 Mstress & Zylot - Acid UFO
 nil - Vortex of Vortices
 ORB - Acid Cycle [flexi composite]
+ORB - Crysal Storm 
 ORB - Dark Omen
 orb - fireworks - fusion
+ORB - Inferno
 ORB - Kalidescope
 ORB - Mega Spectrum
 ORB - Quicksand
@@ -132,7 +132,6 @@ ORB - Supernova Meltdown
 ORB - Temporal Rift
 phat + Eo.S. - 2ct2V5
 phat + Eo.S. - 2ct2V6
-phat + Eo.S. - PeopleWhoEatAcid_phatColoursV2
 phat + Eo.S. - TesellatingFractal_Mix3
 phat_2C-B6
 Phat_Eo.S. - Just more trash
@@ -156,14 +155,12 @@ Reenen - phoenix
 Reenen & Telek - Slow Shift Matrix (bb4.5 (Dynamic Beat) Mix)
 Reenen Geiss - Soft Triple Feedback
 Reenen Geiss - Triple Feedback_phat_edit
-Rovastar - 3am Somewhere
 Rovastar - Alpha Conflict
 Rovastar - Altars Of Harlequin's Madness (Dark Disorder Mix)
 Rovastar - Cerebral Parasites (Attack Mix)
 Rovastar - Dark Ritual (Star Of Destiny Denied Mix)
 Rovastar - Dark Ritual (Star Of Destiny Mix)
 Rovastar - Destiny Star (Starbrust Mix)
-Rovastar - eclectic interface (despair mix)
 Rovastar - Fractopia (Fantic Dancing Lights Mix)
 Rovastar - Fractopia (Galaxy Swirl Mix)
 Rovastar - Fractopia (Upspoken Mix)
@@ -178,7 +175,6 @@ Rovastar - Jester's Calling 2
 Rovastar - Jester's Surreal Tornado
 Rovastar - Mosaics Of Ages
 Rovastar - Parallel Universe
-Rovastar - Solarized Space
 Rovastar - Sunflower Passion
 Rovastar - Sunflower Passion (Simple Mix)_phat+Eo.S. werid_angle_mix
 Rovastar - Tripmaker
@@ -208,8 +204,11 @@ Rozzor & StudioMusic - Vertigyny (Geiss Shape Mod)
 Rozzor & Unchained - Crescat Scientia, Vita Excolatur
 Rozzor & Unchained - Painful Plasma (Multi-Wave Mirrored Rage (Triangle Tweak))
 Rozzor & Unchained - Scientifically Shapely
+Serge - MilkDrop2077.R015
+Serge - MilkDrop2077.R027
 shifter - brain coral (left brained)
 shifter - lazerspecs_phat_edit
+shifter - spincycle c
 shifter - swarm
 shifter - tadpole evolution (static mix)
 shifter - tumbling cubes (endless) radial blur
@@ -222,7 +221,6 @@ shifter & fiShbRaiN - witchcraft (i'm melting)
 shifter + geiss - neon pulse (glow mix)
 Shreyas - Carnival
 Stahlregen - Spiral Beats (Fluctuating Flowers)
-Stahlregen & AdamFx + Eo.S + Flexi + Geiss + Phat + Rovastar + Zylot - Fractopia Kaleidoscope
 Stahlregen & Aderrasi + Flexi + Rovastar - Fractal Twist (A feat. hexcollie)
 Stahlregen & Boz + Eo.S + Geiss + Phat + Rovastar + Zylot - Machine Code (Relief Block Mix)
 Stahlregen & fishbrain + flexi + geiss - The Machine that conquered the Aether

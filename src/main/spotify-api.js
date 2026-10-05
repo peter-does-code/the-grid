@@ -88,6 +88,7 @@ function normalizeTrack(raw, position) {
     uri: raw.uri || null,
     name: raw.name || '(unknown title)',
     artists,
+    artistIds: isEpisode ? [] : (raw.artists || []).map((a) => a && a.id).filter(Boolean), // til genrerne
     album: isEpisode ? (raw.show && raw.show.name) || '' : (raw.album && raw.album.name) || '',
     // Albummet (eller showet for en episode). Bruges som kontekst, når et enkelt nummer afspilles.
     parentUri: isEpisode ? (raw.show && raw.show.uri) || null : (raw.album && raw.album.uri) || null,
@@ -257,6 +258,12 @@ class SpotifyApi {
       total: 1,
       tracks: [track],
     };
+  }
+
+  /** Én kunstner (til sangenes genrer). Ikke GET /artists?ids=..., som 2026-reglerne har fjernet. */
+  async getArtist(id) {
+    const raw = await this.request('GET', `/artists/${encodeURIComponent(id)}`);
+    return { id: raw.id, name: raw.name, genres: Array.isArray(raw.genres) ? raw.genres.slice(0, 20) : [] };
   }
 
   async getDevices() {

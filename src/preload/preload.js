@@ -42,6 +42,11 @@ contextBridge.exposeInMainWorld('visamp', {
     getFile: () => ipcRenderer.invoke('musictest:file'),
     report: (data) => ipcRenderer.invoke('musictest:report', data),
   },
+  songs: {
+    get: (id) => ipcRenderer.invoke('songs:get', id),
+    put: (id, entry) => ipcRenderer.invoke('songs:put', id, entry),
+    genres: (artistIds) => ipcRenderer.invoke('songs:genres', artistIds),
+  },
   votes: {
     add: (name, verdict) => ipcRenderer.invoke('votes:add', name, verdict),
   },

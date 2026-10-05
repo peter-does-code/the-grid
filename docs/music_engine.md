@@ -109,6 +109,19 @@ Pr. 200 skift er det 176-200 forskellige. Prisen er, at høje dele rammer lidt m
 
 Det sker kun ved tilfældig rækkefølge med "Vælg presets, der reagerer på den del af musikken, der fylder mest" slået til.
 
+## Sanghukommelse
+
+The Grid husker, hvad musikmotoren har hørt i hver sang, til næste gang den spilles (Peter 05-10-2026). Kun med Spotify: nummerets id og positionen i nummeret kommer fra afspillerstatussen.
+
+- **Optagelse** (`SongRecorder` i `src/shared/song-memory.js`, kaldt fra `songMemoryFrame` i `app.js`): tempo, nye dele, opbygninger og drops efter positionen i sangen, og lydstyrken pr. 4 s. Kun en afspilning, der begyndte i de første 10 s, varede mindst 45 s og nåede halvvejs, tæller, så "intet drop før 1:00" er en oplysning.
+- **Fletning** (`mergeSong`): et fund tæt på et kendt (drop ±1,5 s, del og opbygning ±3 s) flytter det lidt og tælles; ellers er det nyt. Et fund regnes for kendt, når det er hørt i mindst halvdelen af de gange, sangen blev hørt så langt (`knownEvents`). Tempoet gennemsnittes, når det ligger inden for 4 %; et enkelt afvigende bud (fx dobbelt tempo) tager ikke over.
+- **Brug næste gang:**
+  - Tempoet sættes fra første sekund (`setKnownTempo`): det bruges som sangens tempo og vinder over en kandidat, når det har mindst halvdelen af dens styrke. Det fjerner oktav- og 3:2-fejl i starten; selve låsningen tager stadig et par sekunder, fordi slagene skal høres.
+  - Kendte drops og nye dele fyres, når positionen når dem. Hørte drops inden for ±2 s og dele inden for ±6 s af et kendt fjernes, så de ikke kommer to gange, og et falsk drop, der ikke kom igen, glemmes. Kun hørte fund noteres, ikke de planlagte, så hukommelsen ikke bekræfter sig selv.
+- **Mærker** (`songTags`): genrer fra Spotify (`GET /artists/{id}`, én kunstner ad gangen, højst 3 pr. nummer, gemt pr. kunstner; batch-opslaget er fjernet i 2026) plus det, motoren hørte: `slow`/`mid-tempo`/`fast`, `dynamic`, `quiet`, `drops`, `build-ups`. T viser dem efter titlen.
+- **Lagring** (`src/main/song-store.js`): `%APPDATA%\The Grid\song-memory.json`, højst 5.000 sange (de senest spillede), skrives 2 s efter en ændring og ved lukning. Kun målinger og tidspunkter.
+- **Næste trin** (ikke bygget): planlæg presets for hele sangen (roligt til intro, det stærkeste til det største drop), brug mærkerne i valget, og genkend sange uden Spotify med et lydfingeraftryk.
+
 ## Uden Spotify
 
 Musikmotoren hører kun lyden, så The Grid virker uden Spotify (guiden: "Just visualize what's playing", Peter 05-10-2026). Uden login er `setAudioOnly(true)`:

@@ -34,3 +34,7 @@ src/renderer/presets/review-pack.js
 
 # Arbejdsdata til preset-pakken (konverterede presets og målinger, se docs/presets.md): stort og genskabeligt
 presets-work/
+
+# Winamp selv (installationsfil og udpakket): må aldrig i git (hård regel 1); kun til at finde presets lokalt
+winamp_*.exe
+winamp-src/
