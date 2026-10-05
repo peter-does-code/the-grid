@@ -2032,9 +2032,16 @@
     filterPresets('');
     markCurrentPreset();
     $('presets-dialog').showModal();
+    // Vinduet skal have sin plads og højde i kolonnen, før der rulles til det viste preset; ellers rulles der i en
+    // liste uden højde, og den bliver stående øverst (Peter 05-10-2026: "åbner ikke altid det preset, jeg er i").
+    dockDialogs();
     $('preset-filter').focus();
-    const current = listEl.querySelector('li.current');
-    if (current) current.scrollIntoView({ block: 'center' });
+    requestAnimationFrame(() => {
+      const current = listEl.querySelector('li.current');
+      if (!current) return;
+      const top = current.getBoundingClientRect().top - listEl.getBoundingClientRect().top + listEl.scrollTop;
+      listEl.scrollTop = Math.max(0, top - listEl.clientHeight / 2 + current.offsetHeight / 2);
+    });
   }
 
   // Vinduerne (preset-listen, Settings, hjælpen og guiden) ligger i en kolonne i visualizerens højre side og dækker
