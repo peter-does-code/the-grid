@@ -23,6 +23,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { fork } = require('node:child_process');
 const { repairShader } = require('./lib/repair-shader');
+const { repairEel } = require('./lib/repair-eel');
 
 const MAX_BYTES = 200 * 1024; // unormalt store filer (typisk indlejrede billeder) springes over
 let PER_FAMILY = 2; // --per-family=<n> (Infinity = alle, fx Winamp-klassikerne)
@@ -88,7 +89,8 @@ async function convertOne(src, out, { file, style }) {
   const rel = path.relative(src, file);
   const entry = { name: path.basename(file, path.extname(file)), style, file: rel.replace(/\.milk$/i, '.json').split(path.sep).join('/') };
   try {
-    const text = fs.readFileSync(file, 'latin1');
+    // Ligninger, parseren afviser (unært plus, scripts/lib/repair-eel.js), rettes før konverteringen.
+    const text = repairEel(fs.readFileSync(file, 'latin1'));
     if (text.length > MAX_BYTES) throw new Error('too large');
     const preset = await convertPreset(text);
     // Konverterens shadere har kendte fejl, der giver sorte presets (se scripts/lib/repair-shader.js).

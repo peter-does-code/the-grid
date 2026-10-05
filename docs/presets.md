@@ -37,6 +37,8 @@ Peter testede The Grid til en fest; gæsterne syntes, det var for kaotisk og hur
    - Egne teksturer mangler `uniform`, og Butterchurns egne bliver erklæret igen. Det rettes.
 
    I en stikprøve på 200 faldt andelen, der ikke kan linkes, fra 85 % til 25 %. Resten er blandede fejl.
+
+   Ligningerne rettes også før konverteringen (`scripts/lib/repair-eel.js`, 05-10-2026): MilkDrop tillader et plus foran et udtryk (`sin(+atan2(...))`), som parseren afviser med "Parse error". Det fik bl.a. "Flexi - oldschool tree" (Peters "the fern") til at mangle; med rettelsen konverteres den og 3 andre Winamp-klassikere.
 3. **Preset-test** (`--presettest`, `src/renderer/presettest.js`). Hvert preset tegnes ved 1280x720 med 1 s stilhed og 2 s syntetisk musik (120 BPM):
    - Der måles lysstyrke, farver, detaljer, bevægelse og tid pr. billede.
    - Der måles også, hvor tæt billedet følger kick-slagene (`beatSync`).
