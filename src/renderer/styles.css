@@ -1571,6 +1571,8 @@ body.fullscreen.cursor-hidden * {
 /* Preset-listen (L) ligger i visualizerens højre side, så man kan se presettet. Bredden trækkes i venstre kant;
  * top, højde og bredde sættes af dockPresets() i app.js. */
 .dialog.docked {
+  /* Ikke modale (se dockDialogs i app.js): over visualizeren, under påskeæg (40), intro (50) og beskeder (60). */
+  z-index: 30;
   position: fixed;
   inset: auto 0 auto auto;
   margin: 0;

@@ -85,8 +85,8 @@ async function savePng(win, file) {
  * dialogerne, introens start, fuld skærm, Clu-temaet og at Init kan høres. Den fulde (--selftest-full,
  * ca. 90 s) venter også introens faser, Game Grid-vinderen og alle påskeæg igennem i realtid.
  */
-const QUICK_VIEWS = ['settings', 'presets', 'help', 'terminal', 'guide', 'welcome', 'intro', 'fullscreen', 'drew-audio', 'clu'];
-const FULL_VIEWS = ['settings', 'presets', 'help', 'terminal', 'guide', 'welcome', 'intro', 'intro-battle', 'intro-duel', 'intro-text', 'intro-classic', 'battle-win', 'tron-overlay', 'battle-epic', 'fullscreen', 'egg-users', 'egg-greetings', 'egg-encom', 'egg-zen', 'egg-rinzler', 'egg-spaces', 'egg-jazz', 'egg-clu', 'drew', 'drew-pound', 'drew-audio', 'terminal-return', 'clu'];
+const QUICK_VIEWS = ['settings', 'presets', 'help', 'docked-stack', 'terminal', 'guide', 'welcome', 'intro', 'fullscreen', 'drew-audio', 'clu'];
+const FULL_VIEWS = ['settings', 'presets', 'help', 'docked-stack', 'terminal', 'guide', 'welcome', 'intro', 'intro-battle', 'intro-duel', 'intro-text', 'intro-classic', 'battle-win', 'tron-overlay', 'battle-epic', 'fullscreen', 'egg-users', 'egg-greetings', 'egg-encom', 'egg-zen', 'egg-rinzler', 'egg-spaces', 'egg-jazz', 'egg-clu', 'drew', 'drew-pound', 'drew-audio', 'terminal-return', 'clu'];
 
 async function runSelftest({ win, ipcMain, outDir, full = false }) {
   const startedAt = Date.now();

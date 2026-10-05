@@ -1841,60 +1841,76 @@
     if (current) current.scrollIntoView({ block: 'center' });
   }
 
-  // Vinduerne (preset-listen, Settings, hjælpen og guiden) ligger i visualizerens højre side, ikke over den
-  // (Peter 05-10-2026; Flynns terminal undtaget). Bredden trækkes i venstre kant og huskes pr. vindue på pc'en.
-  const DOCKED = { 'presets-dialog': 420, 'settings-dialog': 480, 'help-dialog': 460, 'guide-dialog': 520 };
+  // Vinduerne (preset-listen, Settings, hjælpen og guiden) ligger i en kolonne i visualizerens højre side og dækker
+  // aldrig billedet (Peter 05-10-2026; Flynns terminal undtaget). Er flere åbne, deler de kolonnen oven over
+  // hinanden som i en tiling-vindueshåndtering (Omarchy): to får hver halvdelen, tre en tredjedel. De åbnes ikke
+  // modalt, så de kan være åbne samtidig; Esc lukker det senest åbnede. Kolonnens bredde trækkes i venstre kant
+  // og huskes på pc'en.
+  const DOCKED = ['presets-dialog', 'settings-dialog', 'help-dialog', 'guide-dialog'];
   const DOCK_MIN_WIDTH = 260;
-  const dockKey = (id) => (id === 'presets-dialog' ? 'presetListWidth' : `dockWidth:${id}`);
+  const DOCK_WIDTH_KEY = 'dockWidth';
+  const dockOrder = []; // åbne vinduer, ældst først (øverst)
 
-  function dockWidth(id) {
+  function dockWidth() {
     try {
-      return Number(localStorage.getItem(dockKey(id))) || DOCKED[id];
+      return Number(localStorage.getItem(DOCK_WIDTH_KEY)) || Number(localStorage.getItem('presetListWidth')) || 440;
     } catch {
-      return DOCKED[id];
+      return 440;
     }
   }
 
-  function openDocked() {
-    return Object.keys(DOCKED)
-      .map((id) => $(id))
-      .find((el) => el && el.open);
-  }
-
-  /**
-   * Det åbne vindue ved siden af visualizeren: visualizeren gøres smallere med vinduets bredde (margin), så hele
-   * billedet stadig ses. Visualizeren er gitterets højre kolonne og går helt ud til vinduets kant.
-   */
+  /** Visualizeren gøres smallere med kolonnens bredde (margin); vinduerne deler kolonnens højde. */
   function dockDialogs(width) {
-    const el = openDocked();
+    const open = dockOrder.map((id) => $(id)).filter((el) => el && el.open);
     const wrap = $('viz-wrap');
-    if (!el) {
+    if (!open.length) {
       wrap.style.marginRight = '';
       return undefined;
     }
     const r = wrap.getBoundingClientRect();
-    const room = window.innerWidth - r.left; // visualizerens kolonne uden vinduet
-    const w = Math.round(Math.max(DOCK_MIN_WIDTH, Math.min(width || dockWidth(el.id), room - 160)));
+    const room = window.innerWidth - r.left; // visualizerens kolonne uden vinduerne
+    const w = Math.round(Math.max(DOCK_MIN_WIDTH, Math.min(width || dockWidth(), room - 160)));
     wrap.style.marginRight = `${w}px`;
-    el.style.top = `${r.top}px`;
-    el.style.height = `${r.height}px`;
-    el.style.right = '0px';
-    el.style.width = `${w}px`;
+    const h = r.height / open.length;
+    open.forEach((el, i) => {
+      el.style.top = `${Math.round(r.top + i * h)}px`;
+      el.style.height = `${Math.round(h)}px`;
+      el.style.right = '0px';
+      el.style.width = `${w}px`;
+    });
     return w;
   }
 
+  /** Esc lukker det senest åbnede vindue i kolonnen. Returnerer true, hvis der var et. */
+  function closeTopDocked() {
+    const top = [...dockOrder].reverse().map((id) => $(id)).find((el) => el && el.open);
+    if (!top) return false;
+    top.close();
+    return true;
+  }
+
   function wireDocking() {
-    for (const id of Object.keys(DOCKED)) {
+    for (const id of DOCKED) {
       const el = $(id);
+      // Alle steder, der åbner vinduet med showModal, åbner det nu i kolonnen, ikke modalt.
+      el.showModal = () => {
+        if (el.open) return;
+        if (!dockOrder.includes(id)) dockOrder.push(id); // med det samme, så rækkefølgen er den, de blev åbnet i
+        HTMLDialogElement.prototype.show.call(el);
+      };
+      new MutationObserver(() => {
+        const i = dockOrder.indexOf(id);
+        if (el.open && i < 0) dockOrder.push(id);
+        if (!el.open && i >= 0) dockOrder.splice(i, 1);
+        dockDialogs();
+      }).observe(el, { attributes: true, attributeFilter: ['open'] });
       const handle = el.querySelector('.dock-resize');
-      // Alle måder at åbne og lukke vinduet på (showModal mange steder) fanges her.
-      new MutationObserver(() => dockDialogs()).observe(el, { attributes: true, attributeFilter: ['open'] });
       handle.addEventListener('pointerdown', (event) => {
         event.preventDefault();
         handle.setPointerCapture(event.pointerId);
         handle.classList.add('dragging');
         const right = el.getBoundingClientRect().right;
-        let w = dockWidth(id);
+        let w = dockWidth();
         const move = (e) => {
           w = dockDialogs(right - e.clientX);
         };
@@ -1904,7 +1920,7 @@
           handle.removeEventListener('pointerup', up);
           handle.removeEventListener('pointercancel', up);
           try {
-            localStorage.setItem(dockKey(id), String(w));
+            localStorage.setItem(DOCK_WIDTH_KEY, String(w));
           } catch {
             // uden lager huskes bredden bare ikke
           }
@@ -2185,6 +2201,11 @@
   }
 
   function onKeyDown(event) {
+    // Vinduerne i kolonnen er ikke modale, så Esc lukker dem her (det senest åbnede først).
+    if (event.key === 'Escape' && !document.fullscreenElement && closeTopDocked()) {
+      event.preventDefault();
+      return;
+    }
     if (event.key === 'F1') {
       event.preventDefault();
       $('help-dialog').showModal();
@@ -2412,6 +2433,12 @@
       if (view === 'settings') openSettings();
       else if (view === 'presets') openPresets();
       else if (view === 'help') $('help-dialog').showModal();
+      else if (view === 'docked-stack') {
+        // Tre vinduer i kolonnen på én gang: de skal dele højden, og billedet må ikke dækkes.
+        openPresets();
+        openSettings();
+        $('help-dialog').showModal();
+      }
       else if (view === 'terminal') {
         openTerminal();
         termRun('cat easter_eggs.txt');
