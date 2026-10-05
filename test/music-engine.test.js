@@ -461,3 +461,18 @@ test('uden Spotify: en kort pause mellem to numre giver et nyt nummer, en kort p
   const withSpotify = simulate({ seconds: 55, parts: song(35) });
   assert.equal(withSpotify.events.filter((e) => e.type === 'track').length, 0, 'med Spotify melder Spotify selv nye numre');
 });
+
+test('en stille passage, mens Spotify spiller her, er ikke "End of line"; først efter 20 s stilhed', () => {
+  const silence = { rms: 0, rmsDb: -120, bass: 0, mid: 0, treb: 0, flux: 0, kickFlux: 0 };
+  const music = { rms: 0.1, rmsDb: -20, bass: 1e-2, mid: 5e-3, treb: 1e-3, flux: 0.3, kickFlux: 0.1 };
+  // 3 s musik og så `seconds` s stilhed.
+  const run = (hint, seconds) => {
+    const engine = new MusicEngine();
+    engine.setPlaybackHint(hint);
+    for (let k = 0; k < (3 + seconds) * 60; k++) engine.update(k / 60, k < 180 ? music : silence);
+    return engine.state.silent;
+  };
+  assert.equal(run(true, 8), false, '8 s stille passage i sangen');
+  assert.equal(run(true, 22), true, 'over 20 s: så er der nok stoppet noget');
+  assert.equal(run(null, 3), true, 'uden Spotify: som før efter 2 s');
+});

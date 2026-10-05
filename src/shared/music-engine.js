@@ -155,6 +155,9 @@
     silenceDbPaused: -42, // Spotify er sat på pause eller spiller et andet sted
     sleepAfterSec: 2.0, // pauser i selve musikken må ikke slukke billedet
     sleepAfterPausedSec: 0.5, // når Spotify melder pause, slukkes hurtigt
+    // Spiller Spotify på denne pc, er en stille passage en del af sangen (Sleep Token - Crimson King, 05-10-2026):
+    // "End of line" først efter så lang stilhed. En rigtig pause melder Spotify selv.
+    sleepAfterPlayingSec: 20,
     // Uden Spotify ("Just visualize", setAudioOnly): lidt lavere tærskel, så stille musik ikke tæller som stilhed,
     // men stadig over Peters baggrundslyd (-55 til -63 dB). Og et nyt nummer kendes på en kort pause.
     silenceDbAudioOnly: -54,
@@ -381,7 +384,8 @@
       if (quiet) {
         this.loudSince = null;
         if (this.quietSince === null) this.quietSince = t;
-        const sleepAfter = this.playbackHint === false ? this.o.sleepAfterPausedSec : this.o.sleepAfterSec;
+        const sleepAfter =
+          this.playbackHint === false ? this.o.sleepAfterPausedSec : this.playbackHint === true ? this.o.sleepAfterPlayingSec : this.o.sleepAfterSec;
         if (!this.silent && t - this.quietSince >= sleepAfter) {
           this.silent = true;
           this.silentStartedAt = t;

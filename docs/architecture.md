@@ -123,7 +123,7 @@ Alle svar har formen `{ ok: true, data }` eller `{ ok: false, error: { code, mes
 
 - `npm run musictest` sender en syntetisk sang med kendt facit gennem den rigtige Web Audio-analyse i en OfflineAudioContext, uden lyd. Den tjekker tempo, slag, dele, drop og at skift lander på taktstart. Med `--file=` analyseres en rigtig lydfil.
 - `npm run diagnose -- --audio=30` lytter med på det, der spiller, og viser hvad musikmotoren hører.
-- `npm test` kører 142 unit-tests med Nodes indbyggede testrunner. De dækker:
+- `npm test` kører 143 unit-tests med Nodes indbyggede testrunner. De dækker:
   - linktolkning, PKCE (RFC 7636-vektoren) og hele login-flowet mod en rigtig loopback-server;
   - token-fornyelse, API-fejlkoder og 2026-formatet for playlister;
   - afspil-forespørgsler med kontekst, verifikation af afspilning og afspilningens fallbacks;
