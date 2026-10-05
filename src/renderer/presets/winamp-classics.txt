@@ -5,11 +5,9 @@ Aderrasi - Brakefreak-bitcore tweak
 Aderrasi - Contortion (Escher's Tunnel Mix)
 Aderrasi - Ert (Wary Mix)
 Aderrasi - Ghast Entity
-Aderrasi - Hard Drink (Half-Infinitea)
 Aderrasi - Kevlar Abyss
 Aderrasi - Party Mutant
 Aderrasi - See
-Aderrasi - Songflower (Hybrid Plant)
 Aderrasi - The Lurker (Twin Mix) - Bitcore Tweak
 Aderrasi - Visitor
 Aderrasi - What Cannot Be Undone
@@ -127,7 +125,6 @@ ORB - Kalidescope
 ORB - Mega Spectrum
 ORB - Quicksand
 ORB - Saturns Rings
-ORB - Solar Sail
 ORB - Supernova Meltdown
 ORB - Temporal Rift
 phat + Eo.S. - 2ct2V5
@@ -192,7 +189,6 @@ Rovastar & Rocke - Sugar Spun Sister
 Rovastar & Unchained - Ambrosia Mystic (Dark Heart Mix)
 Rovastar & Unchained - Demonology (Vampire Soul Mix)
 Rovastar & Unchained - Unified Drag 2 (Ghostly Vision Mix)
-Rovastar + Flexi + Loadus + Geiss - Tone-mapped FractalDrop 4 [moebius edit]
 Rozzor - Learning Curve (Invert Tweak)
 Rozzor & Aderrasi - Canon
 Rozzor & Che - Inside The House Of Nil
@@ -209,7 +205,6 @@ Serge - MilkDrop2077.R027
 shifter - brain coral (left brained)
 shifter - lazerspecs_phat_edit
 shifter - spincycle c
-shifter - swarm
 shifter - tadpole evolution (static mix)
 shifter - tumbling cubes (endless) radial blur
 shifter - tumbling cubes (ripples)

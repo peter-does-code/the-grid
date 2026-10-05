@@ -209,7 +209,7 @@
   }
 
   // Kontaktark: 4x4 små billeder med navn, til at se på et udvalg (--sheets=<mappe>).
-  const SHEET_COLS = 4;
+  const SHEET_COLS = 6; // 36 pr. ark (4x4 før 05-10-2026)
   const CELL_W = 320;
   const CELL_H = 180;
   const sheet = document.createElement('canvas');
