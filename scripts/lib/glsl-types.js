@@ -83,6 +83,7 @@ class Parser {
 
   typeOfName(name) {
     for (let s = this.scopes.length - 1; s >= 0; s--) if (name in this.scopes[s]) return this.scopes[s][name];
+    if (/^sampler_.*noisevol/.test(name)) return 'sampler3D';
     if (/^sampler_/.test(name)) return 'sampler2D';
     if (/^texsize_/.test(name)) return 'vec4';
     return null;

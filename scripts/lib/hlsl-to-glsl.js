@@ -28,6 +28,8 @@ const TYPES = [
   [/\bfloat2x2\b/g, 'mat2'],
   [/\bhalf([1-4])?\b/g, (m, n) => (n && n !== '1' ? `vec${n}` : 'float')],
   [/\bfloat1\b/g, 'float'],
+  [/\bdouble([234])\b/g, 'vec$1'],
+  [/\bdouble1?\b/g, 'float'],
   [/\bfloat([234])\b/g, 'vec$1'],
   [/\bint([234])\b/g, 'ivec$1'],
   [/\bbool([234])\b/g, 'bvec$1'],
@@ -240,6 +242,20 @@ function textureDeclarations(code, header) {
   return { code: s, decls: decls.join('\n') };
 }
 
+/**
+ * MilkDrop lader en shader ændre sin egen kopi af q1-q32; i Butterchurn er de uniforms (q25 er _qg.x). Ændrer
+ * shaderen et q, får den en global kopi (_gl_q25), der sættes i begyndelsen af shaderens funktion.
+ */
+function localQ(code) {
+  const changed = new Set([...code.matchAll(/\bq(\d+)\s*(?:[-+*/]?=(?!=)|\+\+|--)/g)].map((m) => m[1]));
+  if (!changed.size) return code;
+  let s = code;
+  for (const n of changed) s = s.replace(new RegExp(`\\bq${n}\\b`, 'g'), `_gl_q${n}`);
+  const decls = [...changed].map((n) => `float _gl_q${n};`).join('\n');
+  const init = [...changed].map((n) => `  _gl_q${n} = q${n};`).join('\n');
+  return `${decls}\n${s.replace(/(vec3 _gl_shader\([^)]*\) \{\n  vec3 ret = vec3\(0\.0\);)/, `$1\n${init}`)}`;
+}
+
 /** HLSL tillader .x på et tal (float1); GLSL ikke. "d.x" bliver til "d", når d er et tal. */
 function scalarSwizzles(src, types) {
   return src.replace(/\b([A-Za-z_]\w*)\.([xr])\b(?![\w.])/g, (all, name) => (types[name] === 'float' ? name : all));
@@ -289,9 +305,8 @@ function translate(src) {
   s = replaceMacro(s, 'lum', (x) => `(dot(${x}, vec3(0.32, 0.49, 0.29)))`);
   s = translateMul(s);
   for (const [re, to] of FUNCS) s = s.replace(re, to);
-  // tex2D(...) uden swizzle er 4 værdier, som HLSL skærer ned til 3 ved siden af en farve ("ret * tex2D(...)");
-  // GLSL nægter. MilkDrops shadere regner næsten altid i farver, så der sættes .xyz på.
-  s = replaceMacro(s, 'texture', (inner) => `texture(${inner})\u0000`).replace(/\u0000(?!\s*\.)/g, '.xyz').replace(/\u0000/g, '');
+  // GLSL's reserverede ord, som HLSL-shadere bruger som variabelnavne.
+  s = s.replace(/\b(output|input|filter|sample|common|partition|active|packed|interface|namespace|union|enum|typedef|template|goto|inline|volatile|external|superp)\b(?!\s*\()/g, '_gl_$1');
   // HLSL-sampleres erklæringer ("sampler sampler_x;") står i konverterens hoved som uniforms.
   s = s.replace(/^\s*sampler(?:2D|3D)?\s+[^;]*;/gm, '');
   s = s.replace(/\bstatic\s+const\b/g, 'const').replace(/\bstatic\b/g, '');
@@ -330,7 +345,7 @@ function hlslToGlsl(milkText, kind, converted) {
     '  return ret;',
     '}',
   ].join('\n');
-  const tex = textureDeclarations(main, header);
+  const tex = textureDeclarations(localQ(main), header);
   // HLSL's stille omregninger mellem tal og vektorer skrives ud (scripts/lib/glsl-types.js). Kan koden ikke
   // læses, bruges den som den er.
   try {
