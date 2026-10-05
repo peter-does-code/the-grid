@@ -276,7 +276,6 @@
       this.resetBar();
       this.songAccSec = 0;
       this.tempoFreeUntil = -Infinity; // se tempoFreeSec
-      this.knownBpm = null; // se setKnownTempo
     }
 
     /**
@@ -314,6 +313,9 @@
 
     /** Kaldes, når Spotify melder et nyt nummer. */
     notifyTrackChange(t) {
+      // Det kendte tempo (sanghukommelsen) glemmes kun ved et rigtigt nummerskift, ikke når musikken vågner efter
+      // en pause, hvor resetSong også kaldes (Peter satte Sleep Token på pause 05-10-2026).
+      this.knownBpm = null;
       this.resetTempo();
       this.resetSong(t);
     }
