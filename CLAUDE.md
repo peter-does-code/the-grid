@@ -75,7 +75,7 @@ Detaljer: `docs/architecture.md`.
 - **Spotify-appen tømmer afspilleren ved en løs `uris`-kommando.** `PUT /me/player/play` med `{"uris": [...]}` svarer 204, men appen (Windows, 1.301.234.0) ender uden nummer. Kontekst + offset virker, og det samme gør pause og fortsæt. Brug altid `buildPlayRequest` i `src/main/playback.js`, som spiller et enkelt nummer i sit albums kontekst. Efter afspil verificerer The Grid, at musikken starter, og åbner ellers nummeret med et `spotify:track:`-link. Verificeret 29-09-2026; tjek igen med `npm run diagnose -- --experiment`.
 - **Søgning uden `market=from_token`.** `GET /search` med `market=from_token` svarer 403 "Insufficient client scope", fordi appen ikke beder om `user-read-private` (opdaget 30-09-2026, da påskeægget "drew" ikke spillede). `searchTrack` sender derfor ingen market. Test mod den rigtige Spotify med `node scripts/start.js --diagnose "--search=<tekst>"` (kun læsning).
 - **Ingen musik, intet billede.** Visualizeren og mini-spektrummet slukker, når musikmotoren melder stilhed. Tærsklen afhænger af Spotify:
-  - Spiller Spotify på denne pc: -70 dB, altså kun digital stilhed.
+  - Spiller Spotify på denne pc: -70 dB, altså kun digital stilhed, og først efter 20 s (`sleepAfterPlayingSec`): en stille passage i sangen må ikke give "End of line" (Peter 05-10-2026, Sleep Token - Crimson King). Ellers efter 2 s, og 0,5 s når Spotify melder pause.
   - Pause eller afspilning et andet sted: -42 dB.
   - Ukendt: -48 dB.
   - Peters pc har svag baggrundslyd fra andre programmer på -55 til -63 dB. Den må ikke vække billedet.
