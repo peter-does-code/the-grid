@@ -11,7 +11,7 @@ Dokumentation i `docs/` (indeks: `docs/README.md`). Drews vejledning: `docs/en/g
 | Kommando | Hvad |
 |---|---|
 | `npm start` eller dobbeltklik på `The Grid.cmd` | Start appen fra kildekoden |
-| `npm test` | 138 unit-tests (Node test runner, ingen Electron) |
+| `npm test` | 140 unit-tests (Node test runner, ingen Electron) |
 | `npm run selftest` | Hurtig selvtest (ca. 20 s): starter appen, afspiller en 3 sekunders testlyd, tjekker lydfangst og rendering, tager skærmbilleder af dialogerne, introens start, fuld skærm og Clu-temaet, og tjekker at Init kan høres (afspiller den i 4 s). **Laver lyd på pc'en.** |
 | `npm run selftest:quiet` | Som `npm run selftest`, men med næsten uhørlig testlyd og Init (`--quiet`, virker også med `--selftest-full`). **Brug den som standard**: Peter bad om, at testene ikke spiller højt (01-10-2026). Billeder i sekundet er lavere (ca. 34) fra kildekoden end i den pakkede app (60); mål ydelse på `dist/win-unpacked` |
 | `npm run selftest:full` | Fuld selvtest (ca. 90 s): også introens faser, den anden intro, Game Grid-vinderen og alle påskeæg, i realtid. Før en ny installationsfil, og efter ændringer i intro eller påskeæg. |
@@ -29,6 +29,7 @@ Dokumentation i `docs/` (indeks: `docs/README.md`). Drews vejledning: `docs/en/g
 | `npm run presets:pack` | Bygger preset-pakken ud fra målingerne i `presets-work/` og ban- og behold-listerne (se `docs/presets.md`) |
 | `npm run presets:review` | 50 nye kandidater efter Peters smag i review-vinduet (K behold, D ban) |
 | `npm run presets:classics` | 50 Winamp-klassikere (MilkDrops egen pakke), Peter ikke har stemt om, i review-vinduet |
+| `npm run presets:catalog` | Preset-kataloget: stilart, mærker og lighedsvektor for hvert preset, til at kategorisere og forudsige smag (se `docs/presets.md`, "Kataloget") |
 | `npm run presets:missing` | De Winamp-klassikere, preset-testen sorterede fra, men som kan tegnes, i review-vinduet; K tager dem med uanset målingerne |
 | `node scripts/collect-votes.js [--all]` | Brugernes stemmer (K/D) fra releases-repoets issues ind i `data/preset-votes.jsonl` (commit bagefter), luk issues og vis et overblik. Ændrer ingen lister. |
 | `npm run release` | Udgiver en ny version til Drew: test, versionshop, installationsfil til det private releases-repo, git-tag og push. Kun fra en ren arbejdsmappe. `-- --force` får brugernes app til at genstarte selv. Se `docs/releasing.md` |

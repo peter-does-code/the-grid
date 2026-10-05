@@ -67,7 +67,6 @@ Flexi - Milkcore
 Flexi - Milkcore [Martin's ripple on water insertion]
 Flexi - predator-prey-spirals [geiss' laplacian finish]
 Flexi - supersonic
-Flexi - the early bird
 Flexi + Geiss - antagonizing beat detection codes
 Flexi + Geiss - pogo-cubes on tokamak matter [mind over matter remix]
 Forum collaboration thread - second try #4 [Goody(2), Stahlregen (2)]

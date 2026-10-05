@@ -16,10 +16,11 @@
     "dist:dir": "node scripts/prepare-build.js && electron-builder --win dir --x64",
     "release": "node scripts/release.js",
     "selftest:quiet": "node scripts/start.js --selftest --quiet",
-    "presets:pack": "node scripts/build-preset-pack.js presets-work/converted presets-work/results.jsonl --flicker=presets-work/flash.jsonl --existing=presets-work/existing,presets-work/flash-existing.jsonl --classics=presets-work/classics-winamp,presets-work/classics-winamp-results.jsonl",
+    "presets:pack": "node scripts/build-preset-pack.js presets-work/converted presets-work/results.jsonl --flicker=presets-work/flash.jsonl --existing=presets-work/existing,presets-work/flash-existing.jsonl --classics=presets-work/classics-winamp,presets-work/classics-winamp-results.jsonl --extra=presets-work/fernstyle,presets-work/triangles,presets-work/fern && node scripts/build-preset-catalog.js",
     "presets:review": "node scripts/build-review-pack.js",
     "presets:classics": "node scripts/build-review-pack.js --classics",
-    "presets:missing": "node scripts/build-review-pack.js --classics --missing --count=200"
+    "presets:missing": "node scripts/build-review-pack.js --classics --missing --count=200",
+    "presets:catalog": "node scripts/build-preset-catalog.js"
   },
   "author": "Peter <pse@wezimplify.com>",
   "license": "UNLICENSED",

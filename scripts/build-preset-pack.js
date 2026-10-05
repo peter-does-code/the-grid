@@ -187,6 +187,20 @@ for (const r of final) {
   const m = byFile.get(r.file);
   presets[m.name] = JSON.parse(fs.readFileSync(path.join(dir, r.file), 'utf8'));
 }
+// --extra=<mappe>,<mappe>: konverterede presets fra søgninger uden for udvalget (fx fern-lignende stilarter fra hele
+// Cream of the Crop, 05-10-2026). Kun dem, Peter har givet K, kommer med.
+const extraArg = args.find((a) => a.startsWith('--extra='));
+let extras = 0;
+for (const exDir of extraArg ? extraArg.slice('--extra='.length).split(',') : []) {
+  const manifestFile = path.join(root, exDir, 'manifest.json');
+  if (!fs.existsSync(manifestFile)) continue;
+  for (const m of JSON.parse(fs.readFileSync(manifestFile, 'utf8'))) {
+    if (m.error || presets[m.name] || existing.has(m.name.toLowerCase()) || !keeps.has(banKey(m.name)) || banned.has(banKey(m.name))) continue;
+    presets[m.name] = JSON.parse(fs.readFileSync(path.join(root, exDir, m.file), 'utf8'));
+    extras += 1;
+  }
+}
+if (extraArg) console.log(`Fra søgninger (--extra), med K: ${extras}`);
 const outDir = path.join(root, 'src', 'renderer', 'presets');
 fs.mkdirSync(outDir, { recursive: true });
 const js =

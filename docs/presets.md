@@ -70,6 +70,18 @@ Peter testede The Grid til en fest; gæsterne syntes, det var for kaotisk og hur
    - Fra kildekoden (Peter selv) skriver K/D direkte i listerne og gemmes også i `data/preset-votes.jsonl`. Peters lister tælles med som hans stemmer.
 9. **Fjernet af Peter:** navnene i `scripts/preset-bans.txt` kommer aldrig med. Listen ligger også i pakken, så `visualizer.js` fjerner de samme navne blandt de indbyggede presets.
 
+## Kataloget (05-10-2026)
+
+Alt, vi ved om hvert preset, samlet til at kategorisere dem og på sigt forudsige, hvad en bruger kan lide ud fra sine favoritter (Peter 05-10-2026). `npm run presets:catalog` (efter `presets:pack`) skriver `src/renderer/presets/preset-catalog.js`; appen bruger det ikke endnu.
+
+For hvert preset: pakke, klassiker eller ej, forfattere (fra navnet), stilart, mærker og en vektor `f` med 21 træk som placering 0-1 (lysstyrke, bevægelse, takt, farver, detaljer, blink; figurer, teksturerede figurer, trekanter, bølger, spektrum, ekko, decay, zoom, rotation, warp- og comp-shader, bass/mid/treb og reaktivitet). De bandlyste er med (`banned: true`), så smagen kan læres af dem, men de indlæses ikke.
+
+- **Stilart:** Cream of the Crops mappe (fx `Fractal/Trees`), også for indbyggede presets og klassikere, der findes under samme navn i hele samlingen (`presets-work/cotc-src`, 9.708 presets). For resten gættes den ud fra de 7 mest lignende (`styleGuess`). Gættet er svagt: 28 % rammer stilarten præcist (af ca. 150) og 47 % hovedgruppen (af 11), målt på dem, hvor stilarten kendes.
+- **Mærker:** ordene i stilarten plus fx `dark`, `calm`, `energetic`, `on-the-beat`, `colourful`, `flashy`, `feedback-shapes` (fraktal-tricket med teksturerede figurer), `triangles`, `waveforms`, `bass-driven`.
+- **Smag** (`src/shared/preset-similarity.js`): `similarity` er 1 minus den gennemsnitlige forskel pr. træk; `affinity` er ligheden med de 3 mest lignende favoritter minus det samme for de afviste.
+- **Første måling på Peters stemmer** (76 behold, 83 ban, leave-one-out): favoritter mod ban AUC 0,81; favoritter mod alle andre 0,57 (de fleste andre har han ikke set). Hans favoritter følger takten mere (0,69 mod 0,48), blinker mere, har flere figurer og teksturerede figurer og reagerer mere på diskanten. Stemmerne er mest fra review af blinkere, så de er skæve; flere K/D i almindelig brug gør det bedre.
+- **Næste trin** (ikke bygget): brug `affinity` som et lille tillæg i valget, når brugeren har nok favoritter, og vis "ligner" i preset-listen.
+
 ## Til hverdag
 
 Arbejdsdataene ligger i `presets-work/` (ignoreres af git, ca. 40 MB):
