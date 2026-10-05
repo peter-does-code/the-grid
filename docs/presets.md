@@ -19,6 +19,7 @@ Peter testede The Grid til en fest; gæsterne syntes, det var for kaotisk og hur
 - Konverteret med `--per-family=Infinity` (ingen grænse for remix): 547 af 552 (83 s).
 - Målt med preset-testen (ca. 5 min), samme tekniske frasortering og blinkregel som Cream of the Crop, men **uden score og stilartspladser**: alle, der virker, kommer med. Peter vælger selv i review.
 - Resultat: 279 med. Sorteret fra: 114 findes allerede (indbyggede eller i Cream of the Crop), 47 shader kan ikke oversættes, 45 sorte, 37 hvide, 17 står stille, 6 fejl, 2 blinker.
+- **Classic Winamp mode** (Settings → Visualizer, `classicMode`): kun MilkDrops egen pakke. `winamp-classics.js` har også `names` med alle 552 navne, også de 114, der allerede fandtes i de andre pakker, og `setOnly` i `visualizer.js` begrænser udvalget til dem (i alt ca. 390 i appen). Preset-listen (L) viser stadig alle.
 - De sorte og hvide kan være falske: målingen tager 3 s, og nogle klassikere starter mørkt eller bruger teksturer, der mangler (projectM har dem i `presets-milkdrop-texture-pack`). De kan undersøges senere.
 - `npm run presets:classics` åbner review-vinduet med 50 klassikere, Peter ikke har stemt om, efter hans smag. K kommer på behold-listen (og dermed "Peter's picks"), D på ban-listen og ud af pakken for alle ved næste `npm run presets:pack`.
 

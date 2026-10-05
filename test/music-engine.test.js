@@ -445,3 +445,19 @@ test('med målte presets vælges intensiteten efter musikken, og overgangen efte
   const offBeat = { affinity: even, reactivity: 0.5, stats: [0.5, 0.6, 0.05, 0.5, 0.5] };
   assert.ok(scorePreset(onBeat, ctx({ targetIntensity: 0.55, tempoValid: true }), 0) > scorePreset(offBeat, ctx({ targetIntensity: 0.55, tempoValid: true }), 0));
 });
+
+test('uden Spotify: en kort pause mellem to numre giver et nyt nummer, en kort pause tidligt i sangen gør ikke', () => {
+  const song = (gapAt) => [
+    { from: 0, to: gapAt, loud: -20, shares: [0.6, 0.3, 0.1], beats: true },
+    { from: gapAt, to: gapAt + 1.2, silent: true },
+    { from: gapAt + 1.2, to: gapAt + 20, loud: -20, shares: [0.6, 0.3, 0.1], beats: true },
+  ];
+  const late = simulate({ seconds: 55, parts: song(35), options: { audioOnly: true } });
+  const tracks = late.events.filter((e) => e.type === 'track');
+  assert.equal(tracks.length, 1, JSON.stringify(tracks));
+  assert.ok(tracks[0].t > 36 && tracks[0].t < 36.6, `nyt nummer ved ${tracks[0].t}`);
+  const early = simulate({ seconds: 30, parts: song(10), options: { audioOnly: true } });
+  assert.equal(early.events.filter((e) => e.type === 'track').length, 0, 'pause efter 10 s er ikke et nyt nummer');
+  const withSpotify = simulate({ seconds: 55, parts: song(35) });
+  assert.equal(withSpotify.events.filter((e) => e.type === 'track').length, 0, 'med Spotify melder Spotify selv nye numre');
+});

@@ -220,6 +220,7 @@
         <label class="field"><span data-i18n="settings.cycle">Max seconds between changes</span> <input type="number" id="set-cycle" min="5" max="600" step="1"></label>
         <label class="field"><span data-i18n="settings.blend">Transition between presets (seconds)</span> <input type="number" id="set-blend" min="0" max="10" step="0.1"></label>
         <label class="check"><input type="checkbox" id="set-random"> <span data-i18n="settings.random">Random order</span></label>
+        <label class="check"><input type="checkbox" id="set-classic"> <span data-i18n="settings.classic">Classic Winamp mode: only the presets that came with MilkDrop in Winamp</span></label>
         <label class="field"><span data-i18n="settings.maxFps">Speed (frames per second)</span>
           <select id="set-max-fps" class="lcd-select">
             <option value="30" data-i18n="settings.maxFps.30">30: classic Winamp, calm</option>
@@ -273,7 +274,7 @@
       </section>
       <section class="guide-page" data-page="sound" hidden>
         <h2 data-i18n="guide.sound.title"></h2>
-        <p data-i18n="guide.sound.text"></p>
+        <p id="guide-sound-text" data-i18n="guide.sound.text"></p>
         <div class="guide-meter"><div id="guide-meter-fill" class="guide-meter-fill"></div></div>
         <p id="guide-sound-status" class="status-line"></p>
       </section>
@@ -293,6 +294,7 @@
         <button type="button" class="btn" id="guide-skip" data-i18n="guide.skip">Skip</button>
         <span class="spacer"></span>
         <button type="button" class="btn" id="guide-back" data-i18n="guide.back">Back</button>
+        <button type="button" class="btn" id="guide-audio-only" data-i18n="guide.audioOnly">Just visualize what's playing</button>
         <button type="button" class="btn primary" id="guide-next" data-i18n="guide.next">Next</button>
       </div>
     </div>

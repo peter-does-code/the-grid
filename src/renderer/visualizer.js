@@ -267,10 +267,26 @@
       this.names = this.allNames.filter((n) => n === name || this.names.includes(n));
     }
 
-    /** Udvalget er alle presets undtagen `hidden` (erstatter tidligere hide/unhide). */
+    /** Udvalget er alle presets undtagen `hidden` (erstatter tidligere hide/unhide), og kun `only`, hvis sat. */
     setHidden(hidden) {
-      const gone = new Set(hidden || []);
-      this.names = this.allNames.filter((n) => !gone.has(n));
+      this.hiddenSet = new Set(hidden || []);
+      this.applyPool();
+    }
+
+    /**
+     * Kun disse presets (navne, store og små bogstaver er ligegyldige), fx "Classic Winamp mode" med MilkDrops egen
+     * pakke; null = alle. Findes ingen af dem, bruges alle, så der altid er noget at vise.
+     */
+    setOnly(names) {
+      this.only = names ? new Set([...names].map((n) => String(n).toLowerCase())) : null;
+      this.applyPool();
+    }
+
+    applyPool() {
+      const gone = this.hiddenSet || new Set();
+      const visible = this.allNames.filter((n) => !gone.has(n));
+      const only = this.only ? visible.filter((n) => this.only.has(n.toLowerCase())) : visible;
+      this.names = only.length ? only : visible;
     }
 
     /** Fjerner presets fra udvalget (brugerens D, "derez"). Det viste preset bliver stående, til der skiftes. */

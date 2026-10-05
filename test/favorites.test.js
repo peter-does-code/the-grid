@@ -119,3 +119,14 @@ test("Peters valg: lægges oven i brugerens egne, men brugerens K og D og fortry
   assert.deepEqual([...off.favorites], ['own']);
   assert.deepEqual([...off.hidden], ['mine']);
 });
+
+test('Classic Winamp mode: kun de klassiske navne (store/små bogstaver ligegyldige), skjulte stadig væk', () => {
+  const v = fake(['Geiss - A', 'Rovastar - B', 'New - C', 'New - D']);
+  v.setHidden(['Rovastar - B']);
+  v.setOnly(['geiss - a', 'rovastar - b']);
+  assert.deepEqual(v.names, ['Geiss - A']);
+  v.setOnly(['findes ikke']);
+  assert.deepEqual(v.names, ['Geiss - A', 'New - C', 'New - D'], 'ingen klassikere: alle, så der er noget at vise');
+  v.setOnly(null);
+  assert.deepEqual(v.names, ['Geiss - A', 'New - C', 'New - D']);
+});

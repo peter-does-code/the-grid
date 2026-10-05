@@ -14,7 +14,10 @@
   const LCD_TICK_MS = 120;
   const MARQUEE_STEP_MS = 190;
   const CURSOR_HIDE_MS = 2000;
-  const GUIDE_PAGES = ['welcome', 'login', 'sound', 'playlist', 'done'];
+  const GUIDE_FULL = ['welcome', 'login', 'sound', 'playlist', 'done'];
+  // "Just visualize what's playing": uden Spotify, kun lydtjek (Peter 05-10-2026).
+  const GUIDE_AUDIO = ['welcome', 'sound', 'done'];
+  let GUIDE_PAGES = GUIDE_FULL;
 
   // Alle tekster kommer fra src/shared/i18n.js (altid engelsk).
   const t = I18N.t;
@@ -280,6 +283,9 @@
       peter: s.peterPicks ? window.gridPeterPicks : null,
     });
     viz.setHidden(lists.hidden);
+    // Classic Winamp mode: kun MilkDrops egen pakke fra Winamp (winamp-classics.js, names).
+    const classics = window.gridPresetsWinampClassics;
+    viz.setOnly(s.classicMode && classics ? classics.names : null);
     viz.setFavorites(lists.favorites);
   }
 
@@ -767,6 +773,8 @@
     $('volume').disabled = !s.loggedIn;
     $('redirect-uri').textContent = s.redirectUri || state.settings.redirectUri || '';
     $('use-built-in').hidden = Boolean(state.settings.builtInClientId);
+    // Uden Spotify visualiseres al lyd på pc'en, og musikmotoren finder selv nye numre (setAudioOnly).
+    if (music && music.engine) music.engine.setAudioOnly(!s.loggedIn);
     if (!s.loggedIn) {
       state.playback = null;
       state.lastTrackId = null;
@@ -1661,6 +1669,7 @@
   let guideMeterTimer = null;
 
   function openGuide(page = 0) {
+    GUIDE_PAGES = GUIDE_FULL;
     guidePage = page;
     for (const dialog of document.querySelectorAll('dialog[open]')) dialog.close();
     $('guide-dialog').showModal();
@@ -1673,7 +1682,9 @@
     $('guide-step').textContent = t('guide.step', { n: guidePage + 1, total: GUIDE_PAGES.length });
     $('guide-back').hidden = guidePage === 0;
     $('guide-skip').hidden = name === 'done';
-    $('guide-next').textContent = t(name === 'done' ? 'guide.finish' : 'guide.next');
+    $('guide-next').textContent = t(name === 'done' ? 'guide.finish' : name === 'welcome' ? 'guide.useSpotify' : 'guide.next');
+    $('guide-audio-only').hidden = name !== 'welcome';
+    $('guide-sound-text').textContent = t(GUIDE_PAGES === GUIDE_AUDIO ? 'guide.sound.textAny' : 'guide.sound.text');
     clearInterval(guideMeterTimer);
     guideMeterTimer = null;
     if (name === 'login') renderGuideLogin();
@@ -1754,6 +1765,7 @@
     $('set-init-volume').value = String(Math.round(100 * (Number.isFinite(state.settings.initVolume) ? state.settings.initVolume : 1)));
     $('set-share-votes').checked = state.settings.shareVotes === true;
     $('set-peter-picks').checked = state.settings.peterPicks === true;
+    $('set-classic').checked = state.settings.classicMode === true;
     renderSpotifyStatus();
     renderVizToggles();
     renderCaptureStatus();
@@ -1806,7 +1818,7 @@
   }
 
   function updatePresetCount() {
-    const hidden = viz.allNames.length - viz.names.length; // kun presets, der findes (Peters liste har også fjernede)
+    const hidden = viz.allNames.filter((n) => lists.hidden.has(n)).length; // kun presets, der findes (Peters liste har også fjernede)
     const favs = viz.allNames.filter((n) => lists.favorites.has(n)).length;
     $('preset-count').textContent = t('presets.count', { count: viz.names.length, favs, hidden });
   }
@@ -2039,6 +2051,13 @@
       state.settings.shareVotes = e.target.checked;
       saveSettingsSoon({ shareVotes: e.target.checked });
     });
+    $('set-classic').addEventListener('change', (e) => {
+      state.settings.classicMode = e.target.checked;
+      saveSettingsSoon({ classicMode: e.target.checked });
+      if (!viz || REVIEW) return;
+      applyPresetLists();
+      if (e.target.checked && !viz.names.includes(viz.current)) nextPreset(); // straks over til en klassiker
+    });
     $('set-peter-picks').addEventListener('change', (e) => {
       state.settings.peterPicks = e.target.checked;
       saveSettingsSoon({ peterPicks: e.target.checked });
@@ -2088,7 +2107,14 @@
       if (GUIDE_PAGES[guidePage] === 'playlist' && $('guide-pl-input').value.trim() && !state.collection) guideLoadPlaylist();
       else guideStep(1);
     });
-    $('guide-back').addEventListener('click', () => guideStep(-1));
+    $('guide-audio-only').addEventListener('click', () => {
+      GUIDE_PAGES = GUIDE_AUDIO;
+      guideStep(1);
+    });
+    $('guide-back').addEventListener('click', () => {
+      if (guidePage === 1) GUIDE_PAGES = GUIDE_FULL; // tilbage til velkomsten: begge veje åbne igen
+      guideStep(-1);
+    });
     $('guide-skip').addEventListener('click', () => $('guide-dialog').close());
     $('guide-login').addEventListener('click', login);
     $('guide-pl-form').addEventListener('submit', (event) => {
@@ -2531,6 +2557,7 @@
 
     audioContext = new AudioContext({ latencyHint: 'interactive' });
     music = new window.Visamp.MusicListener(audioContext);
+    music.engine.setAudioOnly(!state.spotify.loggedIn); // opdateres af renderSpotifyStatus ved login/log ud
     music.setOptions({ agc: state.settings.music.agc, latencyMs: state.settings.music.latencyMs });
     director = new window.VisampMusic.PresetDirector();
     beatDot = $('beat-dot');

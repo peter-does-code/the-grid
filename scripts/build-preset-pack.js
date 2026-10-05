@@ -273,7 +273,10 @@ if (classicsArg) {
       ' * i hånden. MilkDrop-presets er frigivet frit af deres forfattere (se docs/presets.md). */\n' +
       'window.gridPresetsWinampClassics = { getPresets: function () { return ' +
       JSON.stringify(classics) +
-      '; } };\n'
+      '; },\n  // Alle navne i MilkDrops pakke, også dem, der allerede fandtes i de andre pakker: "Classic Winamp mode"\n' +
+      '  // bruger kun disse (visualizer.js, setOnly).\n  names: ' +
+      JSON.stringify([...clManifest.values()].map((m) => m.name).sort((a, b) => a.localeCompare(b, 'en'))) +
+      ' };\n'
   );
   fs.writeFileSync(path.join(outDir, 'winamp-classics.txt'), Object.keys(classics).sort((a, b) => a.localeCompare(b, 'en')).join('\n') + '\n');
   console.log(`Winamp-klassikere: ${Object.keys(classics).length} med. Sorteret fra:`, JSON.stringify(clRejected));

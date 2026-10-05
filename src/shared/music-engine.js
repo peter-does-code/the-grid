@@ -155,6 +155,11 @@
     silenceDbPaused: -42, // Spotify er sat på pause eller spiller et andet sted
     sleepAfterSec: 2.0, // pauser i selve musikken må ikke slukke billedet
     sleepAfterPausedSec: 0.5, // når Spotify melder pause, slukkes hurtigt
+    // Uden Spotify ("Just visualize", setAudioOnly): lidt lavere tærskel, så stille musik ikke tæller som stilhed,
+    // men stadig over Peters baggrundslyd (-55 til -63 dB). Og et nyt nummer kendes på en kort pause.
+    silenceDbAudioOnly: -54,
+    trackGapSec: 0.8, // så lang en pause (under tærsklen) mellem to numre ...
+    trackMinSongSec: 30, // ... efter mindst så meget af det forrige
     wakeAfterSec: 0.15,
     stickyTempo: 0.8, // behold tempoet, så længe det scorer mindst 80 % af den bedste kandidat
     stickyTempoThreeTwo: 0.55, // ... og 55 %, hvis kandidaten ligger i forholdet 3:2 eller 2:3
@@ -212,6 +217,7 @@
       this.kickMean = null;
       this.silent = true; // indtil der kommer lyd
       this.playbackHint = null; // true/false når Spotify har meldt, om der spilles på denne pc
+      this.audioOnly = Boolean(this.o.audioOnly); // se setAudioOnly
       this.quietSince = null;
       this.loudSince = null;
       this.silentStartedAt = 0;
@@ -307,10 +313,15 @@
       this.playbackHint = playing === true ? true : playing === false ? false : null;
     }
 
+    /** Uden Spotify: alt lyd på pc'en visualiseres, og nye numre findes ud fra pauserne mellem dem. */
+    setAudioOnly(on) {
+      this.audioOnly = Boolean(on);
+    }
+
     silenceThreshold() {
       if (this.playbackHint === true) return this.o.silenceDbPlaying;
       if (this.playbackHint === false) return this.o.silenceDbPaused;
-      return this.o.silenceDb;
+      return this.audioOnly ? this.o.silenceDbAudioOnly : this.o.silenceDb;
     }
 
     /**
@@ -367,6 +378,15 @@
           events.push({ type: 'sleep', t });
         }
       } else {
+        // Uden Spotify: en kort pause efter et stykke musik er typisk et nyt nummer (playlister, YouTube, DJ-pauser
+        // undtaget). Ved en længere pause gør "wake" det samme nedenfor.
+        if (this.audioOnly && this.quietSince !== null && !this.silent) {
+          const gap = t - this.quietSince;
+          if (gap >= this.o.trackGapSec && t - this.songStart >= this.o.trackMinSongSec) {
+            this.notifyTrackChange(t);
+            events.push({ type: 'track', t, gap });
+          }
+        }
         this.quietSince = null;
         if (this.loudSince === null) this.loudSince = t;
         if (this.silent && t - this.loudSince >= this.o.wakeAfterSec) {
@@ -375,6 +395,7 @@
           if (t - this.silentStartedAt >= 3) this.resetSong(t);
           this.cachedState = null;
           events.push({ type: 'wake', t });
+          if (this.audioOnly && t - this.silentStartedAt >= 3) events.push({ type: 'track', t });
         }
       }
     }

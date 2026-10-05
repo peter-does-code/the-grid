@@ -109,6 +109,13 @@ Pr. 200 skift er det 176-200 forskellige. Prisen er, at høje dele rammer lidt m
 
 Det sker kun ved tilfældig rækkefølge med "Vælg presets, der reagerer på den del af musikken, der fylder mest" slået til.
 
+## Uden Spotify
+
+Musikmotoren hører kun lyden, så The Grid virker uden Spotify (guiden: "Just visualize what's playing", Peter 05-10-2026). Uden login er `setAudioOnly(true)`:
+
+- Tærsklen for stilhed er -54 dB (`silenceDbAudioOnly`) i stedet for -48: stille musik må ikke slukke billedet, men Peters baggrundslyd (-55 til -63 dB) må stadig ikke vække det.
+- **Nyt nummer** findes ud fra pausen mellem numrene: mindst 0,8 s under tærsklen (`trackGapSec`) efter mindst 30 s musik (`trackMinSongSec`), eller musik efter en stilhed på mindst 3 s. Motoren glemmer så sangen (tempo, niveau), og instruktøren skifter preset, som når Spotify melder et nyt nummer. Numre uden pause (DJ-mix, crossfade) opdages ikke; der skiftes så kun ved nye dele og drops.
+
 ## Tempo og reaktion
 
 To indstillinger under Settings → Visualizer (Peter 05-10-2026: "for kaotisk/for hurtigt", meget af Winamps charme var væk):
