@@ -26,7 +26,7 @@ const DEFAULT_SETTINGS = {
   lastInput: '',
   visualizer: {
     autoCycle: true,
-    cycleSeconds: 20,
+    cycleSeconds: 40, // 20 indtil 05-10-2026 (Peter: skiftede for meget); se getSettings
     blendSeconds: 2.7,
     random: true,
     lastPreset: null,
@@ -82,6 +82,17 @@ function getSettings() {
     settingsCache = deepMerge(DEFAULT_SETTINGS, JSON.parse(fs.readFileSync(settingsFile(), 'utf8')));
   } catch {
     settingsCache = deepMerge(DEFAULT_SETTINGS, {});
+  }
+  // Én gang: den gamle standard på 20 s mellem skift bliver den nye på 40 s. Har brugeren selv valgt en anden
+  // tid, bliver den stående.
+  if (!settingsCache.cycleRaised) {
+    if (settingsCache.visualizer.cycleSeconds === 20) settingsCache.visualizer.cycleSeconds = DEFAULT_SETTINGS.visualizer.cycleSeconds;
+    settingsCache.cycleRaised = true;
+    try {
+      writeAtomic(settingsFile(), JSON.stringify(settingsCache, null, 2));
+    } catch {
+      // gemmes ved næste ændring
+    }
   }
   return settingsCache;
 }

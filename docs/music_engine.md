@@ -65,13 +65,14 @@ På Peters pc giver andre programmer svag baggrundslyd på -55 til -63 dB. Den m
 |---|---|---|
 | Drop | Hårdt klip med det samme | Mindst 0,5 s siden sidste hårde klip (et skift i opbygningen lige før spærrer ikke) |
 | Opbygning | Efter 2 takter et skift hver takt, fra takt 4 hver halve takt, med korte overgange (et halvt slag) | Kræver fundet tempo, takt-synkronisering og hårde klip slået til |
-| Stort slag i en intens del | Hårdt klip, som MilkDrops "hard cuts" | Højst hvert 25. s, med tilfældighed |
+| Stort slag i en intens del | Hårdt klip, som MilkDrops "hard cuts" | Højst hvert 25. s, med tilfældighed, og mindst 3/4 af den indstillede tid siden sidste skift (mindst 12 s) |
 | Nyt nummer i Spotify | Blødt skift på næste taktstart | Mindst 2 s siden sidste skift |
-| Ny del af sangen | Blødt skift på næste taktstart | Mindst 8 s siden sidste skift |
-| Tiden er gået | Blødt skift på næste taktstart | Indstillet tid ±15 %, mindst 6 s |
+| Ny del af sangen | Blødt skift på næste taktstart | Mindst halvdelen af den indstillede tid siden sidste skift (mindst 8 s) |
+| Tiden er gået | Blødt skift på næste taktstart | Indstillet tid ±15 % (standard 40 s), mindst 6 s |
 
 - Bløde skift varer altid hele takter (højst 8 s), så de både begynder og slutter på en taktstart. Det tal af takter vælges, der kommer tættest på den indstillede overgangstid.
 - Uden fundet tempo skiftes der med det samme.
+- Standardtiden var 20 s indtil 05-10-2026, hvor Peter syntes, det skiftede for meget. Nye dele kunne så skifte hvert 8. s. Nu er den 40 s, og nye dele og accenter venter i forhold til den. Brugere med den gamle standard på 20 s flyttes én gang til 40 s (`cycleRaised` i `store.js`); en anden valgt tid bliver stående.
 - Mens der er stille, står tælleren stille, og der skiftes ikke.
 
 ## Hvilket preset

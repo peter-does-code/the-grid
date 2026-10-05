@@ -265,7 +265,7 @@ function registerIpc() {
       const out = {};
       if ('autoCycle' in v) out.autoCycle = Boolean(v.autoCycle);
       if ('random' in v) out.random = Boolean(v.random);
-      if ('cycleSeconds' in v) out.cycleSeconds = clamp(v.cycleSeconds, 5, 600, 20);
+      if ('cycleSeconds' in v) out.cycleSeconds = clamp(v.cycleSeconds, 5, 600, 40);
       if ('blendSeconds' in v) out.blendSeconds = clamp(v.blendSeconds, 0, 10, 2.7);
       if ('lastPreset' in v) out.lastPreset = typeof v.lastPreset === 'string' ? v.lastPreset.slice(0, 300) : null;
       clean.visualizer = out;

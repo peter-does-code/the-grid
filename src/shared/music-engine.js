@@ -1310,19 +1310,23 @@
         return this.buildChange(t, events, state, cfg);
       }
       this.buildSince = null;
+      // Nye dele og accenter må ikke skifte meget oftere end uret: mindst halvdelen af tiden mellem skift for en ny
+      // del og tre fjerdedele for en accent (Peter 05-10-2026: "det skifter for meget").
+      const sectionGap = Math.max(MIN_GAP.section, 0.5 * cfg.cycleSeconds);
+      const accentGap = Math.max(MIN_GAP.accent, 0.75 * cfg.cycleSeconds);
       for (const e of events) {
         if (
           e.type === 'accent' &&
           cfg.hardCuts &&
           state.energy === 'high' &&
-          since >= MIN_GAP.accent &&
+          since >= accentGap &&
           t - this.lastHardCut >= 25 &&
           this.random() < 0.35
         ) {
           return this.fire(t, 'accent', true, state, cfg);
         }
         if (e.type === 'track' && since >= MIN_GAP.track) this.request(t, 'track', 1.5, synced);
-        if (e.type === 'section' && cfg.sectionChanges && since >= MIN_GAP.section) this.request(t, 'section', 2.5, synced);
+        if (e.type === 'section' && cfg.sectionChanges && since >= sectionGap) this.request(t, 'section', 2.5, synced);
       }
       if (!this.pending && t >= this.dueAt && since >= MIN_GAP.timer) this.request(t, 'timer', 4, synced);
 
