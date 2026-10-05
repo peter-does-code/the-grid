@@ -28,6 +28,8 @@ const DEFAULT_SETTINGS = {
     autoCycle: true,
     cycleSeconds: 40, // 20 indtil 05-10-2026 (Peter: skiftede for meget); se getSettings
     blendSeconds: 2.7,
+    maxFps: 60, // 0 = skærmens takt; se setMaxFps i visualizer.js
+    reactivity: 0.7, // hvor meget presets reagerer på lyden (1 = som i MilkDrop); se setReactivity
     random: true,
     lastPreset: null,
   },

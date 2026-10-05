@@ -1103,9 +1103,11 @@
       const targetReactivity = s.energy === 'high' ? 0.85 : s.energy === 'low' ? 0.3 : 0.55;
       // Ønsket intensitet (0-1): roligt i stille dele, stærkere når det er højt, opbygningen kravler op mod
       // droppet, og droppet får det kraftigste.
-      let targetIntensity = s.energy === 'high' ? 0.8 : s.energy === 'low' ? 0.25 : 0.55;
-      if (s.building) targetIntensity = 0.88;
-      if (reason === 'drop') targetIntensity = 0.95;
+      // Lavere end før (0,25/0,55/0,8, opbygning 0,88, drop 0,95): Peter og hans gæster syntes, det var for kaotisk
+      // (05-10-2026). Også det høje skal kunne være roligt og flydende som i Winamp.
+      let targetIntensity = s.energy === 'high' ? 0.65 : s.energy === 'low' ? 0.2 : 0.45;
+      if (s.building) targetIntensity = 0.75;
+      if (reason === 'drop') targetIntensity = 0.85;
       return { dominance: s.dominance, energy: s.energy, targetReactivity, targetIntensity, tempoValid: s.tempoValid, reason, current };
     }
   }
@@ -1178,7 +1180,7 @@
     const intensity = presetIntensity(profile);
     let score = 1.0 * match + 1.6 * (1 - Math.abs(intensity - context.targetIntensity));
     // Med et tempo: presets, der følger slaget, er bedst.
-    if (context.tempoValid) score += 0.5 * st[2];
+    if (context.tempoValid) score += 0.25 * st[2]; // 0,5 før 05-10-2026: trak de hektiske frem
     // Overgangen: et blødt skift går til en lignende lysstyrke; et drop klipper til kontrast.
     const cur = context.current && context.current.stats;
     if (cur) {
@@ -1320,8 +1322,8 @@
           cfg.hardCuts &&
           state.energy === 'high' &&
           since >= accentGap &&
-          t - this.lastHardCut >= 25 &&
-          this.random() < 0.35
+          t - this.lastHardCut >= 45 &&
+          this.random() < 0.15 // 25 s og 0,35 før 05-10-2026
         ) {
           return this.fire(t, 'accent', true, state, cfg);
         }

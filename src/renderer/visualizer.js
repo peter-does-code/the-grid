@@ -84,6 +84,8 @@
       this.isWebGL2 = Boolean(canvas.getContext('webgl2'));
 
       this.installTransitions();
+      this.installReactivity();
+      this.maxFps = 60;
 
       const extraImages = unwrap(window.butterchurnExtraImages);
       if (extraImages && typeof extraImages.getImages === 'function') {
@@ -126,11 +128,51 @@
       }
     }
 
+    /**
+     * Højst så mange billeder i sekundet (0 = skærmens egen takt). MilkDrop-presets flytter billedet et fast stykke
+     * pr. billede, så på en 120-144 Hz-skærm kørte alt 2-2,5 gange hurtigere end i Winamp (Peter 05-10-2026: "for
+     * kaotisk/for hurtigt" til en fest). 30 er det gamle Winamp-udtryk.
+     */
+    setMaxFps(fps) {
+      this.maxFps = fps > 0 ? fps : 0;
+      this.nextFrameAt = 0;
+    }
+
+    /**
+     * Hvor meget presets reagerer på lyden (0-1). Butterchurn giver dem bass, mid og treb som forholdet til et
+     * langt gennemsnit (1 = normalt), som MilkDrop. Her dæmpes udsvinget omkring 1: 0,5 giver halvt så store
+     * hop, 1 er som i MilkDrop.
+     */
+    setReactivity(amount) {
+      this.reactivity = Math.max(0, Math.min(1, Number(amount)));
+    }
+
+    installReactivity() {
+      const levels = this.viz && this.viz.renderer && this.viz.renderer.audioLevels;
+      if (!levels || !levels.val || !levels.att) return;
+      this.reactivity = 1;
+      const self = this;
+      const damp = (x) => 1 + (x - 1) * self.reactivity;
+      ['bass', 'mid', 'treb'].forEach((band, i) => {
+        Object.defineProperty(levels, band, { configurable: true, get: () => damp(levels.val[i]) });
+        Object.defineProperty(levels, `${band}_att`, { configurable: true, get: () => damp(levels.att[i]) });
+      });
+    }
+
     start() {
       if (this.running) return;
       this.running = true;
-      const loop = () => {
+      this.nextFrameAt = 0;
+      const loop = (now) => {
         if (!this.running) return;
+        this.raf = requestAnimationFrame(loop);
+        if (this.maxFps > 0) {
+          const interval = 1000 / this.maxFps;
+          // 1 ms tolerance: requestAnimationFrame kommer ikke helt præcist.
+          if (now < this.nextFrameAt - 1) return;
+          this.nextFrameAt += interval;
+          if (this.nextFrameAt < now) this.nextFrameAt = now + interval; // første billede, eller langt bagud
+        }
         try {
           this.viz.render();
           this.frames += 1;
@@ -139,7 +181,6 @@
         } catch (err) {
           console.error('Render error:', err);
         }
-        this.raf = requestAnimationFrame(loop);
       };
       this.raf = requestAnimationFrame(loop);
     }

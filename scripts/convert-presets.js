@@ -25,7 +25,7 @@ const { fork } = require('node:child_process');
 const { repairShader } = require('./lib/repair-shader');
 
 const MAX_BYTES = 200 * 1024; // unormalt store filer (typisk indlejrede billeder) springes over
-const PER_FAMILY = 2;
+let PER_FAMILY = 2; // --per-family=<n> (Infinity = alle, fx Winamp-klassikerne)
 
 function walk(dir, list = []) {
   for (const name of fs.readdirSync(dir)) {
@@ -122,6 +122,7 @@ if (process.argv[2] === '--worker') {
     console.error('Brug: node scripts/convert-presets.js <mappe med .milk-filer> <ud-mappe> [--per-style=20] [--workers=4]');
     process.exit(1);
   }
+  PER_FAMILY = opt('per-family', PER_FAMILY);
   const jobs = select(src, opt('per-style', Infinity));
   const workers = Math.max(1, opt('workers', 4));
   const manifest = [];

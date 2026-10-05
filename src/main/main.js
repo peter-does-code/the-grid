@@ -267,6 +267,8 @@ function registerIpc() {
       if ('random' in v) out.random = Boolean(v.random);
       if ('cycleSeconds' in v) out.cycleSeconds = clamp(v.cycleSeconds, 5, 600, 40);
       if ('blendSeconds' in v) out.blendSeconds = clamp(v.blendSeconds, 0, 10, 2.7);
+      if ([0, 30, 60].includes(Number(v.maxFps))) out.maxFps = Number(v.maxFps);
+      if ('reactivity' in v) out.reactivity = clamp(v.reactivity, 0.2, 1, 0.7);
       if ('lastPreset' in v) out.lastPreset = typeof v.lastPreset === 'string' ? v.lastPreset.slice(0, 300) : null;
       clean.visualizer = out;
     }

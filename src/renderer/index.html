@@ -219,6 +219,14 @@
         <label class="field"><span data-i18n="settings.cycle">Max seconds between changes</span> <input type="number" id="set-cycle" min="5" max="600" step="1"></label>
         <label class="field"><span data-i18n="settings.blend">Transition between presets (seconds)</span> <input type="number" id="set-blend" min="0" max="10" step="0.1"></label>
         <label class="check"><input type="checkbox" id="set-random"> <span data-i18n="settings.random">Random order</span></label>
+        <label class="field"><span data-i18n="settings.maxFps">Speed (frames per second)</span>
+          <select id="set-max-fps" class="lcd-select">
+            <option value="30" data-i18n="settings.maxFps.30">30: classic Winamp, calm</option>
+            <option value="60" data-i18n="settings.maxFps.60">60: smooth</option>
+            <option value="0" data-i18n="settings.maxFps.0">Screen rate: fastest</option>
+          </select>
+        </label>
+        <label class="field"><span data-i18n="settings.reactivity">React to the music (%)</span> <input type="number" id="set-reactivity" min="20" max="100" step="5"></label>
       </section>
 
       <section class="dialog-section">

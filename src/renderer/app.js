@@ -193,6 +193,8 @@
   function initVisualizer() {
     viz = new window.Visamp.Visualizer($('viz'), { audioContext, onPresetChange });
     viz.connect(music.output);
+    viz.setMaxFps(state.settings.visualizer.maxFps);
+    viz.setReactivity(REVIEW ? 1 : state.settings.visualizer.reactivity);
     const last = state.settings.visualizer.lastPreset;
     if (!(last && viz.load(last, 0))) viz.next({ random: true, blendSeconds: 0 });
     viz.start();
@@ -502,6 +504,13 @@
     $('set-random').checked = v.random;
     $('set-cycle').value = String(v.cycleSeconds);
     $('set-blend').value = String(v.blendSeconds);
+    $('set-max-fps').value = String(v.maxFps);
+    $('set-reactivity').value = String(Math.round(v.reactivity * 100));
+    // Tempo og reaktion (Peter 05-10-2026: "for kaotisk/for hurtigt" til en fest); se visualizer.js.
+    if (viz) {
+      viz.setMaxFps(v.maxFps);
+      viz.setReactivity(REVIEW ? 1 : v.reactivity);
+    }
     $('set-beatsync').checked = m.beatSync;
     $('set-sections').checked = m.sectionChanges;
     $('set-hardcuts').checked = m.hardCuts;
@@ -2043,6 +2052,11 @@
     $('set-blend').addEventListener('change', (e) => {
       const value = Math.min(10, Math.max(0, Number(e.target.value)));
       setVisualizerSetting({ blendSeconds: Number.isFinite(value) ? value : 2.7 });
+    });
+    $('set-max-fps').addEventListener('change', (e) => setVisualizerSetting({ maxFps: Number(e.target.value) }));
+    $('set-reactivity').addEventListener('change', (e) => {
+      const value = Math.min(100, Math.max(20, Number(e.target.value)));
+      setVisualizerSetting({ reactivity: Number.isFinite(value) ? value / 100 : 0.7 });
     });
     $('set-beatsync').addEventListener('change', (e) => setMusicSetting({ beatSync: e.target.checked }));
     $('set-sections').addEventListener('change', (e) => setMusicSetting({ sectionChanges: e.target.checked }));
