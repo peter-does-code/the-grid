@@ -302,6 +302,7 @@ function registerIpc() {
     }
     if ('peterPicks' in patch) clean.peterPicks = Boolean(patch.peterPicks);
     if ('classicMode' in patch) clean.classicMode = Boolean(patch.classicMode);
+    if ('followSpotify' in patch) clean.followSpotify = Boolean(patch.followSpotify);
     if (Array.isArray(patch.peterPickExceptions)) {
       clean.peterPickExceptions = patch.peterPickExceptions.filter((n) => typeof n === 'string').map((n) => n.slice(0, 300)).slice(-2000);
     }

@@ -37,7 +37,7 @@ You can run the guide again from **Settings → Run setup guide**.
 
 ## Everyday use
 
-- Paste a Spotify link into the playlist field and press **Load**. Double-click a track to play it.
+- Paste a Spotify link into the playlist field and press **Load**. Double-click a track to play it. When you start a playlist or album in Spotify itself, The Grid shows it by itself (switch it off under **Settings → Spotify**). Spotify's own playlists (Discover Weekly, Daily Mix and the like) can't be shown: Spotify doesn't allow it for small apps.
 - **F** or a double-click on the picture toggles fullscreen. In fullscreen only the visuals are shown, and the mouse pointer hides itself when you stop moving it. **Esc** leaves fullscreen.
 - **→ / ←** changes the preset (the visual style, there are over a thousand) and shows its name. **Space** changes preset without showing the name.
 - **K** says you like the preset on screen, and **D** derezzes it: you won't see it again. The first time, The Grid asks whether your votes may be sent to Peter so he can improve the presets. Only the preset name and your vote are sent, nothing about you, and you can switch it off under **Settings**.

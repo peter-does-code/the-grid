@@ -329,6 +329,8 @@
     'votes.ask': "You just voted on a preset. Share your votes (K = like, D = derez) with Peter, so he can make The Grid better? Only the preset name and your vote are sent, nothing about you.\n\nOK = share, Cancel = keep them on this PC.",
     'settings.initVolume': 'Intro and drew music volume (100 = normal)',
     'settings.shareVotes': 'Share my preset votes (K / D) with Peter',
+    'settings.followSpotify': 'Show the playlist or album Spotify is playing',
+    'pl.followed': 'Now on the Grid: {name}',
     'settings.peterPicks': "Use Peter's favourites and derez list too (your own K / D always win)",
     'presets.count': '({count} · ★ {favs} · derezzed {hidden})',
     'presets.favourite': 'Favourite (shows up more often), like K',

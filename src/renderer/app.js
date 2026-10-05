@@ -946,6 +946,38 @@
     }
   }
 
+  // Playlister og albums, der ikke kunne hentes (fx Spotifys egne playlister, som 2026-reglerne spærrer): prøves
+  // ikke igen ved hver afspillerstatus.
+  const followFailed = new Set();
+
+  /**
+   * Spiller Spotify en anden playliste eller et andet album end det viste, hentes det af sig selv (Peter
+   * 05-10-2026). Kun playlister og albums; kunstnere, "Liked Songs" og podcasts har ingen liste at vise her.
+   */
+  let lastSpotifyContext = null;
+  function followSpotifyContext(pb, { force = false } = {}) {
+    if (state.settings.followSpotify === false || !pb || !pb.contextUri || state.loading) return;
+    // Kun når Spotify skifter til noget andet: har brugeren selv indsat et link, mens Spotify spiller det gamle,
+    // bliver det stående.
+    if (!force && pb.contextUri === lastSpotifyContext) return;
+    lastSpotifyContext = pb.contextUri;
+    const parts = pb.contextUri.split(':');
+    const type = parts[parts.length - 2];
+    const id = parts[parts.length - 1];
+    if (!['playlist', 'album'].includes(type) || !id) return;
+    if (state.collection && state.collection.uri === pb.contextUri) return;
+    if (followFailed.has(pb.contextUri)) return;
+    const link = `https://open.spotify.com/${type}/${id}`;
+    loadCollection(link, { quiet: true }).then((ok) => {
+      if (!ok) {
+        followFailed.add(pb.contextUri);
+        return;
+      }
+      saveSettingsSoon({ lastInput: link });
+      toast(t('pl.followed', { name: state.collection.name }), 'info', 2500);
+    });
+  }
+
   function applyPlayback(pb) {
     state.playback = pb;
     state.playbackReceivedAt = performance.now();
@@ -965,6 +997,7 @@
       if (c && c.itemsRestricted && pb.contextUri === c.uri) refreshQueue();
     }
     if (pb && pb.isPlaying) state.stopped = false;
+    followSpotifyContext(pb);
     list.setCurrent(findCurrentIndex());
 
     const device = pb && pb.device;
@@ -1766,6 +1799,7 @@
     $('set-share-votes').checked = state.settings.shareVotes === true;
     $('set-peter-picks').checked = state.settings.peterPicks === true;
     $('set-classic').checked = state.settings.classicMode === true;
+    $('set-follow-spotify').checked = state.settings.followSpotify !== false;
     renderSpotifyStatus();
     renderVizToggles();
     renderCaptureStatus();
@@ -2122,6 +2156,11 @@
     $('set-share-votes').addEventListener('change', (e) => {
       state.settings.shareVotes = e.target.checked;
       saveSettingsSoon({ shareVotes: e.target.checked });
+    });
+    $('set-follow-spotify').addEventListener('change', (e) => {
+      state.settings.followSpotify = e.target.checked;
+      saveSettingsSoon({ followSpotify: e.target.checked });
+      if (e.target.checked) followSpotifyContext(state.playback, { force: true });
     });
     $('set-classic').addEventListener('change', (e) => {
       state.settings.classicMode = e.target.checked;
