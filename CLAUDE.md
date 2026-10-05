@@ -28,6 +28,7 @@ Dokumentation i `docs/` (indeks: `docs/README.md`). Drews vejledning: `docs/en/g
 | `node scripts/start.js --review` | Gennemsyn af frasorterede presets i et eget vindue: ← → bladrer, K beholder, D bandlyser (se `docs/presets.md`) |
 | `npm run presets:pack` | Bygger preset-pakken ud fra målingerne i `presets-work/` og ban- og behold-listerne (se `docs/presets.md`) |
 | `npm run presets:review` | 50 nye kandidater efter Peters smag i review-vinduet (K behold, D ban) |
+| `npm run presets:classics` | 50 Winamp-klassikere (MilkDrops egen pakke), Peter ikke har stemt om, i review-vinduet |
 | `node scripts/collect-votes.js [--all]` | Brugernes stemmer (K/D) fra releases-repoets issues ind i `data/preset-votes.jsonl` (commit bagefter), luk issues og vis et overblik. Ændrer ingen lister. |
 | `npm run release` | Udgiver en ny version til Drew: test, versionshop, installationsfil til det private releases-repo, git-tag og push. Kun fra en ren arbejdsmappe. `-- --force` får brugernes app til at genstarte selv. Se `docs/releasing.md` |
 | `npm run dist:dir` | Bygger kun `dist/win-unpacked`. Selvtest: `"dist/win-unpacked/The Grid.exe" --selftest --selftest-out=<mappe>` |

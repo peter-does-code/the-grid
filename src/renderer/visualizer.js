@@ -14,6 +14,8 @@
     'butterchurnPresetsNonMinimal',
     // De bedste fra Cream of the Crop, udvalgt af preset-testen (scripts/build-preset-pack.js).
     'gridPresetsCreamOfTheCrop',
+    // MilkDrops egen pakke fra Winamp (Winamp-klassikerne, samme script).
+    'gridPresetsWinampClassics',
   ];
   const MAX_RENDER_WIDTH = 2560; // over dette bliver GPU-belastningen høj uden synlig gevinst
   // De sidst viste presets kommer ikke igen foreløbig. Med over 1.000 presets kan vinduet være stort; med 25

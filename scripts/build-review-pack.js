@@ -4,7 +4,7 @@
  * Bygger review-pakken (src/renderer/presets/review-pack.js) til review-tilstanden, så Peter kan stemme:
  *
  *   npm run presets:review                      50 nye kandidater efter Peters smag, og åbner review-vinduet
- *   node scripts/build-review-pack.js [--count=50] [--flashers] [--no-open]
+ *   node scripts/build-review-pack.js [--count=50] [--flashers] [--classics] [--no-open]
  *
  * Kandidaterne er presets fra presets-work (se docs/presets.md), der virker, men ikke er med i pakken, og som Peter
  * ikke har stemt om. De rangeres efter Peters smag fra hans review (02-10-2026): takt minus blink minus lysstyrke
@@ -51,7 +51,22 @@ const byFile = new Map(JSON.parse(fs.readFileSync(path.join(work, 'converted', '
 const results = new Map(readJsonl('results.jsonl').map((r) => [r.file, r]));
 
 const pool = [];
-for (const f of readJsonl('flash.jsonl')) {
+// --classics: Winamp-klassikerne i pakken (src/renderer/presets/winamp-classics.js), som Peter ikke har stemt om.
+// K kommer på behold-listen (og dermed Peters favoritter), D på ban-listen og ud af pakken for alle.
+const CLASSICS = args.includes('--classics');
+const classicPresets = {};
+if (CLASSICS) {
+  global.window = global.window || {};
+  require(path.join(root, 'src', 'renderer', 'presets', 'winamp-classics.js'));
+  Object.assign(classicPresets, window.gridPresetsWinampClassics.getPresets());
+  const clByFile = new Map(JSON.parse(fs.readFileSync(path.join(work, 'classics', 'manifest.json'), 'utf8')).map((m) => [m.file, m]));
+  for (const r of readJsonl('classics-results.jsonl')) {
+    const m = clByFile.get(r.file);
+    if (!m || !classicPresets[m.name] || voted.has(key(m.name))) continue;
+    pool.push({ m: { ...m, style: 'classics' }, taste: r.beatSync - (r.flicker || 0) - r.luma });
+  }
+}
+for (const f of CLASSICS ? [] : readJsonl('flash.jsonl')) {
   const m = byFile.get(f.file);
   const r = results.get(f.file);
   if (!m || !r || r.error || r.linkFailed) continue;
@@ -67,12 +82,14 @@ const perStyle = new Map();
 const picked = [];
 for (const c of pool) {
   if (picked.length >= COUNT) break;
-  if ((perStyle.get(c.m.style) || 0) >= 2) continue;
+  if (!CLASSICS && (perStyle.get(c.m.style) || 0) >= 2) continue;
   perStyle.set(c.m.style, (perStyle.get(c.m.style) || 0) + 1);
   picked.push(c);
 }
 const presets = {};
-for (const c of picked) presets[c.m.name] = JSON.parse(fs.readFileSync(path.join(work, 'converted', c.m.file), 'utf8'));
+for (const c of picked) {
+  presets[c.m.name] = CLASSICS ? classicPresets[c.m.name] : JSON.parse(fs.readFileSync(path.join(work, 'converted', c.m.file), 'utf8'));
+}
 fs.writeFileSync(
   path.join(root, 'src', 'renderer', 'presets', 'review-pack.js'),
   '/* Kun til review-tilstand (--review). Genereret af scripts/build-review-pack.js; ikke i git eller installationen. */\n' +

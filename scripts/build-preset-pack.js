@@ -229,6 +229,56 @@ if (existingArg) {
     if (!r.error && names[r.file] && !banned.has(banKey(names[r.file]))) statsByName[names[r.file]] = r;
   }
 }
+// Winamp-klassikerne (--classics=<mappe>,<jsonl>): MilkDrops egen pakke fra den sidste Winamp-udgave
+// (projectM-visualizer/presets-milkdrop-original). Peter og hans gæster savnede det gamle Winamp-udtryk
+// (05-10-2026). Alle, der virker, kommer med uden score og stilartspladser; samme tekniske frasortering og
+// blinkregel som ovenfor, og Peters ban-liste gælder.
+const classicsArg = args.find((a) => a.startsWith('--classics='));
+if (classicsArg) {
+  const [clDir, clResults] = classicsArg.slice('--classics='.length).split(',');
+  const clManifest = new Map(JSON.parse(fs.readFileSync(path.join(clDir, 'manifest.json'), 'utf8')).map((m) => [m.file, m]));
+  const taken = new Set([...existing, ...Object.keys(presets).map((n) => n.toLowerCase())]);
+  const clRejected = {};
+  const no = (why) => {
+    clRejected[why] = (clRejected[why] || 0) + 1;
+    return false;
+  };
+  const classics = {};
+  for (const line of fs.readFileSync(clResults, 'utf8').split('\n')) {
+    if (!line.trim()) continue;
+    const r = JSON.parse(line);
+    const m = clManifest.get(r.file);
+    const keep = (() => {
+      if (!m) return no('ikke i manifest');
+      if (r.error) return no('fejl');
+      if (r.linkFailed) return no('shader kan ikke oversættes');
+      if (taken.has(m.name.toLowerCase())) return no('findes allerede');
+      if (banned.has(banKey(m.name))) return no('fjernet af Peter');
+      if (r.luma < LIMITS.minLuma) return no('sort');
+      if (r.luma > LIMITS.maxLuma) return no('hvidt');
+      if (r.motion < LIMITS.minMotion) return no('står stille');
+      if (r.msPerFrame > LIMITS.maxMsPerFrame) return no('for tungt');
+      if ((r.flicker || 0) >= MAX_FLICKER && !keeps.has(banKey(m.name)) && !flashesWithMusic(r)) return no('blinker');
+      return true;
+    })();
+    if (!keep) continue;
+    classics[m.name] = JSON.parse(fs.readFileSync(path.join(clDir, r.file), 'utf8'));
+    taken.add(m.name.toLowerCase());
+    if (typeof r.flicker === 'number') statsByName[m.name] = r;
+  }
+  fs.writeFileSync(
+    path.join(outDir, 'winamp-classics.js'),
+    '/* Winamp-klassikerne: MilkDrops egen preset-pakke fra den sidste officielle udgave (projectM-visualizer/\n' +
+      ' * presets-milkdrop-original), dem der virker i The Grid. Genereret af scripts/build-preset-pack.js; redigér ikke\n' +
+      ' * i hånden. MilkDrop-presets er frigivet frit af deres forfattere (se docs/presets.md). */\n' +
+      'window.gridPresetsWinampClassics = { getPresets: function () { return ' +
+      JSON.stringify(classics) +
+      '; } };\n'
+  );
+  fs.writeFileSync(path.join(outDir, 'winamp-classics.txt'), Object.keys(classics).sort((a, b) => a.localeCompare(b, 'en')).join('\n') + '\n');
+  console.log(`Winamp-klassikere: ${Object.keys(classics).length} med. Sorteret fra:`, JSON.stringify(clRejected));
+}
+
 const KEYS = ['luma', 'motion', 'beatSync', 'colorful', 'detail'];
 const entries = Object.entries(statsByName);
 const sortedBy = Object.fromEntries(KEYS.map((k) => [k, entries.map(([, r]) => r[k] || 0).sort((a, b) => a - b)]));

@@ -4,12 +4,23 @@ The Grid har to slags MilkDrop-presets:
 
 - **butterchurn-presets** (npm, 395 stk.), som Butterchurns forfatter har konverteret.
 - **De bedste fra "Cream of the Crop"** i `src/renderer/presets/cream-of-the-crop.js`. Listen over de valgte og deres mål står i `cream-of-the-crop.txt` ved siden af.
+- **Winamp-klassikerne** (279 stk.) i `src/renderer/presets/winamp-classics.js`, listen i `winamp-classics.txt`. Se herunder.
 
 ## Cream of the Crop
 
 - **Kilde:** https://github.com/projectM-visualizer/presets-cream-of-the-crop.
 - **Indhold:** ca. 9.800 MilkDrop-presets, udvalgt og sorteret i stilarter (fx Reaction/Liquid Ripples) af Jason Fletcher (ISOSCELES). Pakken er standard i projectM siden 2022.
 - **Licens:** MilkDrop-presets er næsten aldrig frigivet under en bestemt licens. Forfatterne har frigivet dem frit, og projectM regner dem for public domain. Ønsker en forfatter sit preset fjernet, fjerner projectM det. Forfatterne står i presetnavnene, og dem beholder vi.
+
+## Winamp-klassikerne (05-10-2026)
+
+Peter testede The Grid til en fest; gæsterne syntes, det var for kaotisk og hurtigt, og at meget af Winamps charme var væk. Derfor er MilkDrops egen pakke fra den sidste officielle Winamp-udgave med: https://github.com/projectM-visualizer/presets-milkdrop-original (552 presets). 424 af dem manglede: fra Cream of the Crop blev der kun udtaget 20 pr. stilart, og kun 48 af originalerne var med i stikprøven.
+
+- Konverteret med `--per-family=Infinity` (ingen grænse for remix): 547 af 552 (83 s).
+- Målt med preset-testen (ca. 5 min), samme tekniske frasortering og blinkregel som Cream of the Crop, men **uden score og stilartspladser**: alle, der virker, kommer med. Peter vælger selv i review.
+- Resultat: 279 med. Sorteret fra: 114 findes allerede (indbyggede eller i Cream of the Crop), 47 shader kan ikke oversættes, 45 sorte, 37 hvide, 17 står stille, 6 fejl, 2 blinker.
+- De sorte og hvide kan være falske: målingen tager 3 s, og nogle klassikere starter mørkt eller bruger teksturer, der mangler (projectM har dem i `presets-milkdrop-texture-pack`). De kan undersøges senere.
+- `npm run presets:classics` åbner review-vinduet med 50 klassikere, Peter ikke har stemt om, efter hans smag. K kommer på behold-listen (og dermed "Peter's picks"), D på ban-listen og ud af pakken for alle ved næste `npm run presets:pack`.
 
 ## Sådan blev de valgt (01-10-2026)
 
@@ -67,6 +78,7 @@ Arbejdsdataene ligger i `presets-work/` (ignoreres af git, ca. 40 MB):
 | Kommando | Hvad |
 |---|---|
 | `npm run presets:pack` | Bygger pakken (`src/renderer/presets/`) ud fra målingerne og Peters lister. Kør efter nye stemmer eller ændringer i ban- og behold-listerne, og udgiv bagefter. |
+| `npm run presets:classics` | 50 Winamp-klassikere, Peter ikke har stemt om, i review-vinduet. |
 | `npm run presets:review` | 50 nye kandidater efter Peters smag (`scripts/build-review-pack.js`) og åbner review-vinduet. `-- --flashers` viser i stedet de frasorterede blinkere. |
 | `node scripts/collect-votes.js [--all]` | Brugernes stemmer fra GitHub ind i `data/preset-votes.jsonl` og et overblik. Ændrer ingen lister. |
 
@@ -79,6 +91,9 @@ git clone --depth 1 https://github.com/projectM-visualizer/presets-cream-of-the-
 node scripts/convert-presets.js <cotc> presets-work/converted --per-style=20 --workers=4
 node scripts/start.js --presettest --dir=presets-work/converted --out=presets-work/results.jsonl
 node scripts/start.js --presettest --dir=presets-work/converted --out=presets-work/flash.jsonl
+git clone --depth 1 https://github.com/projectM-visualizer/presets-milkdrop-original.git presets-work/milkdrop-original-src
+node scripts/convert-presets.js presets-work/milkdrop-original-src presets-work/classics --per-family=Infinity --workers=4
+node scripts/start.js --presettest --dir=presets-work/classics --out=presets-work/classics-results.jsonl
 npm run presets:pack
 ```
 

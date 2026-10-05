@@ -65,7 +65,7 @@ På Peters pc giver andre programmer svag baggrundslyd på -55 til -63 dB. Den m
 |---|---|---|
 | Drop | Hårdt klip med det samme | Mindst 0,5 s siden sidste hårde klip (et skift i opbygningen lige før spærrer ikke) |
 | Opbygning | Efter 2 takter et skift hver takt, fra takt 4 hver halve takt, med korte overgange (et halvt slag) | Kræver fundet tempo, takt-synkronisering og hårde klip slået til |
-| Stort slag i en intens del | Hårdt klip, som MilkDrops "hard cuts" | Højst hvert 25. s, med tilfældighed, og mindst 3/4 af den indstillede tid siden sidste skift (mindst 12 s) |
+| Stort slag i en intens del | Hårdt klip, som MilkDrops "hard cuts" | Højst hvert 45. s, med 15 % sandsynlighed (25 s og 35 % før 05-10-2026), og mindst 3/4 af den indstillede tid siden sidste skift (mindst 12 s) |
 | Nyt nummer i Spotify | Blødt skift på næste taktstart | Mindst 2 s siden sidste skift |
 | Ny del af sangen | Blødt skift på næste taktstart | Mindst halvdelen af den indstillede tid siden sidste skift (mindst 8 s) |
 | Tiden er gået | Blødt skift på næste taktstart | Indstillet tid ±15 % (standard 40 s), mindst 6 s |
@@ -85,9 +85,9 @@ Hvert preset har to slags profil:
 
 Ved et automatisk skift scores presets ud fra hvorfor der skiftes og hvad der vises nu (`selectionContext(reason, current)` og `scorePreset`):
 
-- **Intensitet:** sangens energi giver en ønsket intensitet: 0,25 i rolige dele, 0,55 normalt og 0,8 i høje dele. Under en opbygning er den 0,88 og på et drop 0,95. Vægten er 1,6 for at ramme den.
+- **Intensitet:** sangens energi giver en ønsket intensitet: 0,2 i rolige dele, 0,45 normalt og 0,65 i høje dele. Under en opbygning er den 0,75 og på et drop 0,85. Indtil 05-10-2026 var det 0,25/0,55/0,8/0,88/0,95; Peter og hans gæster syntes, det var for kaotisk til en fest. Vægten er 1,6 for at ramme den.
 - **Bånd:** fordelingen skal passe til de bånd, der fylder mere end normalt lige nu (vægt 1,0).
-- **Takt:** med et tempo får presets, der følger slaget, op til 0,5 ekstra.
+- **Takt:** med et tempo får presets, der følger slaget, op til 0,25 ekstra (0,5 før 05-10-2026).
 - **Overgang:** et blødt skift går helst til en lignende lysstyrke (op til 0,6), så skiftet ikke blænder eller mørklægger. Et drop belønner kontrast i intensitet (op til 0,8).
 - **Tilfældighed:** 0,6.
 
@@ -102,11 +102,19 @@ Simuleret 02-10-2026 med de 1.054 målte presets (`favoritter` = antal tilfældi
 | | Forskellige pr. 1.000 skift (0 / 20 / 50 favoritter) | Favoritandel (20 / 50) | Intensitet roligt / normalt / højt (mål 0,25 / 0,55 / 0,8) |
 |---|---|---|---|
 | Før (top 12, 0,25, ingen loft) | 420-453 / 357-371 / 208-246 | 34 % / 71 % | 0,31 / 0,55 / 0,79 |
-| Nu | 494-549 / 511-542 / 526-554 | 18 % / 19 % | 0,35 / 0,54 / 0,73 |
+| 02-10-2026 | 494-549 / 511-542 / 526-554 | 18 % / 19 % | 0,35 / 0,54 / 0,73 |
+| Roligere mål (05-10-2026, mål 0,2 / 0,45 / 0,65) | 195-199 pr. 200 | 18 % / 20 % | 0,31 / 0,46 / 0,61 |
 
 Pr. 200 skift er det 176-200 forskellige. Prisen er, at høje dele rammer lidt mindre intenst (0,73 mod 0,79), fordi hvert femte skift er tilfældigt.
 
 Det sker kun ved tilfældig rækkefølge med "Vælg presets, der reagerer på den del af musikken, der fylder mest" slået til.
+
+## Tempo og reaktion
+
+To indstillinger under Settings → Visualizer (Peter 05-10-2026: "for kaotisk/for hurtigt", meget af Winamps charme var væk):
+
+- **Speed** (`maxFps`, standard 60): højst så mange billeder i sekundet (`setMaxFps` i `visualizer.js`). Et MilkDrop-preset flytter billedet et fast stykke pr. billede (zoom, rotation, fade), og Butterchurn tegnede, så hurtigt skærmen kunne. På en 120-144 Hz-skærm eller et tv kørte alt derfor 2-2,5 gange for hurtigt. 30 er det gamle Winamp-udtryk; "Screen rate" er som før.
+- **React to the music** (`reactivity`, standard 70 %): Butterchurn giver presets `bass`, `mid` og `treb` som forholdet til et langt gennemsnit (1 = normalt), som MilkDrop. Udsvinget omkring 1 ganges med indstillingen (`setReactivity`), så 50 % giver halvt så store hop. Den automatiske lydstyrke betyder derimod næsten intet for presets, netop fordi de måles mod deres eget gennemsnit. Review-tilstanden bruger altid 100 %.
 
 ## Overgange
 

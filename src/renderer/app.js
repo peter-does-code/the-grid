@@ -1217,7 +1217,7 @@
         paused: audio.paused,
         currentTime: Math.round(audio.currentTime * 100) / 100,
         readyState: audio.readyState,
-        volume: Math.round(audio.volume * 100) / 100,
+        volume: Math.round(audio.volume * 10000) / 10000, // 4 decimaler: den stille selvtest ligger på ca. 0,002
         error: audio.error ? audio.error.code : null,
         src: audio.currentSrc,
       }),
