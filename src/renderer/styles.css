@@ -1612,6 +1612,19 @@ body.fullscreen.cursor-hidden * {
   z-index: 1;
 }
 
+/* Mellem to vinduer i kolonnen: træk op og ned for at fordele højden. */
+.dock-split {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -4px;
+  height: 8px;
+  cursor: ns-resize;
+  z-index: 2;
+}
+
+.dock-split:hover,
+.dock-split.dragging,
 .dock-resize:hover,
 .dock-resize.dragging {
   background: var(--bevel-hi);

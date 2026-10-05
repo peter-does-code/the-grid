@@ -1871,14 +1871,69 @@
     const room = window.innerWidth - r.left; // visualizerens kolonne uden vinduerne
     const w = Math.round(Math.max(DOCK_MIN_WIDTH, Math.min(width || dockWidth(), room - 160)));
     wrap.style.marginRight = `${w}px`;
-    const h = r.height / open.length;
+    // Højden fordeles efter vægte (træk i kanten mellem to vinduer, wireDocking); ukendte vinduer vejer 1.
+    const weights = open.map((el) => dockWeights[el.id] || 1);
+    const sum = weights.reduce((a, b) => a + b, 0);
+    let top = r.top;
     open.forEach((el, i) => {
-      el.style.top = `${Math.round(r.top + i * h)}px`;
+      const h = (r.height * weights[i]) / sum;
+      el.style.top = `${Math.round(top)}px`;
       el.style.height = `${Math.round(h)}px`;
       el.style.right = '0px';
       el.style.width = `${w}px`;
+      el.querySelector('.dock-split').hidden = i === open.length - 1; // kun mellem to vinduer
+      top += h;
     });
     return w;
+  }
+
+  // Vinduernes andel af kolonnens højde (relative tal), huskes på pc'en.
+  const DOCK_WEIGHTS_KEY = 'dockWeights';
+  let dockWeights = {};
+  try {
+    dockWeights = JSON.parse(localStorage.getItem(DOCK_WEIGHTS_KEY) || '{}') || {};
+  } catch {
+    dockWeights = {};
+  }
+  const DOCK_MIN_HEIGHT = 120;
+
+  /** Kanten under vinduet `el` trækkes: det og vinduet under det bytter højde. */
+  function dragSplit(el, event) {
+    const open = dockOrder.map((id) => $(id)).filter((d) => d && d.open);
+    const i = open.indexOf(el);
+    const below = open[i + 1];
+    if (i < 0 || !below) return;
+    const split = el.querySelector('.dock-split');
+    event.preventDefault();
+    split.setPointerCapture(event.pointerId);
+    split.classList.add('dragging');
+    const startY = event.clientY;
+    const h1 = el.getBoundingClientRect().height;
+    const h2 = below.getBoundingClientRect().height;
+    // Vægtene sættes i pixel, så de to vinduers samlede andel bliver den samme; de andre røres ikke.
+    const total = open.reduce((a, d) => a + (dockWeights[d.id] || 1), 0);
+    const colHeight = open.reduce((a, d) => a + d.getBoundingClientRect().height, 0);
+    const perPx = total / colHeight;
+    const move = (e) => {
+      const a = Math.max(DOCK_MIN_HEIGHT, Math.min(h1 + h2 - DOCK_MIN_HEIGHT, h1 + (e.clientY - startY)));
+      dockWeights[el.id] = a * perPx;
+      dockWeights[below.id] = (h1 + h2 - a) * perPx;
+      dockDialogs();
+    };
+    const up = () => {
+      split.classList.remove('dragging');
+      split.removeEventListener('pointermove', move);
+      split.removeEventListener('pointerup', up);
+      split.removeEventListener('pointercancel', up);
+      try {
+        localStorage.setItem(DOCK_WEIGHTS_KEY, JSON.stringify(dockWeights));
+      } catch {
+        // uden lager huskes fordelingen bare ikke
+      }
+    };
+    split.addEventListener('pointermove', move);
+    split.addEventListener('pointerup', up);
+    split.addEventListener('pointercancel', up);
   }
 
   /** Esc lukker det senest åbnede vindue i kolonnen. Returnerer true, hvis der var et. */
@@ -1904,6 +1959,7 @@
         if (!el.open && i >= 0) dockOrder.splice(i, 1);
         dockDialogs();
       }).observe(el, { attributes: true, attributeFilter: ['open'] });
+      el.querySelector('.dock-split').addEventListener('pointerdown', (event) => dragSplit(el, event));
       const handle = el.querySelector('.dock-resize');
       handle.addEventListener('pointerdown', (event) => {
         event.preventDefault();
