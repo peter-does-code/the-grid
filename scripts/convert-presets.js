@@ -24,6 +24,7 @@ const path = require('node:path');
 const { fork } = require('node:child_process');
 const { repairShader } = require('./lib/repair-shader');
 const { repairEel } = require('./lib/repair-eel');
+const { shaderOverride } = require('./lib/shader-overrides');
 
 const MAX_BYTES = 200 * 1024; // unormalt store filer (typisk indlejrede billeder) springes over
 let PER_FAMILY = 2; // --per-family=<n> (Infinity = alle, fx Winamp-klassikerne)
@@ -96,6 +97,9 @@ async function convertOne(src, out, { file, style }) {
     // Konverterens shadere har kendte fejl, der giver sorte presets (se scripts/lib/repair-shader.js).
     preset.warp = repairShader(preset.warp, 'warp');
     preset.comp = repairShader(preset.comp, 'comp');
+    // Håndoversatte shadere, hvor konverteren mister operatorer (scripts/lib/shader-overrides.js).
+    const override = shaderOverride(entry.name);
+    if (override) Object.assign(preset, override);
     const json = JSON.stringify(preset);
     const target = path.join(out, entry.file);
     fs.mkdirSync(path.dirname(target), { recursive: true });
