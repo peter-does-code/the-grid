@@ -25,6 +25,7 @@ const { fork } = require('node:child_process');
 const { repairShader } = require('./lib/repair-shader');
 const { repairEel } = require('./lib/repair-eel');
 const { shaderOverride } = require('./lib/shader-overrides');
+const { hlslToGlsl } = require('./lib/hlsl-to-glsl');
 
 const MAX_BYTES = 200 * 1024; // unormalt store filer (typisk indlejrede billeder) springes over
 let PER_FAMILY = 2; // --per-family=<n> (Infinity = alle, fx Winamp-klassikerne)
@@ -100,6 +101,14 @@ async function convertOne(src, out, { file, style }) {
     // Håndoversatte shadere, hvor konverteren mister operatorer (scripts/lib/shader-overrides.js).
     const override = shaderOverride(entry.name);
     if (override) Object.assign(preset, override);
+    // --alt-shaders: vores egen oversættelse af pixel-shaderne i stedet for konverterens (scripts/lib/hlsl-to-glsl.js).
+    // Preset-testen afgør bagefter, hvilken udgave der virker (scripts/pick-shaders.js).
+    else if (process.env.GRID_ALT_SHADERS === '1') {
+      for (const kind of ['warp', 'comp']) {
+        const alt = hlslToGlsl(text, kind, preset[kind]);
+        if (alt) preset[kind] = alt;
+      }
+    }
     const json = JSON.stringify(preset);
     const target = path.join(out, entry.file);
     fs.mkdirSync(path.dirname(target), { recursive: true });
@@ -129,6 +138,7 @@ if (process.argv[2] === '--worker') {
     process.exit(1);
   }
   PER_FAMILY = opt('per-family', PER_FAMILY);
+  if (args.includes('--alt-shaders')) process.env.GRID_ALT_SHADERS = '1'; // arves af arbejderprocesserne
   const jobs = select(src, opt('per-style', Infinity));
   const workers = Math.max(1, opt('workers', 4));
   const manifest = [];
