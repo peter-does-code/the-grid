@@ -333,6 +333,8 @@
     'pl.followed': 'Now on the Grid: {name}',
     'settings.peterPicks': "Use Peter's favourites and derez list too (your own K / D always win)",
     'presets.count': '({count} · ★ {favs} · derezzed {hidden})',
+    'presets.group.classic': 'CLASSIC WINAMP ({count})',
+    'presets.group.expansions': 'EXPANSIONS ({count})',
     'presets.favourite': 'Favourite (shows up more often), like K',
     'presets.unfavourite': 'No longer a favourite',
     'presets.restore': 'Bring this preset back',

@@ -1817,9 +1817,33 @@
 
   function filterPresets(query) {
     const needle = query.trim().toLowerCase();
+    // Gruppens overskrift skjules, når ingen af dens presets passer.
+    let header = null;
+    let shown = 0;
+    const closeGroup = () => {
+      if (header) header.hidden = shown === 0;
+    };
     for (const li of $('preset-list').children) {
+      if (li.classList.contains('preset-group')) {
+        closeGroup();
+        header = li;
+        shown = 0;
+        continue;
+      }
       li.hidden = Boolean(needle) && !li.dataset.name.toLowerCase().includes(needle);
+      if (!li.hidden) shown += 1;
     }
+    closeGroup();
+  }
+
+  /** Er presettet en af Winamp-klassikerne (MilkDrops egen pakke, winamp-classics.js)? */
+  let classicNames = null;
+  function isClassic(name) {
+    if (!classicNames) {
+      const pack = window.gridPresetsWinampClassics;
+      classicNames = new Set(((pack && pack.names) || []).map((n) => n.toLowerCase()));
+    }
+    return classicNames.has(String(name).toLowerCase());
   }
 
   /** En række i preset-listen: ★ for favoritter, overstreget for derezzede (med ↺ for at få det tilbage). */
@@ -1863,7 +1887,19 @@
     // Bygges hver gang, så favoritter og derezzede altid passer.
     const hiddenSet = lists.hidden;
     const fragment = document.createDocumentFragment();
-    for (const name of viz.allNames) fragment.append(presetRow(name, hiddenSet.has(name)));
+    // To grupper: Winamp-klassikerne (MilkDrops egen pakke) og udvidelserne (alt det andet).
+    const groups = [
+      ['presets.group.classic', viz.allNames.filter((n) => isClassic(n))],
+      ['presets.group.expansions', viz.allNames.filter((n) => !isClassic(n))],
+    ];
+    for (const [key, names] of groups) {
+      if (!names.length) continue;
+      const header = document.createElement('li');
+      header.className = 'preset-group';
+      header.textContent = t(key, { count: names.length });
+      fragment.append(header);
+      for (const name of names) fragment.append(presetRow(name, hiddenSet.has(name)));
+    }
     listEl.replaceChildren(fragment);
     updatePresetCount();
     $('preset-filter').value = '';
@@ -2253,7 +2289,7 @@
     $('preset-filter').addEventListener('input', (e) => filterPresets(e.target.value));
     $('preset-filter').addEventListener('keydown', (event) => {
       if (event.key !== 'Enter') return;
-      const first = Array.from($('preset-list').children).find((li) => !li.hidden);
+      const first = Array.from($('preset-list').querySelectorAll('li[data-name]')).find((li) => !li.hidden);
       if (first) loadPresetByName(first.dataset.name);
     });
     $('preset-list').addEventListener('click', (event) => {

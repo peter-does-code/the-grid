@@ -1929,6 +1929,25 @@ code {
   background: var(--pl-select-bg);
 }
 
+/* Gruppernes overskrift (Classic Winamp / Expansions) bliver stående øverst, mens man ruller i gruppen. */
+.preset-list li.preset-group {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 4px 8px 2px;
+  font: 15px/1.2 var(--font-lcd, monospace);
+  letter-spacing: 0.08em;
+  color: var(--lcd-fg);
+  text-shadow: var(--lcd-glow);
+  background: var(--well);
+  border-bottom: 1px solid var(--inset-lo);
+  cursor: default;
+}
+
+.preset-list li.preset-group:hover {
+  background: var(--well);
+}
+
 .help-table {
   width: 100%;
   border-collapse: collapse;
