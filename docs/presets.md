@@ -84,6 +84,31 @@ milkdrop-preset-converter (hlslparser-js, nyeste udgave 0.1.2) ødelægger regne
 - Pakken skal holdes lille: hver oversat shader får kun de hjælpefunktioner, den bruger (`usedHelpers`); med alle blev pakken 18 MB i stedet for 10,6.
 - Oversættelsen er ikke kontrolleret preset for preset; ser et forkert ud (fx forkerte farver), giver D det væk.
 
+## Find et bestemt preset (05-10-2026)
+
+Sådan blev Peters "the fern" (`Flexi - oldschool tree`) og ansigtet (`Zylot & Idiot - Face zzz9`) fundet. Kort sagt: navne hjælper sjældent; ens **kode** og ens **opbygning** gør.
+
+**Kilder** (alle i `presets-work/`, ignoreres af git):
+
+| Mappe | Indhold |
+|---|---|
+| `cotc-src/` | Hele Cream of the Crop (9.708 .milk), sorteret i stilarter |
+| `projectm-classic-src/` | projectM's gamle samling (4.189, MilkDrop 1-tiden): `git clone --depth 1 https://github.com/projectM-visualizer/presets-projectm-classic.git` |
+| `../winamp-src/` | Presets og teksturer fra Winamps installationsfil (558), se "Winamp-klassikerne" |
+| `ia-flexi/` | 3.485 af Flexis presets fra Internet Archive |
+
+**Internet Archive** har den største samling (ca. 43.000 emner med id `md_...`, ét preset pr. emne), også mange, der ikke er i de andre. `node scripts/fetch-archive-presets.js <ud-mappe> "<søgning i titlen>" --known=<mapper>` henter dem, der mangler (fx `flexi` eller `"shader circus"`). Arkivets titler mangler " - " efter forfatteren ("Flexi shader circus"); omdøb til "Flexi - shader circus", så navnene passer til resten (fx `shader-overrides.js`).
+
+**Metoder:**
+1. **Delte ligningslinjer:** sammenlign normaliserede linjer (per_frame/per_pixel/shape/wave) med et kendt preset. Remix deler 60-100 %; under ca. 40 % er det bare forfatterens faste byggesten. Fandt "shader circus"-serien og "swinging fractal".
+2. **Opbygning:** fx 2 cirkler + 1 trekant + 2 bølger (ansigtet), teksturerede figurer med formindskede kopier (`tex_zoom` 0,3-0,7), spejlet videoekko og lidt fade (bregne-fraktalerne), eller to cirkler placeret symmetrisk som øjne.
+3. **Cream of the Crops stilarter** (fx `Fractal/Wings`) til at indsnævre efter udseende.
+4. **Kontaktark:** `node scripts/start.js --presettest --dir=<mappe> --out=<fil> --sheets=<mappe>` (6 x 6 billeder med navn pr. ark) til at se mange på én gang.
+5. Vis kandidaterne for Peter i review-vinduet (`src/renderer/presets/review-pack.js` med `window.gridReviewPresets = {...}`, åbnes med `node scripts/start.js --review`). **Sæt ikke noget foran navnene** (fx "[1 Trees]"): K/D gemmes under det viste navn.
+6. Får et preset fra en søgning K, kommer det med i pakken via `--extra=<mapper>` i `npm run presets:pack` (konverterede mapper med manifest.json).
+
+**Peters fund og smag:** "the fern" er `Flexi - oldschool tree` (fundet, med i appen), men den variant, han kan lide mest ("bladene udvider sig med musikken"), er ikke fundet; slægtningene (`shader circus` 00-28, `swinging fractal`, `elastic self similar`, `self similarity` 5-8, `fractal tree`) er set. Han kan ikke lide Dancer/Tree Branch. Wings-stilen (`cope - soar`) var tættest på bregnen.
+
 ## Kataloget (05-10-2026)
 
 Alt, vi ved om hvert preset, samlet til at kategorisere dem og på sigt forudsige, hvad en bruger kan lide ud fra sine favoritter (Peter 05-10-2026). `npm run presets:catalog` (efter `presets:pack`) skriver `src/renderer/presets/preset-catalog.js`; appen bruger det ikke endnu.
@@ -98,11 +123,15 @@ For hvert preset: pakke, klassiker eller ej, forfattere (fra navnet), stilart, m
 
 ## Til hverdag
 
-Arbejdsdataene ligger i `presets-work/` (ignoreres af git, ca. 40 MB):
+Arbejdsdataene ligger i `presets-work/` (ignoreres af git, flere GB efter søgningerne 05-10-2026):
 - `converted/`: de 2.765 konverterede presets og deres manifest.
 - `results.jsonl`: preset-testens målinger.
 - `flash.jsonl`: blink-målingerne.
 - `existing/` og `flash-existing.jsonl`: de indbyggede presets og deres målinger.
+- `classics-winamp/` og `classics-winamp-results.jsonl`: Winamp-klassikerne (fra `winamp-src`). `classics/` og `milkdrop-original-src/` er projectM's ældre kopi (bruges ikke længere).
+- `rescue/` ... `rescue5/` med `rescue*-results.jsonl`: presets reddet af den egne shader-oversættelse (`--rescued`).
+- `fernstyle/`, `triangles/`, `fern/`, `wings/`, `tree/`, `faces/`, `ferns/`, `fern2/`, `fern2-alt/`: konverterede kandidater fra søgningerne efter bregnen og ansigtet (`--extra`).
+- `cotc-src/`, `projectm-classic-src/`, `ia-flexi/`: kilderne, se "Find et bestemt preset".
 
 | Kommando | Hvad |
 |---|---|

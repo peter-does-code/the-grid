@@ -40,12 +40,26 @@ npm run release -- minor   # 0.1.0 → 0.2.0
 1. Kører testene. Fejler én, stopper udgivelsen.
 2. Hæver versionen i `package.json`.
 3. Bygger installationsfilen med læse-tokenen (`--publish never`), skriver `latest.yml` (`scripts/lib/update-info.js`) og lægger installationsfil, blockmap og `latest.yml` op som én release i `the-grid-releases` med `gh release create`. Kopien af tokenen i `build/` slettes igen.
-4. Committer, tagger `vX.Y.Z` og pusher koden til `the-grid`.
+4. Committer `package.json` og Peters valg (`src/renderer/presets/peter-picks.js`, laves før bygget af `scripts/lib/peter-picks.js`), tagger `vX.Y.Z` og pusher koden og tagget til `the-grid` (tagget skubbes eksplicit; `--follow-tags` tog ikke lette tags med, rettet 02-10-2026).
 
 Drews app finder den nye version ved næste start eller inden for 4 timer.
 
 - **Alle opdateringer installeres med det samme** (fra v0.1.10). Appen tjekker ved hver start og hver 4. time, henter en ny udgave og genstarter efter 10 s varsel. Musikken spiller videre i Spotify, og introen springes over efter en opdatering. (`--force` fandtes i v0.1.8-v0.1.10 og er fjernet.)
 - **Kun fra en ren arbejdsmappe:** `release.js` stopper, hvis der er ændringer, der ikke er committet, og committer selv kun versionen.
+
+## Installér lokalt uden at udgive
+
+Peters arbejdsgang (05-10-2026): **hver ændring installeres på hans pc, men udgives først til alle, når han siger det.**
+
+```
+npm run install:local            # byg og installér (The Grid skal være lukket)
+npm run install:local -- --wait  # vent, til The Grid er lukket
+```
+
+`scripts/install-local.js` bygger med versionen *næste patch*-local (0.1.21 → 0.1.22-local), så den næste rigtige udgivelse stadig er nyere og appen opdaterer sig til den. Læse-tokenen kopieres ind til bygget og fjernes igen, installationsfilen køres med `/S`, og `package.json` sættes tilbage, også ved fejl.
+
+- Kør den som en selvstændig proces (fx `Start-Process` i PowerShell), ikke i en kommando med tidsgrænse: afbrydes den midt i, står `package.json` på "-local". Næste kørsel retter det selv, men tjek `git status` bagefter.
+- Peters app skal være lukket; luk den ikke selv for ham.
 
 ## Fejlsøgning
 
@@ -56,5 +70,5 @@ Drews app finder den nye version ved næste start eller inden for 4 timer.
 ## Vigtigt
 
 - **Forny læse-tokenen, før den udløber.** Den nye token kan kun nå ud til Drew gennem en opdatering, som appen henter med den gamle. Udløber den gamle først, holder opdateringerne op, og Drew skal have en installationsfil igen. Appen virker stadig; kun opdateringerne stopper.
-- **Tokenen må ikke kunne mere end at læse `the-grid-releases`.** Alle med installationsfilen kan i princippet finde den.
+- **Tokenen må ikke kunne mere end læse `the-grid-releases` og oprette issues der** (Contents: Read-only; Issues: Read and write, til brugernes stemmer, `src/main/votes.js`). Alle med installationsfilen kan i princippet finde den.
 - **Filen er usigneret.** Kun den første installation giver Windows' advarsel ("More info" → "Run anyway"). Opdateringer installeres af appen selv, uden advarsel.

@@ -64,10 +64,22 @@ Rendereren har ingen Node-adgang og laver ingen netværkskald. Alt Spotify-arbej
 | `eggs.js` | Påskeæg: Tron-ord i link-feltet, Konami-koden og snydearket (`CHEAT_SHEET`), som Flynns terminal viser. Terminalen (`openTerminal`, `termRun` i `app.js`) åbnes med `whoami`. Se CLAUDE.md. |
 | `music.js` | Lydkæden foran visualizeren (forsinkelse, automatisk lydniveau, begrænser) og analysen til musikmotoren. Se `music_engine.md`. |
 | `musictest.js`, `probe.js` | `npm run musictest` (offline mod facit eller en lydfil) og lyddiagnosen `npm run diagnose -- --audio` |
-| `visualizer.js` | Butterchurn: 1.057 presets (395 fra butterchurn-presets og 662 fra Cream of the Crop, se docs/presets.md), historik, tilfældig eller fast rækkefølge, titelanimation |
+| `visualizer.js` | Butterchurn: ca. 1.637 presets (butterchurn-presets, Cream of the Crop og Winamp-klassikerne, se docs/presets.md), historik, tilfældig eller fast rækkefølge, titelanimation. Udvalget (`setHidden`, `setOnly` for Classic Winamp mode), valget (`pickSmart`, favoritter, loft), billeder i sekundet (`setMaxFps`), reaktion på lyden (`setReactivity`) og overgange (`installTransitions`) |
 | `spectrum.js` | Den lille Winamp-analysator på 76 x 16 pixels: spektrum, oscilloskop eller slukket, i temaets farver |
 | `playlist.js` | Playliste-listen: valg, afspilning, markering af det aktuelle nummer |
 | `index.html`, `styles.css` | Layout og tre temaer via `body[data-theme]`: `grid` (Tron, standard), `clu` (orange) og `classic` (Winamp). Faste tekster har `data-i18n`-attributter. |
+
+## Vinduerne i kolonnen
+
+Preset-listen (L), Settings, hjælpen (F1/?) og opsætningsguiden ligger i en kolonne i visualizerens højre side og dækker aldrig billedet (Peter 05-10-2026). Flynns terminal er undtaget og er stadig modal. Koden er `dockDialogs`, `wireDocking` og `dragSplit` i `app.js`:
+
+- Vinduerne har klassen `docked` og åbnes **ikke modalt**: `showModal` er erstattet med `show` for dem, så flere kan være åbne. Visualizeren gøres smallere med kolonnens bredde (`margin-right` på `#viz-wrap`), og `ResizeObserver` i `visualizer.js` tilpasser billedet.
+- Flere åbne vinduer deler kolonnens højde oven over hinanden som i en tiling-vindueshåndtering (Omarchy); ældst øverst (`dockOrder`).
+- **Bredde:** træk i venstre kant (`.dock-resize`), fælles for kolonnen, gemt i `localStorage` (`dockWidth`). **Højde:** træk i kanten mellem to vinduer (`.dock-split`); fordelingen gemmes som vægte (`dockWeights`).
+- **Esc** lukker det senest åbnede (`closeTopDocked`). Et klik på billedet lukker ikke længere noget.
+- Genvejene virker, mens vinduerne er åbne (fx L med Settings åben); kun terminalen og guiden spærrer. Har en knap eller liste i et vindue fokus, hører mellemrum, Enter og pilene til den.
+- Preset-listen er delt i "CLASSIC WINAMP" og "EXPANSIONS" med overskrifter, der bliver stående øverst (`isClassic`), og ruller til det viste preset, når den er åbnet og har fået sin højde.
+- Selvtestens visning `docked-stack` åbner tre vinduer på én gang, så tilingen kan ses på et skærmbillede.
 
 ## Lydens vej
 
@@ -92,7 +104,10 @@ Begrænsning: loopback fanger kun Windows' **standard**-afspilningsenhed, og en 
   - Et enkelt nummer sendes i sit albums kontekst med `offset.uri`. Spotify-appen til Windows tømmer nemlig afspilleren ved en løs `uris`-kommando (verificeret 29-09-2026).
   - Uden aktiv enhed findes en afspiller, eller Spotify-appen startes, og der ventes op til 10 sekunder.
   - Bagefter spørger The Grid `GET /me/player` op til 4 sekunder for at se, at musikken faktisk spiller. Ellers åbnes nummeret med et `spotify:track:`-link, som appen altid afspiller.
-- **Status:** `GET /me/player` hvert 3. sekund, når vinduet er synligt. Uret regnes lokalt imellem kaldene. Nyt nummer starter MilkDrops titelanimation.
+- **Status:** `GET /me/player` hvert 3. sekund, også når vinduet er minimeret (fra 05-10-2026; ellers opdagede sanghukommelsen ikke nye numre). Uret regnes lokalt imellem kaldene. Nyt nummer starter MilkDrops titelanimation og sanghukommelsen (`startSong`).
+- **Følg Spotify** (`followSpotifyContext`, indstillingen "Show the playlist or album Spotify is playing", `followSpotify`, slået til): skifter Spotify til en anden playliste eller et andet album (`contextUri`), hentes den/det af sig selv. Kun ved et skift, så et link, brugeren selv har indsat, bliver stående. Kunstnere, "Liked Songs" og podcasts har ingen liste; Spotifys egne playlister kan ikke hentes (2026-reglerne) og prøves kun én gang.
+- **Uden Spotify:** appen virker uden login (guiden: "Just visualize what's playing"); se `music_engine.md`, "Uden Spotify".
+- **Genrer:** `GET /artists/{id}` (én ad gangen; batch er fjernet i 2026) til sanghukommelsens mærker. Spotify svarede med tomme genrer for de kunstnere, der er prøvet (05-10-2026).
 - **Kø:** for andres playlister vises `GET /me/player/queue` i stedet for nummerlisten.
 
 ## IPC-kanaler

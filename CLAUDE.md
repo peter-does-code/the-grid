@@ -33,6 +33,8 @@ Dokumentation i `docs/` (indeks: `docs/README.md`). Drews vejledning: `docs/en/g
 | `npm run presets:missing` | De Winamp-klassikere, preset-testen sorterede fra, men som kan tegnes, i review-vinduet; K tager dem med uanset målingerne |
 | `node scripts/collect-votes.js [--all]` | Brugernes stemmer (K/D) fra releases-repoets issues ind i `data/preset-votes.jsonl` (commit bagefter), luk issues og vis et overblik. Ændrer ingen lister. |
 | `npm run release` | Udgiver en ny version til Drew: test, versionshop, installationsfil til det private releases-repo, git-tag og push. Kun fra en ren arbejdsmappe. `-- --force` får brugernes app til at genstarte selv. Se `docs/releasing.md` |
+| `npm run install:local [-- --wait]` | Bygger og installerer på denne pc uden at udgive (version næste-patch-local); se `docs/releasing.md` |
+| `node scripts/fetch-archive-presets.js <mappe> "<søgning>"` | Henter MilkDrop-presets fra Internet Archive (ca. 43.000); se `docs/presets.md`, "Find et bestemt preset" |
 | `npm run dist:dir` | Bygger kun `dist/win-unpacked`. Selvtest: `"dist/win-unpacked/The Grid.exe" --selftest --selftest-out=<mappe>` |
 
 Udviklerværktøjer i appen: `Ctrl+Shift+I` eller `F12`. I den installerede app: `"The Grid.exe" --diagnose > diagnose.txt` (uden omdirigering vises intet, da programmet ikke har en konsol).
@@ -124,5 +126,7 @@ Derudover: ASCII-logo i udviklerkonsollen, "SECTOR n" og "IDLE" på LCD'et, "Der
 - Appen er altid på engelsk (regel 6). Docs og kodekommentarer er på dansk, bortset fra Drews vejledning i `docs/en/` og PowerShell-scripts (ASCII).
 - Kør `npm test` efter ændringer i `src/main/` eller `src/shared/`. Kør `npm run musictest` efter ændringer i musikmotoren. Kør `npm run selftest` efter ændringer i lydfangst, visualizer eller layout, og `npm run selftest:full` efter ændringer i intro eller påskeæg; se på skærmbillederne. Før en ny installationsfil: `npm run dist:dir` og selvtest af den pakkede app.
 - **Overskriv aldrig brugernes indstillinger ved en opdatering** (Peter 05-10-2026). `settings.json` gemmer kun det, brugeren har ændret (`rawSettings` i `store.js`); alt andet kommer fra `DEFAULT_SETTINGS`. En ny standard når derfor ud til alle, der ikke selv har valgt noget, uden en migrering. Skriv ikke nye migreringer, der ændrer en værdi, brugeren kan have valgt.
+- **Peters arbejdsgang** (05-10-2026): efter hver ændring committes og pushes der, og den installeres lokalt med `npm run install:local` (se `docs/releasing.md`). **Udgiv først (`npm run release`), når Peter siger det.** Kør tests og selvtest kun, når det er relevant (logik i `src/main`, `src/shared` eller presetvalget), og altid stille (`--quiet`). Skærmbilleder kun, når et layout ikke kan vurderes ellers.
+- Peter skriver dansk eller engelsk; svar på hans sprog. Appen er stadig altid på engelsk.
 - Versionsnummeret i `package.json` hæves for hver installationsfil, der sendes til Drew.
 - Commit-beskeder: én kort linje.

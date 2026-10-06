@@ -7,13 +7,13 @@ Oprettet 29-09-2026. **Levende** dokumenter holdes ajour og må citeres som fakt
 | Fil | Dækker |
 |---|---|
 | `../CLAUDE.md` | Projektoverblik, kommandoer, hårde regler, faldgruber og påskeæg. **Læs først.** |
-| `architecture.md` | Processer, moduler, lydens vej, Spotify-flows, IPC, sikkerhedsvalg, test og installationsfilen |
+| `architecture.md` | Processer, moduler, vinduerne i kolonnen, lydens vej, Spotify-flows (også følg Spotify og uden Spotify), IPC, sikkerhedsvalg, test og installationsfilen |
 | `music_engine.md` | Hvordan visualizeren følger musikken: tempo, slag, dele, drops, stilhed, valg af preset og målte resultater |
 | `spotify_setup.md` | Opsætning af Spotify-udvikler-app, hvad Spotify tillader i 2026, fejlfinding og lagring |
 | `winamp_research.md` | Hvordan Winamp og MilkDrop virker, licensstatus, og hvorfor vi bruger Butterchurn |
-| `backlog.md` | Ønsker, der ikke er bygget endnu (fx mere tilfældighed i valget af preset) |
-| `presets.md` | Hvor presets kommer fra, preset-testen, udvælgelsen, Peters smag, review, stemmer og personlige lister |
-| `releasing.md` | Udgivelser og automatiske opdateringer: tokens, `npm run release`, fejlsøgning med `--update-check` |
+| `backlog.md` | Ønsker og løse ender: bregnen, sanghukommelsen, valget af preset, shader-oversættelsen, musikmotoren |
+| `presets.md` | Hvor presets kommer fra (Cream of the Crop, Winamp-klassikerne, Internet Archive), preset-testen, udvælgelsen, den egne shader-oversættelse, at finde et bestemt preset, kataloget, Peters smag, review, stemmer og personlige lister |
+| `releasing.md` | Udgivelser og automatiske opdateringer: tokens, `npm run release`, lokal installation uden at udgive (`npm run install:local`), fejlsøgning med `--update-check` |
 | `sharing_plan.md` | Planen for at dele The Grid med Peters ven Drew: status på sprog, Tron-præg, guide, installationsfil og test |
 | `en/getting_started.md` | **Engelsk** vejledning til Drew: installation, SmartScreen, første start, fejlfinding og diagnose |
 
