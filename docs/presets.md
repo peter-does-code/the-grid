@@ -72,6 +72,18 @@ Peter testede The Grid til en fest; gæsterne syntes, det var for kaotisk og hur
    - Fra kildekoden (Peter selv) skriver K/D direkte i listerne og gemmes også i `data/preset-votes.jsonl`. Peters lister tælles med som hans stemmer.
 9. **Fjernet af Peter:** navnene i `scripts/preset-bans.txt` kommer aldrig med. Listen ligger også i pakken, så `visualizer.js` fjerner de samme navne blandt de indbyggede presets.
 
+## Egen shader-oversættelse (05-10 og 06-10-2026)
+
+milkdrop-preset-converter (hlslparser-js, nyeste udgave 0.1.2) ødelægger regnestykkerne i mange pixel-shadere: den skriver `&&` i stedet for plus, minus og gange, når tal og vektorer blandes, så billedet bliver hvidt eller sort. Derfor har The Grid sin egen oversætter fra MilkDrops HLSL til Butterchurns GLSL:
+
+- `scripts/lib/hlsl-to-glsl.js`: typer, funktioner (tex2D, lerp, saturate, frac, atan2, fmod, mul …), MilkDrops makroer (GetBlur1-3, GetMain, GetPixel, lum) og konstanter (M_PI …), hele tal som kommatal, egne teksturer erklæret, så Butterchurn indlæser dem (`uniform sampler2D sampler_x;`), globale variable med startværdi flyttet ind i funktionen, shaderens egen kopi af q1-q32, GLSL's reserverede ord omdøbt.
+- `scripts/lib/glsl-types.js`: en lille parser med typer, der skriver HLSL's stille omregninger ud: vektorer af forskellig længde skæres til den korteste, % på kommatal bliver mod(), sandt/falsk i regnestykker bliver 0/1, .x på et tal, tildelinger og argumenter i målets type. Kan den ikke læse en shader, bruges den uændret.
+- `node scripts/convert-presets.js <ind> <ud> --alt-shaders` bruger oversætteren i stedet for konverterens shadere. `scripts/lib/shader-overrides.js` har håndoversatte shadere til enkelte presets.
+- **Resultat** (05-10 og 06-10-2026): af 1.682 presets, preset-testen havde sorteret fra for shader/sort/hvidt/stille (1.550 fra Cream of the Crop-stikprøven og 146 Winamp-klassikere), virker 950 nu, i fem runder (`presets-work/rescue` … `rescue5` med målinger i `<mappe>-results.jsonl`). 212 kan stadig ikke linkes; fejlene er spredt.
+- **Med i pakken** (Peters "løsning B", 06-10-2026): `build-preset-pack.js --rescued=<mapper>` lader de reddede konkurrere med de andre på lige fod (samme frasortering, stilartspladser, blinkregel og Peters lister). Klassikere går til Winamp-klassikerne. Pakken voksede fra 656 til 896 presets og klassikerne fra 271 til 340, i alt 1.637 i appen.
+- Pakken skal holdes lille: hver oversat shader får kun de hjælpefunktioner, den bruger (`usedHelpers`); med alle blev pakken 18 MB i stedet for 10,6.
+- Oversættelsen er ikke kontrolleret preset for preset; ser et forkert ud (fx forkerte farver), giver D det væk.
+
 ## Kataloget (05-10-2026)
 
 Alt, vi ved om hvert preset, samlet til at kategorisere dem og på sigt forudsige, hvad en bruger kan lide ud fra sine favoritter (Peter 05-10-2026). `npm run presets:catalog` (efter `presets:pack`) skriver `src/renderer/presets/preset-catalog.js`; appen bruger det ikke endnu.

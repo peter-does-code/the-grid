@@ -91,6 +91,35 @@ function helpers() {
   return out.join('\n');
 }
 
+/**
+ * Kun de hjælpefunktioner, koden bruger (alle varianter af et navn). Med alle i hver shader blev preset-pakken
+ * 18 MB i stedet for ca. 7 (06-10-2026).
+ */
+function usedHelpers(code) {
+  return helpers()
+    .split('\n')
+    .filter((line) => {
+      const m = line.match(/^\S+ (_gl_\w+)\(/);
+      return m && new RegExp(`\\b${m[1]}\\s*\\(`).test(code);
+    })
+    .join('\n');
+}
+
+/** Fjerner ubrugte hjælpefunktioner fra en allerede oversat shader (til presets oversat før usedHelpers). */
+function pruneHelpers(glsl) {
+  if (!glsl || !glsl.includes('_gl_shader')) return glsl;
+  const lines = glsl.split('\n');
+  const isHelper = (l) => /^(float|vec[234]) _gl_(max|min|pow|step|dot|mix|clamp|saturate)\(/.test(l);
+  const rest = lines.filter((l) => !isHelper(l)).join('\n');
+  return lines
+    .filter((l) => {
+      if (!isHelper(l)) return true;
+      const name = l.match(/ (_gl_\w+)\(/)[1];
+      return new RegExp(`\\b${name}\\s*\\(`).test(rest);
+    })
+    .join('\n');
+}
+
 /** HLSL-linjerne fra .milk-teksten (warp_1=`..., comp_1=`...), samlet. */
 function extractHlsl(milkText, kind) {
   const lines = [];
@@ -353,7 +382,7 @@ function hlslToGlsl(milkText, kind, converted) {
   } catch {
     // uændret
   }
-  return [header, tex.decls, CONSTANTS, helpers(), tex.code, ` shader_body {`, `    ret = _gl_shader(${args});`, ' }'].join('\n');
+  return [header, tex.decls, CONSTANTS, usedHelpers(tex.code), tex.code, ` shader_body {`, `    ret = _gl_shader(${args});`, ' }'].join('\n');
 }
 
-module.exports = { hlslToGlsl, translate, floatLiterals, extractHlsl, wrapAssignments };
+module.exports = { hlslToGlsl, translate, floatLiterals, extractHlsl, wrapAssignments, pruneHelpers };

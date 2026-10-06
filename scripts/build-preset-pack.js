@@ -76,6 +76,48 @@ for (const file of flickerArg ? flickerArg.slice('--flicker='.length).split(',')
     }
   }
 }
+// --rescued=<mappe>,<mappe>: presets, preset-testen sorterede fra, men som den nye shader-oversættelse
+// (scripts/lib/hlsl-to-glsl.js, convert-presets --alt-shaders) har fået til at virke. Hver mappe har manifest.json og
+// målingerne i <mappe>-results.jsonl. De konkurrerer med de andre på lige fod (samme frasortering, stilartspladser og
+// Peters lister; Peter 06-10-2026, "løsning B"). Klassikere går til Winamp-klassikerne, resten til pakken.
+const fileOf = new Map(); // nøgle → sti til presettets JSON, når den ikke ligger i hovedmappen
+const rescuedClassics = [];
+const rescuedArg = args.find((a) => a.startsWith('--rescued='));
+if (rescuedArg) {
+  const classicsDir = (args.find((a) => a.startsWith('--classics=')) || '').slice('--classics='.length).split(',')[0];
+  const classicNames = new Set(
+    classicsDir && fs.existsSync(path.join(classicsDir, 'manifest.json'))
+      ? JSON.parse(fs.readFileSync(path.join(classicsDir, 'manifest.json'), 'utf8')).map((m) => banKey(m.name))
+      : []
+  );
+  const styleOf = new Map(manifest.map((m) => [banKey(m.name), m.style]));
+  let n = 0;
+  for (const rdir of rescuedArg.slice('--rescued='.length).split(',')) {
+    const resultsPath = `${rdir}-results.jsonl`;
+    if (!fs.existsSync(path.join(rdir, 'manifest.json')) || !fs.existsSync(resultsPath)) continue;
+    const rman = new Map(JSON.parse(fs.readFileSync(path.join(rdir, 'manifest.json'), 'utf8')).map((m) => [m.file, m]));
+    for (const line of fs.readFileSync(resultsPath, 'utf8').split('\n')) {
+      if (!line.trim()) continue;
+      const r = JSON.parse(line);
+      const m = rman.get(r.file);
+      if (!m || m.error || r.error || r.linkFailed) continue;
+      if (classicNames.has(banKey(m.name))) {
+        rescuedClassics.push({ r, m, file: path.join(rdir, r.file) });
+        continue;
+      }
+      const k = `${rdir}::${r.file}`;
+      byFile.set(k, { ...m, file: k, style: styleOf.get(banKey(m.name)) || m.style || 'Rescued' });
+      fileOf.set(k, path.join(rdir, r.file));
+      results.push({ ...r, file: k });
+      if (typeof r.flicker === 'number') {
+        flicker.set(k, r.flicker);
+        measured.set(k, { ...r, file: k });
+      }
+      n += 1;
+    }
+  }
+  console.log(`Reddet af den nye oversættelse: ${n} kandidater til pakken, ${rescuedClassics.length} klassikere`);
+}
 const MAX_FLICKER = 0.5;
 // Peters smag (review af 65 blinkere, 01-10-2026): blink er fint, når det følger musikken. Takt minus blink
 // adskilte hans "behold" fra "ban" bedst (AUC 0,80; takt alene 0,77, blink alene 0,73). Med mindst -0,2 ville
@@ -144,7 +186,7 @@ for (const r of ok) {
 
 // Pladser pr. stilart efter størrelse (i Cream of the Crop), mindst 2.
 const styleSize = {};
-for (const m of manifest) styleSize[m.style] = (styleSize[m.style] || 0) + 1;
+for (const m of byFile.values()) styleSize[m.style] = (styleSize[m.style] || 0) + 1; // også de reddede (--rescued)
 const candidates = {};
 for (const r of ok) (candidates[byFile.get(r.file).style] = candidates[byFile.get(r.file).style] || []).push(r);
 const styles = Object.keys(candidates);
@@ -185,7 +227,7 @@ const final = chosen.slice(0, Math.max(TOTAL, chosen.length));
 const presets = {};
 for (const r of final) {
   const m = byFile.get(r.file);
-  presets[m.name] = JSON.parse(fs.readFileSync(path.join(dir, r.file), 'utf8'));
+  presets[m.name] = JSON.parse(fs.readFileSync(fileOf.get(r.file) || path.join(dir, r.file), 'utf8'));
 }
 // --extra=<mappe>,<mappe>: konverterede presets fra søgninger uden for udvalget (fx fern-lignende stilarter fra hele
 // Cream of the Crop, 05-10-2026). Kun dem, Peter har givet K, kommer med.
@@ -258,10 +300,17 @@ if (classicsArg) {
     return false;
   };
   const classics = {};
-  for (const line of fs.readFileSync(clResults, 'utf8').split('\n')) {
-    if (!line.trim()) continue;
-    const r = JSON.parse(line);
-    const m = clManifest.get(r.file);
+  // Klassikerne fra Winamps kopi og dem, den nye shader-oversættelse har reddet (--rescued).
+  const clEntries = fs
+    .readFileSync(clResults, 'utf8')
+    .split('\n')
+    .filter((l) => l.trim())
+    .map((l) => {
+      const r = JSON.parse(l);
+      return { r, m: clManifest.get(r.file), file: path.join(clDir, r.file) };
+    });
+  clEntries.push(...rescuedClassics);
+  for (const { r, m, file: presetFile } of clEntries) {
     const keep = (() => {
       if (!m) return no('ikke i manifest');
       if (r.error) return no('fejl');
@@ -279,7 +328,7 @@ if (classicsArg) {
       return true;
     })();
     if (!keep) continue;
-    classics[m.name] = JSON.parse(fs.readFileSync(path.join(clDir, r.file), 'utf8'));
+    classics[m.name] = JSON.parse(fs.readFileSync(presetFile, 'utf8'));
     taken.add(m.name.toLowerCase());
     if (typeof r.flicker === 'number') statsByName[m.name] = r;
   }

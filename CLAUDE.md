@@ -26,7 +26,7 @@ Dokumentation i `docs/` (indeks: `docs/README.md`). Drews vejledning: `docs/en/g
 | `npm run diagnose -- --play` | Afspiller det sidst hentede link med afspil-knappens kode og viser Spotifys svar. **Starter musik.** |
 | `npm run dist` | Bygger installationsfilen `dist/The-Grid-Setup-<version>.exe` (NSIS, x64, cirka 100 MB) |
 | `node scripts/start.js --review` | Gennemsyn af frasorterede presets i et eget vindue: ← → bladrer, K beholder, D bandlyser (se `docs/presets.md`) |
-| `npm run presets:pack` | Bygger preset-pakken ud fra målingerne i `presets-work/` og ban- og behold-listerne (se `docs/presets.md`) |
+| `npm run presets:pack` | Bygger preset-pakken ud fra målingerne i `presets-work/` og ban- og behold-listerne, med de presets, den egne shader-oversættelse har reddet (`--rescued`, se `docs/presets.md`, "Egen shader-oversættelse") |
 | `npm run presets:review` | 50 nye kandidater efter Peters smag i review-vinduet (K behold, D ban) |
 | `npm run presets:classics` | 50 Winamp-klassikere (MilkDrops egen pakke), Peter ikke har stemt om, i review-vinduet |
 | `npm run presets:catalog` | Preset-kataloget: stilart, mærker og lighedsvektor for hvert preset, til at kategorisere og forudsige smag (se `docs/presets.md`, "Kataloget") |
