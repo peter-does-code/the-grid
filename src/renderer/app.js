@@ -172,6 +172,7 @@
     document.body.dataset.theme = theme;
     if (mini) mini.setPalette(theme);
     if (tronOverlay) tronOverlay.setTheme(theme);
+    if (viz) viz.setDinoMode(theme === 'jurassic'); // Jurassic Grid: dinosaurer i cirka hvert tiende preset
     $('set-theme').value = theme;
   }
 
@@ -195,6 +196,7 @@
 
   function initVisualizer() {
     viz = new window.Visamp.Visualizer($('viz'), { audioContext, onPresetChange });
+    viz.setDinoMode(currentTheme() === 'jurassic');
     viz.connect(music.output);
     viz.setMaxFps(state.settings.visualizer.maxFps);
     viz.setReactivity(REVIEW ? 1 : state.settings.visualizer.reactivity);
@@ -1597,6 +1599,14 @@
         setTheme('grid');
         toast(t('term.tronBlue'));
         return Promise.resolve(true);
+      case 'dino': {
+        // Jurassic Grid til og fra: temaet skifter, og cirka hvert tiende preset får en dinosaur. Gemmes som temaet.
+        const on = currentTheme() !== 'jurassic';
+        setTheme(on ? 'jurassic' : 'grid');
+        toast(t(on ? 'term.dino.on' : 'term.dino.off'));
+        if (on && viz) nextPreset({ hardCut: false });
+        return Promise.resolve(true);
+      }
       case 'overlay': {
         // "tron": Tron-laget over visualiseringen til og fra (også i terminalen, se termRun).
         const on = !tronOn;
@@ -1751,6 +1761,15 @@
         setTheme('grid');
         termPrint([t('term.tronBlue')]);
         break;
+      case 'dino':
+      case 'jurassic': {
+        // Jurassic Grid til og fra (også fra link-feltet).
+        const on = currentTheme() !== 'jurassic';
+        setTheme(on ? 'jurassic' : 'grid');
+        if (on && viz) nextPreset({ hardCut: false });
+        termPrint([t(on ? 'term.dino.on' : 'term.dino.off')]);
+        break;
+      }
       case 'trongrid': {
         // Tron-laget over visualiseringen, til og fra (også fra link-feltet). Huskes ikke: det starter slukket.
         const on = !tronOn;

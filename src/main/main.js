@@ -91,6 +91,7 @@ const TITLEBAR_COLORS = {
   grid: { color: '#02070c', symbolColor: '#7fefff' },
   clu: { color: '#0c0602', symbolColor: '#ffb070' },
   classic: { color: '#1b1b27', symbolColor: '#c8cbe0' },
+  jurassic: { color: '#070a03', symbolColor: '#ffd36e' },
 };
 const THEMES = Object.keys(TITLEBAR_COLORS);
 

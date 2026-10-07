@@ -11,6 +11,7 @@
     grid: { line: [0, 229, 255], accent: [255, 138, 28] },
     clu: { line: [255, 138, 28], accent: [0, 229, 255] },
     classic: { line: [70, 255, 120], accent: [255, 220, 60] },
+    jurassic: { line: [255, 190, 74], accent: [126, 227, 107] },
   };
   const HORIZON = 0.6; // horisonten i andele af højden
   const NEAR = 1; // gulvets nærmeste dybde

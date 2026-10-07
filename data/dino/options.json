@@ -1,0 +1,4 @@
+{
+  "ORB - Solar Sail": { "passes": 3, "alphaMin": 0.45 },
+  "Stahlregen & Geiss + Pithlit + PieturP - Dark Ritual (Etheral)_1": { "passes": 3, "alphaMin": 0.55, "color": [1, 0.78, 0.35] }
+}

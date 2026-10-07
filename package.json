@@ -21,6 +21,7 @@
     "presets:classics": "node scripts/build-review-pack.js --classics",
     "presets:missing": "node scripts/build-review-pack.js --classics --missing --count=200",
     "presets:catalog": "node scripts/build-preset-catalog.js",
+    "presets:dino": "node scripts/build-dino-pack.js",
     "install:local": "node scripts/install-local.js"
   },
   "author": "Peter <pse@wezimplify.com>",

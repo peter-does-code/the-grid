@@ -72,6 +72,13 @@
       this.presets = collectPresets();
       this.names = Object.keys(this.presets).sort((a, b) => a.localeCompare(b, 'en'));
       this.allNames = this.names.slice(); // også de skjulte (derezzede), til preset-listen
+      // Jurassic Grid (kommandoen "dino"): dinosaur-presets er en egen liste uden for udvalget. I dino-tilstand kommer
+      // cirka hvert tiende automatiske skift fra den. De kan altid indlæses (historik, preset-listen).
+      const dino = unwrap(window.gridPresetsDino);
+      this.dinoNames = dino && typeof dino.getPresets === 'function' && !window.gridReviewPresets ? Object.keys(dino.getPresets()) : [];
+      if (this.dinoNames.length) Object.assign(this.presets, dino.getPresets());
+      this.dinoMode = false;
+      this.dinoCountdown = 0;
       this.failed = new Set();
       this.history = [];
       this.historyIndex = -1;
@@ -381,11 +388,34 @@
      * Næste preset. Er man gået tilbage i historikken, går "næste" først frem igen, som i MilkDrop.
      * `pick` kan vælge et preset ud fra musikken (se pickSmart); ellers tilfældigt eller i rækkefølge.
      */
+    /** Dino-tilstand (temaet Jurassic): cirka hvert tiende skift bliver en dinosaur. Første gang med det samme. */
+    setDinoMode(on) {
+      const next = Boolean(on) && this.dinoNames.length > 0;
+      if (next && !this.dinoMode) this.dinoCountdown = 0;
+      this.dinoMode = next;
+    }
+
+    /** Et dinosaur-preset, der ikke er vist for nylig; null uden for dino-tilstand eller før tælleren er løbet ud. */
+    dinoName() {
+      if (!this.dinoMode) return null;
+      if (this.dinoCountdown > 0) {
+        this.dinoCountdown -= 1;
+        return null;
+      }
+      this.dinoCountdown = 7 + Math.floor(Math.random() * 6); // 8-13 skift til næste
+      const recent = new Set(this.history.slice(-Math.floor(this.dinoNames.length / 2)));
+      let pool = this.dinoNames.filter((n) => !recent.has(n) && !this.failed.has(n));
+      if (!pool.length) pool = this.dinoNames.filter((n) => n !== this.current && !this.failed.has(n));
+      return pool.length ? pool[Math.floor(Math.random() * pool.length)] : null;
+    }
+
     next({ random = true, blendSeconds = 2.7, pick = null } = {}) {
       if (this.historyIndex < this.history.length - 1) {
         this.historyIndex += 1;
         if (this.load(this.history[this.historyIndex], blendSeconds, { pushHistory: false })) return true;
       }
+      const dino = this.dinoName();
+      if (dino && this.load(dino, blendSeconds)) return true;
       if (random && pick) {
         const name = pick();
         if (name && this.load(name, blendSeconds)) return true;

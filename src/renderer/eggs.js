@@ -51,6 +51,11 @@
     // Virker både i link-feltet og i Flynns terminal (Peter: det, der skal virke i terminalen, skal også virke her).
     tron: 'blue', // temaet blåt
     trongrid: 'overlay', // Tron-laget over visualiseringen
+    dino: 'dino', // Jurassic Grid: temaet og dinosaurer i presets, til og fra
+    dinosaur: 'dino',
+    dinosaurs: 'dino',
+    jurassic: 'dino',
+    'jurassic grid': 'dino',
     'epic battle': 'epic',
     epicbattle: 'epic',
   };
@@ -78,6 +83,7 @@
     ['tron', 'sheet.tronBlue', 'blue'],
     ['trongrid', 'sheet.overlay', 'overlay'],
     ['epic battle', 'sheet.epic', 'epic'],
+    ['dino / jurassic', 'sheet.dino', 'dino'],
     ['↑ ↑ ↓ ↓ ← → ← →', 'sheet.konami', null],
     ['double-click THE GRID', 'sheet.wordmark', null],
   ];

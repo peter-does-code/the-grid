@@ -162,6 +162,59 @@ body[data-theme='clu'] {
     radial-gradient(ellipse at 50% 120%, rgba(255, 138, 30, 0.16), transparent 60%);
 }
 
+/* Jurassic Grid (kommandoen "dino"): rav og jungle. Samme layout, LCD'et i rav, accenten i grønt. */
+body[data-theme='jurassic'] {
+  --bg: #030502;
+  --left-bg: #050803;
+  --titlebar-bg: linear-gradient(#101606, #070a03);
+  --stripes: linear-gradient(to bottom, transparent 3px, rgba(255, 190, 74, 0.85) 3px 5px, transparent 5px);
+  --panel-top: #0d1206;
+  --panel-bottom: #070a03;
+  --panel-glow: 0 0 12px rgba(255, 190, 74, 0.12), inset 0 0 18px rgba(120, 220, 110, 0.05);
+  --bevel-hi: #6d6a2a;
+  --bevel-lo: #4a4a1c;
+  --inset-hi: #3f4318;
+  --inset-lo: #3f4318;
+  --button-top: #1c2409;
+  --button-bottom: #111606;
+  --button-hover-top: #2a350f;
+  --button-hover-bottom: #1a2209;
+  --button-hi: #9bb43a;
+  --button-lo: #4f5e1e;
+  --button-fg: #f1e4a6;
+  --well: #020301;
+
+  --lcd-fg: #ffd36e;
+  --lcd-mid: #d49a2c;
+  --lcd-dim: #4a3410;
+  --lcd-rgb: 255, 190, 74;
+  --lcd-glow: 0 0 7px rgba(var(--lcd-rgb), 0.65);
+  --slider-fill: #b07d22;
+  --placeholder: #6b5a2a;
+
+  --accent: #7ee36b;
+  --accent-dim: #3d7a33;
+  --accent-rgb: 126, 227, 107;
+  --accent-glow: 0 0 8px rgba(255, 190, 74, 0.7);
+  --text: #f3e9cc;
+  --text-dim: #9a8c62;
+  --pl-fg: #ffd36e;
+  --pl-current: #ffffff;
+  --pl-select-bg: #3f3a12;
+  --pl-hover: #2a2a0c;
+  --pl-unplayable: #5a5230;
+  --idle: #8a7a3a;
+  --notice-bg: #0b1206;
+  --notice-border: #3d6a2a;
+  --link: #ffe08a;
+  --rule: #3a3a14;
+  --danger: #ff5a3c;
+  /* Uden musik: en jungle-grøn bund i stedet for the Grids gulv. */
+  --viz-floor: linear-gradient(rgba(126, 227, 107, 0.06) 1px, transparent 1px) 0 0 / 44px 44px,
+    linear-gradient(90deg, rgba(126, 227, 107, 0.06) 1px, transparent 1px) 0 0 / 44px 44px,
+    radial-gradient(ellipse at 50% 120%, rgba(255, 190, 74, 0.14), transparent 60%);
+}
+
 *,
 *::before,
 *::after {
@@ -237,6 +290,10 @@ select {
 
 body[data-theme='grid'] .wordmark {
   color: #dffcff;
+}
+
+body[data-theme='jurassic'] .wordmark {
+  color: #fff1cf;
 }
 
 body[data-theme='clu'] .wordmark {

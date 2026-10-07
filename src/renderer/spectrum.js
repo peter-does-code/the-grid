@@ -46,6 +46,17 @@
       peak: '#00e5ff',
       dot: '#1c1006',
     },
+    // Jurassic Grid: rav med en grøn top.
+    jurassic: {
+      stops: [
+        [0, [230, 255, 200]],
+        [0.3, [126, 227, 107]],
+        [0.6, [255, 190, 74]],
+        [1, [140, 70, 10]],
+      ],
+      peak: '#ffd36e',
+      dot: '#0d1206',
+    },
   };
 
   function colorAt(stops, t) {

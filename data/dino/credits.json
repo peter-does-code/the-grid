@@ -1,0 +1,64 @@
+{
+ "stegosaurus": {
+  "taxon": "Stegosaurus",
+  "attribution": null,
+  "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "image": "/images/429d71d8-2940-449b-838b-a5b7f1733eba?build=558",
+  "size": "1536x682"
+ },
+ "triceratops": {
+  "taxon": "Triceratops",
+  "attribution": "Jagged Fang Designs",
+  "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "image": "/images/0388ee19-b40e-46fd-92f5-8ef6b9075590?build=558",
+  "size": "4643x1742"
+ },
+ "brachiosaurus": {
+  "taxon": "Brachiosaurus",
+  "attribution": "Amy Beauvois",
+  "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "image": "/images/2003b4f6-7b8d-4c98-9797-1aca028dc2ac?build=558",
+  "size": "1338x1536"
+ },
+ "pteranodon": {
+  "taxon": "Pterodactylus",
+  "attribution": "Gareth Monger",
+  "license": "https://creativecommons.org/licenses/by/3.0/",
+  "image": "/images/02651c35-768e-4570-9bad-90cac6911b52?build=558",
+  "size": "1536x679"
+ },
+ "velociraptor": {
+  "taxon": "Velociraptor",
+  "attribution": null,
+  "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "image": "/images/fc9271c1-c59d-41bf-941e-9c5a084169c7?build=558",
+  "size": "1536x469"
+ },
+ "parasaurolophus": {
+  "taxon": "Parasaurolophus",
+  "attribution": null,
+  "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "image": "/images/80afe0b5-630f-4599-b5bb-167211d25cb1?build=558",
+  "size": "1536x990"
+ },
+ "spinosaurus": {
+  "taxon": "Spinosaurus",
+  "attribution": "Tasman Dixon",
+  "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "image": "/images/0dd7eaf6-1caf-4579-9f42-340fa9f34c48?build=558",
+  "size": "6238x2707"
+ },
+ "ankylosaurus": {
+  "taxon": "Ankylosaurus",
+  "attribution": null,
+  "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "image": "/images/8a8a2525-e97d-4505-8085-7958f8d36137?build=558",
+  "size": "1536x446"
+ },
+ "diplodocus": {
+  "taxon": "Diplodocus",
+  "attribution": "Jagged Fang Designs",
+  "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "note": "candidates/diplodocus-0.svg, 96 harmonics"
+ }
+}
